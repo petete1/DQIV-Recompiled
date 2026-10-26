@@ -168,13 +168,14 @@ void FramePresenter::frame(NitroVideo& video,const GxGeometry& geometry,const Gx
         p.screenWide=gpuPlacement(-1,1,1,-1);
         batches.push_back({geometry.triangles(),p,true,true});
     } else if(mode==Mode::effect) {
-        // Each screen's half of the canvas, rendered across its whole width.
-        slot=screen;
-        layout_.threeRects={GpuLayout::Rect{0,0,0,0},GpuLayout::Rect{0,0,0,0}};
-        layout_.threeRects[slot]={0,screen*192.f,width,192};
-        if(seen_[other])layout_.threeRects[other]={0,other*192.f,width,192};
+        // Both screens cut the same picture into the same tiles (one tile
+        // grid, ScreenEffect.cpp), each its own half on alternate frames: here
+        // every frame's tiles cover the whole canvas, cut from the whole world
+        // picture, so the effect is one (and moves at 60 frames per second).
+        slot=0;
+        layout_.threeRects={GpuLayout::Rect{0,0,width,384},GpuLayout::Rect{0,0,0,0}};
         layout_.sides=true;
-        GpuBatch batch{geometry.triangles(),{},true,true};batch.worldScreen=int(screen);
+        GpuBatch batch{geometry.triangles(),{},true,true};batch.worldScreen=2;
         batches.push_back(batch);
     } else if(mode==Mode::menu) {
         // The kept world covers the canvas; the menus' 2D layers lie over it.
@@ -218,7 +219,7 @@ void FramePresenter::frame(NitroVideo& video,const GxGeometry& geometry,const Gx
     if(mode==Mode::joined)source={column,screen*0.5f,span,0.5f};
     else if(mode==Mode::battle)source={column,mainTop?0.f:0.5f,span,0.5f};
     else if(mode==Mode::field)source={column,fieldExtendY/384.f,span,0.5f};
-    else if(mode==Mode::effect)source={column,0,span,1};
+    else if(mode==Mode::effect)source={column,screen*0.5f,span,0.5f};
     const bool fieldInset=mode==Mode::field&&screen==0; // the map screen is drawn in the inset
     if(native3d)window_.gpu().readNative(native3d_,true,source);
     else if(capturing&&!fieldInset)window_.gpu().readNative(native3d_,false,source,screen);

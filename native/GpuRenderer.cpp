@@ -736,7 +736,10 @@ void GpuRenderer::render3D(std::span<const GpuBatch> batches,const GxRasterState
             ((parameters>>20)&7)==5&&((parameters>>23)&7)==5;
         float worldRow=0;
         if(fromWorld) {
-            polygon.texture=world_.color;size[0]=256;size[1]=-384;worldRow=192.f*float(batch.worldScreen)-384;
+            polygon.texture=world_.color;size[0]=256;
+            // One screen's half of the picture, or all of it (2: both screens).
+            if(batch.worldScreen==2) {size[1]=-192;worldRow=-192;}
+            else {size[1]=-384;worldRow=192.f*float(batch.worldScreen)-384;}
             polygon.wrap=0;polygon.crisp=true;
         } else if(textured) {
             const std::uint64_t key=(std::uint64_t(triangle.material.palette)<<32)|(parameters&0x3ff0ffffu);

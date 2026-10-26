@@ -32,7 +32,8 @@ struct GpuBatch {
     // When not negative: the DS screen (0 top, 1 bottom) whose captured picture
     // the direct-colour 256 x 256 textures hold (screen effects).
     // They sample the kept world picture (keepWorld) at that screen's place
-    // instead, so the effect covers the whole canvas.
+    // instead, so the effect covers the whole canvas; 2: the whole picture
+    // (one effect drawn over both screens).
     int worldScreen=-1;
 };
 // Fog of `upper` (when set) above `split` (fraction of the target height from
