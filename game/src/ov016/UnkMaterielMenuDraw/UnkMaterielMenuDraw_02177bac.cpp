@@ -563,12 +563,12 @@ THUMB void unkfunc_unused_3(int coin)
 // not in the ROM (dead-stripped), its local array initializer and strings are still in .rodata/.data
 THUMB void unkfunc_unused_4(int rank, int time)
 {
-    const char* name[15] = { "\xff\xfe\xb8\x24", "\xff\xfe\x21\xff", "\xff\xfe\x9e\x24", "\xff\xfe\x9f\x24", "\xff\xfe\xa0\x24",
-                             "\xff\xfe\xa1\x24", "\xff\xfe\xa2\x24", "\xff\xfe\xa3\x24", "\xff\xfe\xa4\x24", "\xff\xfe\xa5\x24",
-                             "\xff\xfe\x9d\x24\xff\xfe\x9c\x24", "\xff\xfe\x2a\xff", "\xff\xfe\x31\xff", "\xff\xfe\x2b\xff", (const char*)1 };
+    const char* name[15] = { "\xff\xfe\xb8\x24\0", "\xff\xfe\x21\xff\0", "\xff\xfe\x9e\x24\0", "\xff\xfe\x9f\x24\0", "\xff\xfe\xa0\x24\0",
+                             "\xff\xfe\xa1\x24\0", "\xff\xfe\xa2\x24\0", "\xff\xfe\xa3\x24\0", "\xff\xfe\xa4\x24\0", "\xff\xfe\xa5\x24\0",
+                             "\xff\xfe\x9d\x24\xff\xfe\x9c\x24\0", "\xff\xfe\x2a\xff\0", "\xff\xfe\x31\xff\0", "\xff\xfe\x2b\xff\0", (const char*)1 };
     int param[3];
     param[0] = (int)name[rank];
-    param[1] = (int)"\xff\xfe\xa9\x24";
+    param[1] = (int)"\xff\xfe\xa9\x24\0";
     param[2] = (int)":";
     unkfunc_02050ed0(s_parts_02183f82, param, time);
 }
@@ -623,7 +623,7 @@ THUMB void unkfunc_02177eb8(int monsterID, int diameter, int index, int orderCou
     const char* order[5] = { "", " A", " B", " C", " D" };
     int param[7];
     param[0] = monsterID + 0x60000000;
-    param[1] = (int)"\xff\xfe\xa9\x24";
+    param[1] = (int)"\xff\xfe\xa9\x24\0";
     param[2] = diameter / 10;
     param[3] = (int)"@.";
     param[4] = diameter % 10;

@@ -10,9 +10,15 @@
 #include <memory>
 #include <new>
 #include <stdexcept>
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#else
+#include "NitroThreads.hpp"
+#include <link.h>
+#include <vector>
+#endif
 
 namespace {
 struct Allocation { std::size_t size, alignment; void* heap; };
@@ -123,6 +129,7 @@ bool isGameTextPointer(std::uintptr_t value) {
         --it;const auto start=reinterpret_cast<std::uintptr_t>(it->first);
         if(value>=start&&value-start<it->second.size)return true;
     }
+#ifdef _WIN32
     MEMORY_BASIC_INFORMATION info{};
     if(!VirtualQuery(reinterpret_cast<void*>(value),&info,sizeof(info))||info.State!=MEM_COMMIT||
         (info.Protect&(PAGE_GUARD|PAGE_NOACCESS))||!(info.Protect&(PAGE_READONLY|PAGE_READWRITE|PAGE_WRITECOPY)))return false;
@@ -131,6 +138,26 @@ bool isGameTextPointer(std::uintptr_t value) {
     // Only committed bytes in active caller frames can hold a supplied string.
     if(value>=std::max<std::uintptr_t>(low,reinterpret_cast<std::uintptr_t>(&info))&&value<high)return true;
     return info.Type==MEM_IMAGE&&info.AllocationBase==GetModuleHandleW(nullptr);
+#else
+    // Active caller frames, from this one up to the top of the running stack.
+    const auto stack=pc::currentNativeStack();
+    const auto frame=reinterpret_cast<std::uintptr_t>(&it);
+    if(value>=std::max(stack.low,frame)&&value<stack.high)return true;
+    // The executable's own data: its loaded segments, holes between them excluded.
+    struct Segment {std::uintptr_t begin,end;};
+    static const auto image=[] {
+        std::vector<Segment> segments;
+        dl_iterate_phdr([](dl_phdr_info* info,std::size_t,void* data) {
+            auto& list=*static_cast<std::vector<Segment>*>(data);
+            for(int i=0;i<info->dlpi_phnum;++i)
+                if(const auto& header=info->dlpi_phdr[i];header.p_type==PT_LOAD&&(header.p_flags&PF_R))
+                    list.push_back({info->dlpi_addr+header.p_vaddr,info->dlpi_addr+header.p_vaddr+header.p_memsz});
+            return 1; // the first object is the executable
+        },&segments);
+        return segments;
+    }();
+    return std::any_of(image.begin(),image.end(),[value](const Segment& s){return value>=s.begin&&value<s.end;});
+#endif
 }
 std::size_t gameBytesAfter(const void* pointer) {
     const auto value=reinterpret_cast<std::uintptr_t>(pointer);

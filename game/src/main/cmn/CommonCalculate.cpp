@@ -4,8 +4,8 @@
 // unreferenced
 const short data_020b5fa8 = 0x1000;
 
-inline const long& enterLimitL() { return 0L; }
-inline const long& frontLimitL() { return 0L; }
+inline const long& enterLimitL() { static const long zero = 0L; return zero; }
+inline const long& frontLimitL() { static const long zero = 0L; return zero; }
 
 ARM void cmn::CommonCalculate::getDirByIdx(short dir, dss::Fix32Vector3& vec)
 {

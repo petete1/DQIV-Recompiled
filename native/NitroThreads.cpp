@@ -1,6 +1,15 @@
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#define FIBER_ENTRY VOID WINAPI
+#else
+#include <sys/mman.h>
+#include <ucontext.h>
+#include <unistd.h>
+#include <thread>
+#define FIBER_ENTRY void
+#endif
 #include "NitroThreads.hpp"
 #include <algorithm>
 #include <cstring>
@@ -24,6 +33,68 @@ struct IrqGuard {
     ~IrqGuard(){OS_RestoreIRQ(previous);}
 };
 thread_local ThreadRuntime* runtime=nullptr;
+#ifdef _WIN32
+using ThreadId=DWORD;
+ThreadId currentThreadId() {return GetCurrentThreadId();}
+// A fiber with 64 KiB committed of a 1 MiB stack; floating-point state switches with it.
+void* createFiber(void (WINAPI* entry)(void*),void* argument) {
+    return CreateFiberEx(64*1024,1024*1024,FIBER_FLAG_FLOAT_SWITCH,entry,argument);
+}
+void* threadFiber(bool& converted) {
+    if(IsThreadAFiber())return GetCurrentFiber();
+    converted=true;return ConvertThreadToFiberEx(nullptr,FIBER_FLAG_FLOAT_SWITCH);
+}
+void switchToFiber(void* fiber) {SwitchToFiber(fiber);}
+void deleteFiber(void* fiber) {DeleteFiber(fiber);}
+void releaseThreadFiber(void*) {ConvertFiberToThread();}
+#else
+using ThreadId=std::thread::id;
+ThreadId currentThreadId() {return std::this_thread::get_id();}
+// Fibers as contexts on their own 1 MiB stacks (reserved, used on demand,
+// below a guard page); the OS thread's own context is the first fiber.
+struct Fiber {
+    ucontext_t context{};
+    unsigned char* mapping=nullptr;
+    std::size_t size=0;
+    void (*entry)(void*)=nullptr;
+    void* argument=nullptr;
+};
+thread_local Fiber* runningFiber=nullptr;
+void fiberStart(unsigned low,unsigned high) {
+    auto* fiber=reinterpret_cast<Fiber*>((std::uintptr_t(high)<<16<<16)|low);
+    fiber->entry(fiber->argument);
+}
+void* createFiber(void (*entry)(void*),void* argument) {
+    const std::size_t page=std::size_t(sysconf(_SC_PAGESIZE)),size=1024*1024+page;
+    void* mapping=mmap(nullptr,size,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_STACK,-1,0);
+    if(mapping==MAP_FAILED)return nullptr;
+    mprotect(mapping,page,PROT_NONE);
+    auto* fiber=new Fiber{{},static_cast<unsigned char*>(mapping),size,entry,argument};
+    getcontext(&fiber->context);
+    fiber->context.uc_stack.ss_sp=fiber->mapping+page;fiber->context.uc_stack.ss_size=size-page;
+    fiber->context.uc_link=nullptr;
+    const auto address=reinterpret_cast<std::uintptr_t>(fiber);
+    makecontext(&fiber->context,reinterpret_cast<void (*)()>(fiberStart),2,unsigned(address),unsigned(address>>16>>16));
+    return fiber;
+}
+void* threadFiber(bool& converted) {
+    if(runningFiber)return runningFiber;
+    converted=true;return runningFiber=new Fiber;
+}
+void switchToFiber(void* pointer) {
+    auto* next=static_cast<Fiber*>(pointer);auto* previous=runningFiber;
+    if(next==previous)return;
+    runningFiber=next;
+    setCurrentNativeStack(next->mapping?StackRange{reinterpret_cast<std::uintptr_t>(next->mapping),
+        reinterpret_cast<std::uintptr_t>(next->mapping)+next->size}:StackRange{});
+    swapcontext(&previous->context,&next->context);
+}
+void deleteFiber(void* pointer) {
+    auto* fiber=static_cast<Fiber*>(pointer);
+    munmap(fiber->mapping,fiber->size);delete fiber;
+}
+void releaseThreadFiber(void* pointer) {delete static_cast<Fiber*>(pointer);runningFiber=nullptr;}
+#endif
 }
 struct ThreadRuntime {
     struct Record {
@@ -42,20 +113,18 @@ struct ThreadRuntime {
     OSThread eventThread{};
     unsigned nextId=1;
     bool converted=false,stopping=false;
-    DWORD ownerThread=GetCurrentThreadId();
+    ThreadId ownerThread=currentThreadId();
 
     ThreadRuntime() {
         if(runtime)throw std::runtime_error("Native thread runtime already active");
-        void* fiber;
-        if(IsThreadAFiber())fiber=GetCurrentFiber();
-        else {fiber=ConvertThreadToFiberEx(nullptr,FIBER_FLAG_FLOAT_SWITCH);converted=true;}
-        if(!fiber)throw std::runtime_error("Could not initialize Windows fibers");
+        void* fiber=threadFiber(converted);
+        if(!fiber)throw std::runtime_error("Could not initialize native fibers");
         mainThread.state=1;mainThread.priority=16;
         records.emplace(&mainThread,std::make_unique<Record>(Record{this,&mainThread,fiber,nullptr,nullptr,true}));
         ThreadInfo={};ThreadInfo.current=&mainThread;ThreadInfo.list=&mainThread;runtime=this;
     }
     void assertOwner() const {
-        if(GetCurrentThreadId()!=ownerThread)throw std::runtime_error("SDK scheduler called outside its owning OS thread");
+        if(currentThreadId()!=ownerThread)throw std::runtime_error("SDK scheduler called outside its owning OS thread");
     }
     static ThreadRuntime& get() {if(!runtime)throw std::runtime_error("No native thread runtime is active");runtime->assertOwner();return *runtime;}
     void insert(OSThread* thread) {
@@ -93,10 +162,10 @@ struct ThreadRuntime {
     void switchTo(Record& next) {
         if(next.sdk==ThreadInfo.current)return;
         const auto depth=suspendNativeInterrupts();
-        ThreadInfo.current=next.sdk;SwitchToFiber(next.fiber);
+        ThreadInfo.current=next.sdk;switchToFiber(next.fiber);
         resumeNativeInterrupts(depth);
     }
-    static VOID WINAPI eventEntry(void* pointer) {
+    static FIBER_ENTRY eventEntry(void* pointer) {
         auto& r=*static_cast<ThreadRuntime*>(pointer);
         try {
             while(!r.stopping) {
@@ -115,7 +184,7 @@ struct ThreadRuntime {
         }
         eventThread.state=1;eventThread.priority=32;
         auto record=std::make_unique<Record>(Record{this,&eventThread});
-        record->fiber=CreateFiberEx(64*1024,1024*1024,FIBER_FLAG_FLOAT_SWITCH,eventEntry,this);
+        record->fiber=createFiber(eventEntry,this);
         if(!record->fiber)throw std::runtime_error("Could not allocate native event fiber");
         auto* result=record.get();records.emplace(&eventThread,std::move(record));return *result;
     }
@@ -140,7 +209,7 @@ struct ThreadRuntime {
         while(sdk->mutexQueue.head)removeMutex(sdk->mutexQueue.head);
         unlinkWait(sdk);erase(sdk);sdk->state=2;wakeQueue(&sdk->joinQueue);
     }
-    static VOID WINAPI entry(void* pointer) {
+    static FIBER_ENTRY entry(void* pointer) {
         auto& r=*static_cast<Record*>(pointer);auto& owner=*r.owner;
         try {
             if(owner.stopping)throw StopThread{};
@@ -170,9 +239,10 @@ struct ThreadRuntime {
         for(auto& [sdk,record]:records)if(!record->main && sdk!=&eventThread && sdk->state!=2)wake(sdk);
         for(auto& [sdk,record]:records)if(!record->main && sdk!=&eventThread && sdk->state!=2)switchTo(*record);
         if(auto event=records.find(&eventThread);event!=records.end() && eventThread.state!=2)switchTo(*event->second);
-        for(auto& [sdk,record]:records)if(!record->main)DeleteFiber(record->fiber);
+        void* threadOwnFiber=nullptr;
+        for(auto& [sdk,record]:records)if(!record->main)deleteFiber(record->fiber);else threadOwnFiber=record->fiber;
         ThreadInfo={};runtime=nullptr;
-        if(converted)ConvertFiberToThread();
+        if(converted)releaseThreadFiber(threadOwnFiber);
     }
 };
 NitroThreads::NitroThreads():impl_(std::make_unique<ThreadRuntime>()) {}
@@ -192,7 +262,7 @@ void func_020787c4(OSThread* sdk,void (*function)(void*),void* argument,void* st
     const unsigned top=0x7bf9dd5b,bottom=0xfddb597d;
     std::memcpy(memory,&top,4);std::memcpy(memory+size-4,&bottom,4);
     auto record=std::make_unique<pc::ThreadRuntime::Record>(pc::ThreadRuntime::Record{&r,sdk,nullptr,function,argument,false});
-    record->fiber=CreateFiberEx(64*1024,1024*1024,FIBER_FLAG_FLOAT_SWITCH,pc::ThreadRuntime::entry,record.get());
+    record->fiber=pc::createFiber(pc::ThreadRuntime::entry,record.get());
     if(!record->fiber)throw std::runtime_error("Could not allocate native SDK fiber");
     r.records.emplace(sdk,std::move(record));
     r.insert(sdk);

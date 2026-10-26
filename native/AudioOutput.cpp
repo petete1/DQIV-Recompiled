@@ -1,4 +1,5 @@
 #include "AudioOutput.hpp"
+#include "Profile.hpp"
 #include <SDL3/SDL.h>
 #include <limits>
 #include <stdexcept>
@@ -26,7 +27,14 @@ void AudioOutput::write(std::span<const std::int16_t> stereo) {
     // The sound card's clock drifts from the game's 60 frames per second: in
     // a long session the queue would grow without end (seconds of delay).
     // Past 300 ms queued, this frame's sound is dropped instead.
-    if(stereo.size()/2+queuedFrames()>std::uint64_t(rate_)*3/10)return;
+    const unsigned queued=queuedFrames();
+    if(profiling()) {
+        // Sound still waiting to be played when this frame's arrives (DQIV_PROFILE),
+        // and how often none was left (the device ran dry: a gap).
+        profileAdd("audio-queued",double(queued)*1e6/rate_);
+        if(!queued)profileAdd("audio-empty",0);
+    }
+    if(stereo.size()/2+queued>std::uint64_t(rate_)*3/10)return;
     if(!stereo.empty())requireAudio(SDL_PutAudioStreamData(stream_,stereo.data(),static_cast<int>(stereo.size_bytes())));
 }
 unsigned AudioOutput::queuedFrames() const {

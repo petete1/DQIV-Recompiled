@@ -314,7 +314,7 @@ THUMB void unkfunc_0216bec8(int* list, int count, int* order, int orderCount)
         int number[3];
         number[0] = i + 1;
         number[1] = (int)":";
-        number[2] = (int)"\xff\xfe\xa6\x24";
+        number[2] = (int)"\xff\xfe\xa6\x24\0";
         int color = 0;
         if (orderCount > i) {
             status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(*order)->haveStatusInfo_;

@@ -144,10 +144,14 @@ const char* yesNo(bool value,int language) {
     return value?pick(language,"Yes","Oui","Ja","Sì","Sí"):pick(language,"No","Non","Nein","No","No");
 }
 bool applyRequested=false;
+bool exitRequest=false;
 std::atomic<bool> partyChatRequest=false;
+std::atomic<bool> fastForwardHeld=false;
 }
 void setPartyChatRequest(bool pressed) {partyChatRequest=pressed;}
 bool takePartyChatRequest() {return partyChatRequest.exchange(false);}
+void setFastForward(bool held) {fastForwardHeld=held;}
+bool fastForward() {return fastForwardHeld;}
 const char* settingsTitle(int language) {return pick(language,"Settings","Paramètres","Einstellungen","Impostazioni","Ajustes");}
 const char* pageTitle(int page,int language) {
     switch(page) {
@@ -172,6 +176,7 @@ const char* controlName(int action,int language) {
     case 10:return pick(language,"Left","Gauche","Links","Sinistra","Izquierda");
     case 11:return pick(language,"Right","Droite","Rechts","Destra","Derecha");
     case controlPartyChat:return pick(language,"Party chat","Parler au groupe","Gruppengespräch","Parla al gruppo","Hablar al grupo");
+    case controlFastForward:return pick(language,"Fast forward","Avance rapide","Schnellvorlauf","Avanti veloce","Avance rápido");
     }
     return "";
 }
@@ -193,6 +198,7 @@ void resetControls(int page) {
     }
 }
 const char* settingsBack(int language) {return pick(language,"Back","Retour","Zurück","Indietro","Volver");}
+const char* settingsExit(int language) {return pick(language,"Exit game","Quitter le jeu","Spiel beenden","Esci dal gioco","Salir del juego");}
 const char* settingLabel(int item,int language) {
     switch(item) {
     case settingLanguage:return pick(language,"Language","Langue","Sprache","Lingua","Idioma");
@@ -329,4 +335,6 @@ void zoomCamera(int step) {
 }
 void requestSettingsApply() {applyRequested=true;}
 bool takeSettingsApply() {const bool requested=applyRequested;applyRequested=false;return requested;}
+void requestExit() {exitRequest=true;}
+bool exitRequested() {return exitRequest;}
 }

@@ -4,6 +4,8 @@
 namespace pc {
 // How fast dialogue text appears.
 enum TextSpeed {textSlow,textNormal,textFast,textInstant,textSpeedCount};
+// The gamepad's triggers are axes in SDL: these codes bind them like buttons.
+inline constexpr int padLeftTrigger=100,padRightTrigger=101;
 struct GameSettings {
     int language=1;          // game language: 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish
     bool showFps=false;
@@ -23,11 +25,11 @@ struct GameSettings {
     // Camera of towns, dungeons and the world map.
     int cameraZoom=100;       // percent: above 100 closer, below farther
     bool mobileSound=true;    // the smartphone version's music and sounds instead of the DS sequences
-    // Controls, in the order of controlBits then party chat: an SDL keycode
-    // and an SDL gamepad button (or padLeftTrigger / padRightTrigger).
-    unsigned keys[13]={'z','x','s','a','q','w',0x0d,0x400000e5,0x40000052,0x40000051,0x40000050,0x4000004f,'e'};
+    // Controls, in the order of controlBits then party chat and fast forward:
+    // an SDL keycode and an SDL gamepad button (or padLeftTrigger / padRightTrigger).
+    unsigned keys[14]={'z','x','s','a','q','w',0x0d,0x400000e5,0x40000052,0x40000051,0x40000050,0x4000004f,'e','\t'};
     // Party chat on B: the game only takes it outside menus (B does nothing there).
-    int pads[13]={0,1,3,2,9,10,6,4,11,12,13,14,1};
+    int pads[14]={0,1,3,2,9,10,6,4,11,12,13,14,1,padRightTrigger};
 };
 // Battles in 16:9: the scene zoomed to fill the room between the party's
 // windows (smaller, at the top) and the commands (large), the scene over the
@@ -37,15 +39,19 @@ enum BattleLayout {battleLarge,battlePanorama,battleDsScreens,battleLayoutCount}
 // A, B, X, Y, L, R, Start, Select, Up, Down, Left, Right (bits of the DS pad).
 inline constexpr unsigned controlBits[12]={0,1,10,11,9,8,3,2,6,7,5,4};
 inline constexpr int buttonControlCount=12;
-// The gamepad's triggers are axes in SDL: these codes bind them like buttons.
-inline constexpr int padLeftTrigger=100,padRightTrigger=101;
-// After the DS buttons: talk to the party at once.
+// After the DS buttons: talk to the party at once, and fast forward (held).
 inline constexpr int controlPartyChat=12;
-inline constexpr int controlCount=13;
+inline constexpr int controlFastForward=13;
+inline constexpr int controlCount=14;
+// While fast forward is held, the game runs this many times as fast.
+inline constexpr int fastForwardSpeed=4;
 // Whether the party chat control was pressed since the window last read the
 // input (the game takes it once).
 void setPartyChatRequest(bool pressed);
 bool takePartyChatRequest();
+// Whether the fast forward control is held (set by the window's input).
+void setFastForward(bool held);
+bool fastForward();
 }
 // The game's frame count (with the power functions).
 extern "C" unsigned pcVBlankCount();
@@ -90,6 +96,7 @@ const char* settingLabel(int item,int language);
 std::string settingValue(int item,int language);
 const char* settingsTitle(int language); // the entry in the adventure log menu
 const char* settingsBack(int language);
+const char* settingsExit(int language);
 const char* settingHint(int item,int language);
 // Changes a setting by `step` (-1 or +1); false when nothing changed.
 bool changeSetting(int item,int step);
@@ -101,4 +108,7 @@ const char* soundsLabel(int language);
 // Settings changed outside the window (the game's menu) wait to be applied by it.
 void requestSettingsApply();
 bool takeSettingsApply();
+// The settings' exit entry: the window closes the game, as when it is closed.
+void requestExit();
+bool exitRequested();
 }

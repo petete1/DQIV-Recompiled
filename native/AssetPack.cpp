@@ -111,6 +111,8 @@ void writePack(const std::filesystem::path& prefixFile,const std::vector<std::st
 #ifdef _WIN32
         if(!MoveFileExW(temporary.c_str(),output.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) throw std::runtime_error("Cannot write "+output.string());
 #else
+        // A packed executable stays executable.
+        if(!prefixFile.empty()) std::filesystem::permissions(temporary,std::filesystem::status(prefixFile).permissions());
         std::filesystem::rename(temporary,output);
 #endif
     } catch(...) { std::error_code ignored; std::filesystem::remove(temporary,ignored); throw; }

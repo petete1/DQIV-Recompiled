@@ -14,6 +14,7 @@ struct SettingsPanel
         ROW_SOUNDS,
         ROW_RESET,
         ROW_BACK,
+        ROW_EXIT,
     };
     int page_ = 0;
     bool inGame_ = false;

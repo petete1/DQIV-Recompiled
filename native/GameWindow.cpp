@@ -89,6 +89,7 @@ void GameWindow::canvasPixels(const GpuLayout& layout,float& width,float& height
 bool GameWindow::poll() {
     // Settings changed in the game's own menu.
     if(takeSettingsApply())applySettings();
+    if(exitRequested())running_=false;
     SDL_Event e;
     while(SDL_PollEvent(&e)) {
         if(e.type==SDL_EVENT_QUIT)running_=false;
@@ -152,7 +153,7 @@ bool GameWindow::poll() {
             }
         }
     }
-    std::uint16_t buttons=0;bool partyChat=false;
+    std::uint16_t buttons=0;bool partyChat=false,fast=false;
     const auto* keys=SDL_GetKeyboardState(nullptr);
     const auto& controls=gameSettings();
     auto held=[&](SDL_Keycode key){const auto scan=SDL_GetScancodeFromKey(key,nullptr);return scan!=SDL_SCANCODE_UNKNOWN&&keys[scan];};
@@ -163,6 +164,7 @@ bool GameWindow::poll() {
         // Escape for B while they are bound to nothing else.
         for(int i=0;i<buttonControlCount;++i)if(held(static_cast<SDL_Keycode>(controls.keys[i])))buttons|=1u<<controlBits[i];
         partyChat=held(static_cast<SDL_Keycode>(controls.keys[controlPartyChat]));
+        fast=held(static_cast<SDL_Keycode>(controls.keys[controlFastForward]));
         if(!bound(SDLK_SPACE)&&keys[SDL_SCANCODE_SPACE])buttons|=1;
         if(!bound(SDLK_BACKSPACE)&&keys[SDL_SCANCODE_BACKSPACE])buttons|=2;
         if(!bound(SDLK_ESCAPE)&&keys[SDL_SCANCODE_ESCAPE])buttons|=2;
@@ -176,6 +178,7 @@ bool GameWindow::poll() {
         };
         for(int i=0;i<buttonControlCount;++i)if(pressed(controls.pads[i]))buttons|=1u<<controlBits[i];
         if(pressed(controls.pads[controlPartyChat]))partyChat=true;
+        if(pressed(controls.pads[controlFastForward]))fast=true;
         // The left stick moves too.
         const int x=SDL_GetGamepadAxis(gamepad_,SDL_GAMEPAD_AXIS_LEFTX),y=SDL_GetGamepadAxis(gamepad_,SDL_GAMEPAD_AXIS_LEFTY);
         if(x>16000)buttons|=16;if(x<-16000)buttons|=32;if(y<-16000)buttons|=64;if(y>16000)buttons|=128;
@@ -186,8 +189,9 @@ bool GameWindow::poll() {
     }
     // While a control is being bound, and until the key that bound it is
     // released, the game gets no input.
-    if(rebindWaiting()) {buttons=0;partyChat=false;}
-    else if(suppressInput_) {if(buttons)buttons=0;else suppressInput_=false;partyChat=false;}
+    if(rebindWaiting()) {buttons=0;partyChat=false;fast=false;}
+    else if(suppressInput_) {if(buttons)buttons=0;else suppressInput_=false;partyChat=false;fast=false;}
+    setFastForward(fast);
     setPartyChatRequest(partyChat&&!partyChatHeld_);partyChatHeld_=partyChat;
     // Touch: the bottom DS screen, centred at the foot of the canvas.
     float mouseX=0,mouseY=0;const auto mouse=SDL_GetMouseState(&mouseX,&mouseY);

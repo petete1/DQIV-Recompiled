@@ -1,5 +1,5 @@
-// Dragon Quest IV for Windows: the original game, run natively with the PC
-// window, renderer and sound.
+// Dragon Quest IV for Windows and Linux: the original game, run natively with
+// the PC window, renderer and sound.
 #include "Assets.hpp"
 #include "AssetPack.hpp"
 #include "GameServices.hpp"
@@ -22,12 +22,19 @@
 #include "NitroWireless.hpp"
 #include "Input.hpp"
 #include "Settings.hpp"
+#ifdef _WIN32
 #include <share.h>
 // Laptops with two graphics chips run the game on the discrete one.
 extern "C" {
 __declspec(dllexport) unsigned long NvOptimusEnablement=1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance=1;
 }
+#else
+#include <SDL3/SDL_messagebox.h>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <unistd.h>
+#endif
 extern "C" {
 #include <nitro/os/thread.h>
 }
@@ -37,13 +44,16 @@ extern "C" {
 #include <cstdio>
 #include <exception>
 #include <iostream>
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#endif
 
 static_assert(sizeof(void*) == 4, "The original game resources contain 32-bit pointers");
 
 namespace {
+#ifdef _WIN32
 // The game's frame (the DS game, its 3D and the frames between) runs on this
 // thread: on processors with fast and efficient cores (Intel 12th generation
 // and later) Windows may give it an efficient one, or slow it down to save
@@ -78,6 +88,10 @@ void preferFastCores() {
         std::printf("Fast cores: %zu of %zu\n",fast.size(),all.size());
     }
 }
+#else
+// Linux schedules the busy game thread on the fast cores itself.
+void preferFastCores() {}
+#endif
 }
 
 static_assert(sizeof(DataObject) == 0x10);
@@ -100,7 +114,11 @@ void adoptPreviousSave() {
 }
 void showError(const std::string& text) {
     const auto message="Dragon Quest IV a rencontre une erreur et doit se fermer.\n\n"+text+"\n\nJournal : "+journalPath();
+#ifdef _WIN32
     MessageBoxA(nullptr,message.c_str(),"Dragon Quest IV",MB_OK|MB_ICONERROR);
+#else
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Dragon Quest IV",message.c_str(),nullptr);
+#endif
 }
 // The game's resources: packed inside the executable or, in a build tree, the
 // assets folder (the game's data) and the addons folder (the PC version's
@@ -114,7 +132,11 @@ pc::Assets openResources() {
             if(std::filesystem::is_directory(directory/name)) {assets.add(directory/name);break;}
             const auto parent=directory.parent_path();if(parent==directory)break;directory=parent;
         }
+#ifdef _WIN32
     if(!assets.contains("data/SOUND/sound_data.sdat"))throw std::runtime_error("Game data not found: build the game with build.ps1");
+#else
+    if(!assets.contains("data/SOUND/sound_data.sdat"))throw std::runtime_error("Game data not found: build the game with build.sh");
+#endif
     return assets;
 }
 }
@@ -129,9 +151,20 @@ int main() {
             std::filesystem::copy_options::overwrite_existing,ignored);
         // Shared opening: a second running copy of the game must not lose its
         // output (an exclusive journal would leave it without a stdout).
+#ifdef _WIN32
         if(FILE* file=_fsopen(journalPath().c_str(),"w",_SH_DENYWR))std::fclose(file);
         if(!std::freopen(journalPath().c_str(),"a",stdout))std::freopen("NUL","w",stdout);
         if(!std::freopen(journalPath().c_str(),"a",stderr))std::freopen("NUL","w",stderr);
+#else
+        // Each running copy holds a shared lock on the journal it writes to.
+        if(const int file=::open(journalPath().c_str(),O_WRONLY|O_CREAT|O_CLOEXEC,0644);file>=0) {
+            if(::flock(file,LOCK_EX|LOCK_NB)==0&&::ftruncate(file,0)!=0)std::perror("journal");
+            ::close(file);
+        }
+        if(!std::freopen(journalPath().c_str(),"a",stdout))std::freopen("/dev/null","w",stdout);
+        else ::flock(fileno(stdout),LOCK_SH|LOCK_NB);
+        if(!std::freopen(journalPath().c_str(),"a",stderr))std::freopen("/dev/null","w",stderr);
+#endif
     }
     try {
         std::cout.setf(std::ios::unitbuf);
@@ -165,8 +198,9 @@ int main() {
         pc::NitroOverlays overlays(gameOverlayImages());
         if(!overlays.load(38)) throw std::runtime_error("Cannot construct main game module");
         pc::FramePresenter presenter(window,display,textures);
-        // Faster battles (settings): only one game frame in 2, 3 or 4 is
-        // shown, paced and heard; the music keeps its tempo.
+        // Faster battles (settings), and the whole game while fast forward is
+        // held: only one game frame in 2, 3 or 4 is shown, paced and heard;
+        // the music keeps its tempo.
         bool fastFrame=false;unsigned boostFrames=0;
         pc::setFrameCallback([&] {
             pc::ProfileScope frameTiming("render-callback");
@@ -184,11 +218,14 @@ int main() {
         threads.setIdleHandler([&] {
             running=window.poll();
             const bool shown=!fastFrame;
-            const int boost=data_0210bb94.unkfunc_0205810c()==13?pc::gameSettings().battleBoost+1:1;
+            int boost=data_0210bb94.unkfunc_0205810c()==13?pc::gameSettings().battleBoost+1:1;
+            if(pc::fastForward())boost=std::max(boost,pc::fastForwardSpeed);
             fastFrame=boost>1&&++boostFrames%unsigned(boost)!=0;
             if(shown) {
                 pc::ProfileScope timing("sound");
                 sound.render(samples);mobileSound.mix(samples);
+                // Fast forward is silent; the sound goes on underneath.
+                if(pc::fastForward())samples.fill(0);
             }
             power.advanceFrame();pc::advanceWireless();
             if(shown) {window.audio(samples);window.pace();}

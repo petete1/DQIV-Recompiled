@@ -39,6 +39,11 @@ namespace dss {
         }
         return x;
     }
+
+    template int max<int>(int, int);
+    template int min<int>(int, int);
+    template int clamp<int>(int, int, int);
+    template int loop<int>(int, int, int);
 }
 
 BattleMenuPart g_BattleMenuPart;

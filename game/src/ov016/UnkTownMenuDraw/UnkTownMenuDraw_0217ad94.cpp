@@ -557,7 +557,7 @@ THUMB void unkfunc_0217b2b4(int index)
 
 THUMB void unkfunc_0217b300(int x, int pageMax, int page, int flag)
 {
-    int param[5] = { page + 1, (int)"\xff\xfe\xa7\x24", pageMax + 1, 0xd, 0xc };
+    int param[5] = { page + 1, (int)"\xff\xfe\xa7\x24\0", pageMax + 1, 0xd, 0xc };
     if (flag) {
         unkfunc_02050ee0(s_parts_0218514a, param, x, 0x78, data_020be244[0]);
         return;
@@ -567,7 +567,7 @@ THUMB void unkfunc_0217b300(int x, int pageMax, int page, int flag)
 
 THUMB void unkfunc_0217b368(int x, int pageMax, int page)
 {
-    int param[5] = { 0xc, page + 1, (int)"\xff\xfe\xa7\x24", pageMax + 1, 0xd };
+    int param[5] = { 0xc, page + 1, (int)"\xff\xfe\xa7\x24\0", pageMax + 1, 0xd };
     unkfunc_02050ee0(s_parts_021851f2, param, x, 0x78, data_020be244[0]);
 }
 
@@ -809,9 +809,9 @@ THUMB void unkfunc_0217b908(status::HaveStatusInfo* info, int index, int flag)
     param[1] = playerIndex + 0x50000000;
     param[2] = 0xa000003f;
     param[3] = 0xa000003d;
-    param[4] = (int)"\xff\xfe\xa7\x24";
+    param[4] = (int)"\xff\xfe\xa7\x24\0";
     param[5] = 0xa000003e;
-    param[6] = (int)"\xff\xfe\xa7\x24";
+    param[6] = (int)"\xff\xfe\xa7\x24\0";
     param[7] = info->haveStatus_.level_;
     param[8] = info->haveStatus_.getHp();
     param[9] = info->haveStatus_.getHpMax();
@@ -858,7 +858,7 @@ THUMB void unkfunc_0217b908(status::HaveStatusInfo* info, int index, int flag)
 THUMB void unkfunc_0217ba8c(status::HaveStatusInfo* info, int pageMax, int page)
 {
     unkfunc_02050ebc(s_parts_02184d22, 0, 0x88, 0xa0);
-    int param[4] = { 0xa000003e, page, (int)"\xff\xfe\xa7\x24", pageMax };
+    int param[4] = { 0xa000003e, page, (int)"\xff\xfe\xa7\x24\0", pageMax };
     unkfunc_02050ee0(s_parts_02185078, param, 0x88, 0xa0, data_020be244[unkfunc_0217cf70(info)]);
 }
 
@@ -923,7 +923,7 @@ THUMB void unkfunc_0217bc9c(status::HaveStatusInfo* info)
     int icon = info->haveStatus_.iconIndex_;
     int job = info->haveStatus_.job_;
     param[0] = info->haveStatus_.playerIndex_ + 0x50000000;
-    param[1] = (int)"\xff\xfe\xac\x24";
+    param[1] = (int)"\xff\xfe\xac\x24\0";
     param[2] = 0x80000094;
     param[3] = job + 0xb0000000;
     if (job == 1) {
@@ -945,11 +945,11 @@ THUMB void unkfunc_0217bc9c(status::HaveStatusInfo* info)
     param[9] = info->haveStatus_.level_;
     param[10] = 0xa0000001;
     param[11] = info->getHp();
-    param[12] = (int)"\xff\xfe\xa7\x24";
+    param[12] = (int)"\xff\xfe\xa7\x24\0";
     param[13] = info->getHpMax();
     param[14] = 0xa0000002;
     param[15] = info->getMp();
-    param[16] = (int)"\xff\xfe\xa7\x24";
+    param[16] = (int)"\xff\xfe\xa7\x24\0";
     param[17] = info->getMpMax();
     if (info->haveStatus_.isPlayer() == false) {
         s_parts_02185732[9].type_ = 0xd;
@@ -1138,7 +1138,7 @@ THUMB void unkfunc_0217c658()
 
 THUMB void unkfunc_0217c7f0()
 {
-    int param[12] = { 0xa0000029, (int)"\xff\xfe\xa9\x24", 0, 0xa000002a, (int)"\xff\xfe\xa9\x24", 0, 0xa000002b, 0, 0xa000003c, 0xa000002c, 0, 0xa000003c };
+    int param[12] = { 0xa0000029, (int)"\xff\xfe\xa9\x24\0", 0, 0xa000002a, (int)"\xff\xfe\xa9\x24\0", 0, 0xa000002b, 0, 0xa000003c, 0xa000002c, 0, 0xa000003c };
     int time[7];
     param[2] = status::g_Party.casinoCoin_;
     param[5] = status::g_Party.medalCoin_ + status::g_Party.playerMedalCoin_;
@@ -1288,7 +1288,7 @@ THUMB void unkfunc_0217ccf8(status::HaveStatusInfo* info, int item, int flag)
     int param[8];
     int values[5];
     param[0] = item + 0x40000000;
-    param[1] = (int)"\xff\xfe\xaf\x24";
+    param[1] = (int)"\xff\xfe\xaf\x24\0";
     if (TownMenuPlayerControl::getSingleton()->targetFukuro_ != 0) {
         param[2] = 0x5000005b;
     } else {
@@ -1361,7 +1361,7 @@ THUMB void unkfunc_0217ccf8(status::HaveStatusInfo* info, int item, int flag)
 
 THUMB void unkfunc_0217cea8(int mode)
 {
-    int param[2] = { 0x8000008d, (int)"\xff\xfe\xac\x24" };
+    int param[2] = { 0x8000008d, (int)"\xff\xfe\xac\x24\0" };
     int y = 0x58;
     if (mode == 1) {
         if (status::g_Party.getCount() + 1 > 5) {
@@ -1378,7 +1378,7 @@ THUMB void unkfunc_0217cea8(int mode)
 THUMB void unkfunc_0217cf1c(int mode)
 {
     unkfunc_02050698(0, 0);
-    int param[2] = { 0x8000008f, (int)"\xff\xfe\xad\x24" };
+    int param[2] = { 0x8000008f, (int)"\xff\xfe\xad\x24\0" };
     if (mode == 1) {
         param[0] = 0x80000090;
     }
@@ -1522,7 +1522,7 @@ THUMB int unkfunc_0217d140(status::HaveStatusInfo* info, int item, int* param)
         param[4] = info->getChangeLuck(item);
         break;
     }
-    param[3] = (int)"\xff\xfe\xaf\x24";
+    param[3] = (int)"\xff\xfe\xaf\x24\0";
     return 1;
 }
 
@@ -1583,7 +1583,7 @@ THUMB int unkfunc_0217d2e8(status::HaveStatusInfo* info, int equipIndex, int* pa
         break;
     }
     param[4] = dss::clamp(param[4], 0, 999);
-    param[3] = (int)"\xff\xfe\xaf\x24";
+    param[3] = (int)"\xff\xfe\xaf\x24\0";
     return equip;
 }
 

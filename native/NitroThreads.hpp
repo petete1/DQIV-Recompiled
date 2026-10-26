@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <functional>
 #include <memory>
 namespace pc {
@@ -16,4 +17,11 @@ private:
 };
 unsigned suspendNativeInterrupts();
 void resumeNativeInterrupts(unsigned depth);
+#ifndef _WIN32
+// The stack the game runs on: an SDK thread's own while it runs, else the
+// OS thread's (Windows keeps them in the thread's own information block).
+struct StackRange {std::uintptr_t low=0,high=0;};
+StackRange currentNativeStack();
+void setCurrentNativeStack(StackRange fiber);
+#endif
 }

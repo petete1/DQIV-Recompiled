@@ -22,6 +22,8 @@ namespace dss {
     {
         return min(max(a, b), c);
     }
+
+    template Fix32 clamp<Fix32>(Fix32, Fix32, Fix32);
 }
 
 // Unreferenced global objects

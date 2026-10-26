@@ -90,7 +90,7 @@ ARM void TownMenu_TOWN::menuDraw()
         return;
     }
     const char* text[2];
-    text[0] = "\xff\xfe\xac$";
+    text[0] = "\xff\xfe\xac$\0";
     if (unk_94 == 1) {
         text[1] = "@\x83\x7d\x83\x62\x83\x76\x82\xb6\x82\xe5\x82\xa4\x82\xd9\x82\xa4";  // "@マップじょうほう" (map information)
     }

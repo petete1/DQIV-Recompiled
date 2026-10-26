@@ -6,6 +6,10 @@
 #include <mutex>
 #include <stdexcept>
 #include <array>
+#include "NitroThreads.hpp"
+#ifndef _WIN32
+#include <pthread.h>
+#endif
 
 namespace {
 const auto start=std::chrono::steady_clock::now();
@@ -27,6 +31,24 @@ void resumeNativeInterrupts(unsigned saved) {
     for(unsigned i=0;i<saved;++i)criticalSection.lock();
     irqDepth=saved;
 }
+#ifndef _WIN32
+namespace {thread_local StackRange fiberStack;}
+void setCurrentNativeStack(StackRange fiber) {fiberStack=fiber;}
+StackRange currentNativeStack() {
+    if(fiberStack.high)return fiberStack;
+    thread_local StackRange thread=[] {
+        StackRange range;pthread_attr_t attributes;
+        if(!pthread_getattr_np(pthread_self(),&attributes)) {
+            void* low=nullptr;std::size_t size=0;
+            if(!pthread_attr_getstack(&attributes,&low,&size))
+                range={reinterpret_cast<std::uintptr_t>(low),reinterpret_cast<std::uintptr_t>(low)+size};
+            pthread_attr_destroy(&attributes);
+        }
+        return range;
+    }();
+    return thread;
+}
+#endif
 }
 extern "C" {
 unsigned short* pcMasterInterruptRegister() {return &masterInterruptEnable;}

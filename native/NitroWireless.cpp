@@ -2,6 +2,7 @@
 #include "ov002/mp/UnkWH.hpp"
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <deque>
 

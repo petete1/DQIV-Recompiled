@@ -387,7 +387,7 @@ THUMB void unkfunc_0216b254(int x, int y, int message)
 THUMB void unkfunc_0216b27c(int x, int y, int max, int page)
 {
     if (max != 0) {
-        int param[4] = { 0, (int)"\xff\xfe\xa7\x24", 0, 0xd };
+        int param[4] = { 0, (int)"\xff\xfe\xa7\x24\0", 0, 0xd };
         param[0] = page + 1;
         param[2] = max + 1;
         unkfunc_02050ee0(s_parts_02176b8c, param, x, y - 8, data_020be244[0]);
@@ -396,7 +396,7 @@ THUMB void unkfunc_0216b27c(int x, int y, int max, int page)
 
 THUMB void unkfunc_0216b2c4(int x, int y, int item, int flag)
 {
-    int param[3] = { 0, 0, (int)"\xff\xfe\xa6\x24" };
+    int param[3] = { 0, 0, (int)"\xff\xfe\xa6\x24\0" };
     param[0] = item + 0x40000000;
     param[1] = item;
     if (flag) {
@@ -419,9 +419,9 @@ THUMB void unkfunc_0216b344(status::HaveStatusInfo* info, int index)
     param[1] = playerIndex + 0x50000000;
     param[2] = 0xa0000013;
     param[3] = 0xa0000011;
-    param[4] = (int)"\xff\xfe\xa7\x24";
+    param[4] = (int)"\xff\xfe\xa7\x24\0";
     param[5] = 0xa0000012;
-    param[6] = (int)"\xff\xfe\xa7\x24";
+    param[6] = (int)"\xff\xfe\xa7\x24\0";
     param[7] = info->haveStatus_.level_;
     param[8] = info->haveStatus_.getHp();
     param[9] = info->haveStatus_.getHpMax();
@@ -451,7 +451,7 @@ THUMB void unkfunc_0216b460(int x, int y, status::HaveStatusInfo* info)
     unkfunc_02050ebc(s_parts_02176a82, 0, x, y);
     int level[2] = { (int)":", 0 };
     level[1] = info->haveStatus_.level_;
-    int status[9] = { 0, 0xa0000013, 0xa0000001, 0, 0, 0xa0000002, 0, 0, (int)"\xff\xfe\xa7\x24" };
+    int status[9] = { 0, 0xa0000013, 0xa0000001, 0, 0, 0xa0000002, 0, 0, (int)"\xff\xfe\xa7\x24\0" };
     status[0] = info->haveStatus_.playerIndex_ + 0x50000000;
     status[3] = info->getHp();
     status[4] = info->getHpMax();
@@ -545,7 +545,7 @@ THUMB void unkfunc_0216b7d4(int index, int value, int message, int color)
     unkfunc_02050698(0, 0);
     int x = index * 64;
     if (message != -1) {
-        int param[3] = { 0, (int)"\xff\xfe\xbe\x24", 0 };
+        int param[3] = { 0, (int)"\xff\xfe\xbe\x24\0", 0 };
         param[2] = message;
         param[0] = value;
         unkfunc_02050ee0(s_parts_02176ad6, param, x, 0x10, data_020be244[color]);
@@ -575,7 +575,7 @@ THUMB void unkfunc_0216b858(int x, int y, int value, int type)
 THUMB void unkfunc_0216b8d0(int mp, int useMp)
 {
     unkfunc_02050ebc(s_parts_021769b0, 0, 0x88, 0xa0);
-    int param[4] = { 0xa000003e, 0, (int)"\xff\xfe\xa7\x24", 0 };
+    int param[4] = { 0xa000003e, 0, (int)"\xff\xfe\xa7\x24\0", 0 };
     param[1] = useMp;
     param[3] = mp;
     unkfunc_02050ee0(s_parts_02176c18, param, 0x88, 0xa0, data_020be244[0]);

@@ -228,8 +228,8 @@ THUMB void MenuTemplate_materiel::MATERIEL_SETTINGS(menu::MenuItem* menuitem, in
         {1, 2, 0, 0, 0x100, 0xc0},
         {-1, -1, 0, 0, 0, 0},
     };
-    static MENUITEM_DATA menu[16];
-    for (int i = 0; i < num && i < 15; i++) {
+    static MENUITEM_DATA menu[17];
+    for (int i = 0; i < num && i < 16; i++) {
         menu[i] = item[0];
         menu[i].x = 18;
         menu[i].y = 32 + i * step;

@@ -183,7 +183,7 @@ ARM int DSSAData::getNullIndex(int index)
     return defineNullInfo[index];
 }
 
-inline const long& zeroL() { return 0L; }
+inline const long& zeroL() { static const long zero = 0L; return zero; }
 
 ARM DSSAObject::DSSAObject() : data_(0), palette_(0), flag_(0)
 {
@@ -426,7 +426,7 @@ ARM void DSSAObject::setupRoot()
 }
 
 int DSSAObject::priorityShift_ = 1;
-inline const long& zero2L() { return 0L; }
+inline const long& zero2L() { static const long zero = 0L; return zero; }
 
 ARM void DSSAObject::setPriority(int priority)
 {

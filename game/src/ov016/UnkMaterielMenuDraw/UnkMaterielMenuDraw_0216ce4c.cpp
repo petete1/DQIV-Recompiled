@@ -571,7 +571,7 @@ THUMB void unkfunc_0216d058(int* count)
             param[1] = 0xa0000079;
             parts = s_parts_0218137c;
         } else {
-            param[1] = (int)"\xff\xfe\xa9\x24";
+            param[1] = (int)"\xff\xfe\xa9\x24\0";
             param[2] = count[item];
             parts = s_parts_02181582;
         }
@@ -649,7 +649,7 @@ void unkfunc_native_shopBuyList(const int* rows, int count)
             itemID = i == 0 ? 0x6f : 7;
         }
         param[0] = itemID + 0x40000000;
-        param[1] = (int)"\xff\xfe\xa9\x24";
+        param[1] = (int)"\xff\xfe\xa9\x24\0";
         param[2] = manager->getItemQuantity(i);
         param[3] = manager->getItemPriceSum(i);
         param[4] = 0xa000003c;
@@ -778,7 +778,7 @@ THUMB void unkfunc_0216d154(int flag)
             } else {
                 param[0] = MaterielMenu_SHOP_MANAGER::getSingleton()->getItem(i) + 0x40000000;
             }
-            param[1] = (int)"\xff\xfe\xa9\x24";
+            param[1] = (int)"\xff\xfe\xa9\x24\0";
             param[2] = MaterielMenu_SHOP_MANAGER::getSingleton()->getItemQuantity(i);
             param[3] = MaterielMenu_SHOP_MANAGER::getSingleton()->getItemPriceSum(i);
             param[4] = 0xa000003c;
@@ -865,7 +865,7 @@ THUMB void unkfunc_0216d398()
         param[0] = itemID + 0x40000000;
         param[7] = itemID;
     }
-    param[1] = (int)"\xff\xfe\xaf\x24";
+    param[1] = (int)"\xff\xfe\xaf\x24\0";
     param[2] = status::g_Party.getPlayerStatus(chara)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000;
     if (chara == status::g_Party.getCount()) {
         param[2] = 0x5000005b;
@@ -1086,7 +1086,7 @@ THUMB void unkfunc_0216da80(int flag)
         } else {
             param[0] = status::UseItem::getSellPrice(sack->getItem(item + start));
             param[1] = 0xa000003c;
-            param[2] = (int)"\xff\xfe\xa9\x24";
+            param[2] = (int)"\xff\xfe\xa9\x24\0";
             param[3] = sack->getItemCount(item + start);
             if (param[3] > 99) {
                 param[3] = 99;
@@ -1115,7 +1115,7 @@ THUMB void unkfunc_0216da80(int flag)
 THUMB void unkfunc_0216db94(int mode, int a, int b, int c)
 {
     int param[5];
-    param[1] = (int)"\xff\xfe\xa7\x24";
+    param[1] = (int)"\xff\xfe\xa7\x24\0";
     param[3] = 0xc;
     param[4] = 0xd;
     UnkMenuParts* parts = s_parts_02181a1a;
@@ -1232,7 +1232,7 @@ THUMB void unkfunc_0216dc54(int item)
 
 THUMB void unkfunc_0216ddf4(int quantity)
 {
-    int param[2] = { (int)"\xff\xfe\xa9\x24", quantity };
+    int param[2] = { (int)"\xff\xfe\xa9\x24\0", quantity };
     unkfunc_02050ed0(s_parts_021813d0, param, data_020be244[0]);
     unkfunc_0201e194(0x98, 0x50, 0x68, 0x28, -1);
 }
@@ -1585,13 +1585,13 @@ THUMB void unkfunc_0216eb18(int count, int page, int pageMax, int flag)
     } else {
         param[0] = 0x800001f7;
     }
-    param[1] = (int)"\xff\xfe\xac\x24";
+    param[1] = (int)"\xff\xfe\xac\x24\0";
     param[2] = 0xa00002ce;
     unkfunc_02050ed0(s_parts_0218169a, param, data_020be244[0]);
     if (count > 8) {
         param[0] = 0xe;
         param[1] = page + 1;
-        param[2] = (int)"\xff\xfe\xa7\x24";
+        param[2] = (int)"\xff\xfe\xa7\x24\0";
         param[3] = pageMax;
         param[4] = 0xf;
         unkfunc_02050ed0(s_parts_02181876, param, data_020be244[0]);
@@ -1709,7 +1709,7 @@ THUMB void unkfunc_0216f0c0(int page, int value)
     }
     int msg = 0xa00002bc;
     unkfunc_02050ed0(s_parts_02180f70, &msg, data_020be244[0]);
-    int param2[5] = { 0xe, page + 1, (int)"\xff\xfe\xa7\x24", value, 0xf };
+    int param2[5] = { 0xe, page + 1, (int)"\xff\xfe\xa7\x24\0", value, 0xf };
     unkfunc_02050ed0(s_parts_021818ca, param2, data_020be244[0]);
     unkfunc_0201e194(0, 0, 0x100, 0x78, 0x20);
 }
@@ -1768,7 +1768,7 @@ THUMB void unkfunc_0216f318()
     }
     param[0] = 0xc;
     param[1] = page + 1;
-    param[2] = (int)"\xff\xfe\xa7\x24";
+    param[2] = (int)"\xff\xfe\xa7\x24\0";
     param[3] = 8;
     param[4] = 0xd;
     unkfunc_02050ed0(s_parts_0218191e, param, data_020be244[0]);
@@ -1916,7 +1916,7 @@ THUMB int unkfunc_0216f5f8(status::HaveStatusInfo* status, int* param, int item)
         param[3] = status->getChangeLuck(item);
         break;
     }
-    param[2] = (int)"\xff\xfe\xaf\x24";
+    param[2] = (int)"\xff\xfe\xaf\x24\0";
     return 1;
 }
 
@@ -1941,7 +1941,7 @@ THUMB int unkfunc_0216f7d0(status::HaveStatusInfo* status, int* param, int item)
         }
     }
     if (count > 0) {
-        param[1] = (int)"\xff\xfe\xa9\x24";
+        param[1] = (int)"\xff\xfe\xa9\x24\0";
         param[2] = count;
         return 1;
     }
@@ -1982,7 +1982,7 @@ THUMB void unkfunc_0216f8f8(int* param, int chara, int index)
         }
         param[2] = status::UseItem::getSellPrice(sack->getItem(index));
         param[3] = 0xa000003c;
-        param[4] = (int)"\xff\xfe\xa9\x24";
+        param[4] = (int)"\xff\xfe\xa9\x24\0";
         param[5] = sack->getItemCount(index);
         if (param[5] > 99) {
             param[5] = 99;

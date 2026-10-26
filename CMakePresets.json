@@ -5,8 +5,15 @@
     "generator": "Visual Studio 17 2022",
     "architecture": "Win32",
     "binaryDir": "${sourceDir}/build32"
+  }, {
+    "name": "linux-game",
+    "generator": "Ninja",
+    "binaryDir": "${sourceDir}/build32",
+    "toolchainFile": "${sourceDir}/cmake/linux-i686.cmake",
+    "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
   }],
   "buildPresets": [
-    {"name": "windows-game", "configurePreset": "windows-game", "configuration": "Release"}
+    {"name": "windows-game", "configurePreset": "windows-game", "configuration": "Release"},
+    {"name": "linux-game", "configurePreset": "linux-game"}
   ]
 }

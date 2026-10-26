@@ -84,11 +84,14 @@ void SettingsPanel::buildRows()
         break;
     }
     rows_[rowCount_++] = ROW_BACK;
+    if (page_ == pc::pageGame) {
+        rows_[rowCount_++] = ROW_EXIT;
+    }
 }
 
 int SettingsPanel::step() const
 {
-    return rowCount_ <= 8 ? 16 : rowCount_ <= 12 ? 11 : 10;
+    return rowCount_ <= 8 ? 16 : rowCount_ <= 12 ? 11 : rowCount_ <= 15 ? 10 : 9;
 }
 
 void SettingsPanel::execute(menu::MenuItem& item)
@@ -187,6 +190,9 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
     if (activate) {
         if (row == ROW_BACK) {
             leave = true;
+        } else if (row == ROW_EXIT) {
+            pc::saveSettings();
+            pc::requestExit();
         } else if (row == ROW_RESET) {
             pc::resetControls(page_);
             pc::saveSettings();
@@ -197,7 +203,7 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
         }
         redraw = 1;
     }
-    if (step != 0 && (page_ == pc::pageGame || page_ == pc::pageDisplay) && row != ROW_BACK) {
+    if (step != 0 && (page_ == pc::pageGame || page_ == pc::pageDisplay) && row != ROW_BACK && row != ROW_EXIT) {
         change(row, step);
         redraw = 1;
     }
@@ -226,6 +232,8 @@ void SettingsPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, 
         char value[40] = "";
         if (row == ROW_BACK) {
             label = pc::settingsBack(language);
+        } else if (row == ROW_EXIT) {
+            label = pc::settingsExit(language);
         } else if (row == ROW_RESET) {
             label = pc::resetLabel(language);
         } else if (row == ROW_BATTLE_SPEED) {

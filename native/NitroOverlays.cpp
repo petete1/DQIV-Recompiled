@@ -11,7 +11,8 @@ struct NitroOverlays::Impl {
     struct Module {
         OverlayImage image;
         std::vector<unsigned char> data, bss;
-        std::vector<OverlayFunction> destructors;
+        struct Destructor { void (*function)(void*); void* argument; };
+        std::vector<Destructor> destructors;
         State state = State::absent;
     };
     std::vector<Module> modules;
@@ -34,7 +35,8 @@ struct NitroOverlays::Impl {
     static void destroy(Module& module) {
         // Destruction may register another object, as on the original SDK.
         while(!module.destructors.empty()) {
-            const auto function=module.destructors.back();module.destructors.pop_back();function();
+            const auto destructor=module.destructors.back();module.destructors.pop_back();
+            destructor.function(destructor.argument);
         }
     }
 };
@@ -84,10 +86,31 @@ void NitroOverlays::registerDestructor(unsigned id,OverlayFunction function) {
     auto* module=impl_->find(id);
     if(!module || module->state==Impl::State::absent || !function)
         throw std::runtime_error("An overlay object was constructed outside its module lifetime");
-    module->destructors.push_back(function);
+    module->destructors.push_back({[](void* f){reinterpret_cast<OverlayFunction>(f)();},reinterpret_cast<void*>(function)});
+}
+bool NitroOverlays::registerConstructionDestructor(void (*function)(void*),void* argument) {
+    const auto inside=[argument](OverlayRange range) {
+        return static_cast<unsigned char*>(argument)>=range.begin && static_cast<unsigned char*>(argument)<range.end;
+    };
+    // Arrays are destroyed by a generated function without an object.
+    for(auto& module:impl_->modules)
+        if(module.state==Impl::State::loading && (!argument || inside(module.image.data) || inside(module.image.bss))) {
+            module.destructors.push_back({function,argument});return true;
+        }
+    return false;
 }
 }
-extern "C" int __cdecl pcRegisterOverlayDestructor(unsigned id,pc::OverlayFunction function) {
+#ifndef _MSC_VER
+// GCC registers each static object's destructor with __cxa_atexit from the
+// module's constructors (the linker routes the calls here): objects of a
+// module being loaded are destroyed when it unloads, others at exit.
+extern "C" int __real___cxa_atexit(void (*function)(void*),void* argument,void* dso);
+extern "C" int __wrap___cxa_atexit(void (*function)(void*),void* argument,void* dso) {
+    if(pc::current && pc::current->registerConstructionDestructor(function,argument)) return 0;
+    return __real___cxa_atexit(function,argument,dso);
+}
+#endif
+extern "C" int PC_CDECL pcRegisterOverlayDestructor(unsigned id,pc::OverlayFunction function) {
     if(!pc::current) throw std::runtime_error("Native overlay constructor ran before the overlay context");
     pc::current->registerDestructor(id,function);return 0;
 }
