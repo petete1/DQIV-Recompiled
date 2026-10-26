@@ -2,13 +2,13 @@
 
 # Dragon Quest IV: native PC version
 
-The original Nintendo DS game (built from its decompilation) runs natively on Windows, without an emulator. It has HD rendering, both screens joined into one 16:9 picture, the mobile version's sound and the party chat back in every language.
+The original Nintendo DS game (built from its decompilation) runs natively on Windows and Linux, without an emulator. It has HD rendering, both screens joined into one 16:9 picture, the mobile version's sound and the party chat back in every language.
 
 ![The town in HD, 16:9](docs/images/town.jpg)
 
 ## Playing
 
-Double-click `dist\DragonQuestIV.exe`. Every game resource is packed inside it, so it can be moved on its own.
+Double-click `dist\DragonQuestIV.exe` (Windows) or run `dist/DragonQuestIV` (Linux). Every game resource is packed inside it, so it can be moved on its own.
 
 The game keeps its files in a `saves` folder next to the executable:
 
@@ -19,7 +19,7 @@ The game keeps its files in a `saves` folder next to the executable:
 | `achievements.ini` | the achievements unlocked |
 | `journal.txt` | the log (details of an error, if the game stops) |
 
-Moving the game together with its `saves` folder keeps your progress. On the first start, a save from an earlier version (`%LOCALAPPDATA%\DQIV-PC`) is copied into `saves` automatically.
+Moving the game together with its `saves` folder keeps your progress. On Windows, on the first start, a save from an earlier version (`%LOCALAPPDATA%\DQIV-PC`) is copied into `saves` automatically.
 
 ### Default controls
 
@@ -34,6 +34,7 @@ All keys and gamepad buttons can be changed in the settings.
 | L / R | Q / W | LB / RB |
 | Start / Select | Enter / Right Shift | Start / Back |
 | Party chat (when walking, outside menus) | E | B |
+| Fast forward (hold: up to 4x, silent) | Tab | RT |
 | Camera zoom | Mouse wheel, numpad + / - | Right stick |
 | DS touch screen | Left click on the bottom view | |
 
@@ -44,7 +45,7 @@ Function keys:
 - **F9**: window size.
 - **F10**: stretch or keep proportions.
 - **F11**: fullscreen.
-- **F12**: PNG screenshot, saved in `%AppData\Roaming\DQIV-PC`.
+- **F12**: PNG screenshot, saved in `%AppData\Roaming\DQIV-PC` (Windows) or `~/.local/share/DQIV-PC` (Linux).
 
 ## What's new
 
@@ -137,7 +138,7 @@ The same screen, in the game's style, opens from "Settings" in the adventure log
   - vertical sync, 3D quality, smooth textures (No: the original DS pixels, without upscaling or filtering).
 - **Keyboard** and **Gamepad**: the key or button for each action (A, B, X, Y, L, R, Start, Select, directions, party chat); the gamepad's triggers (LT / RT) can be bound too. Press A on a line, then the new key or button; Escape cancels. "Default controls" restores the page.
 
-On laptops with two graphics chips, the game asks for the dedicated one (NVIDIA / AMD).
+On laptops with two graphics chips, the game asks Windows for the dedicated one (NVIDIA / AMD). On Linux it uses the system's default; to run it on an NVIDIA chip: `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ./dist/DragonQuestIV`.
 
 ### Achievements
 
@@ -145,7 +146,7 @@ The 80 achievements of [RetroAchievements' set](https://retroachievements.org/ga
 
 ### More
 
-- **Quitting**: "Quit game" in the adventure log menu closes the game (keyboard or gamepad). After "End adventure" at a church, the "turn the power off" screen closes the game on A, B or Start.
+- **Quitting**: "Quit game" in the adventure log menu, or at the bottom of Settings > Game, closes the game (keyboard or gamepad). After "End adventure" at a church, the "turn the power off" screen closes the game on A, B or Start.
 - **Quick save anywhere**: Misc > Quick save works everywhere, dungeons included, except in the middle of an action (rope, fall, stairs). The game then goes on; on the DS it stopped. Resuming the interrupted adventure from the adventure log menu brings you back to the exact same spot.
 - **Shops**: the buy list has tabs at the top: every item first, then the categories the shop sells (weapons, armour, shields, helmets, accessories, items); L / R switch tabs. Every item has its HD icon next to its name.
 - **Menus over the world**: the scenery stays on the whole 16:9 picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.
@@ -162,6 +163,8 @@ The project contains no game data: it comes from your own copies of the game. Pu
 | --- | --- |
 | Your **European Dragon Quest IV ROM** for Nintendo DS (game code `YIVP`): the `.nds` file, or a `.zip` that contains it | required |
 | The **Android version's data file** (`main.xxxxx.com.square_enix.android_googleplay.dq4.obb`) | optional: HD music and sound effects; without it, the game uses the DS sound |
+
+### Windows
 
 You also need:
 - Visual Studio 2026 or 2022 (the free Community edition is enough) with the **Desktop development with C++** workload, which brings the Windows SDK and CMake (with Visual Studio 2026, CMake 4.2 or later: the one it comes with is);
@@ -185,6 +188,35 @@ The extraction is done only once: later builds reuse `assets`. To redo it, delet
 
 The build is 32-bit (Win32), because the original game resources contain 32-bit pointers; it runs on 64-bit Windows. Intermediate files go to `build32`, which can be deleted afterwards: only `dist\DragonQuestIV.exe` matters.
 
+### Linux
+
+The game is built as a 32-bit Linux program (for the same reason: the game resources contain 32-bit pointers) with GCC, CMake and Ninja; it runs on 64-bit Linux. You need:
+- CMake 3.24 or later, Ninja, GCC with 32-bit (multilib) support, and `unzip` or `bsdtar` if your ROM is in a `.zip`;
+- the 32-bit versions of the libraries SDL3 uses for the window, OpenGL, input and sound (X11 and Wayland, Mesa/GLVND, PulseAudio/PipeWire and ALSA, udev, D-Bus);
+- fontconfig and a TrueType font (the interface text: FPS display);
+- Internet access on the first build: SDL3, stb_vorbis and stb_truetype are downloaded and checked.
+
+On **Arch Linux** (tested), with the `[multilib]` repository enabled:
+
+```bash
+sudo pacman -S --needed cmake ninja gcc unzip fontconfig \
+    lib32-glibc lib32-gcc-libs lib32-mesa lib32-libglvnd \
+    lib32-libx11 lib32-libxext lib32-libxrandr lib32-libxcursor lib32-libxi lib32-libxfixes lib32-libxss lib32-libxtst \
+    lib32-wayland lib32-libxkbcommon lib32-libdecor lib32-libpulse lib32-alsa-lib lib32-systemd lib32-dbus
+```
+
+The headers come from the matching 64-bit packages (`libx11`, `wayland`, ...), which a desktop system already has. Other distributions (not tested): install the equivalent 32-bit (i386 / i686) development packages, for example `g++-multilib` and the `:i386` `-dev` packages on Debian and Ubuntu, or the `.i686` `-devel` packages on Fedora. A library missing at build time only leaves its feature out of SDL (for example Wayland or PulseAudio).
+
+Then run, from the project folder:
+
+```bash
+./build.sh
+```
+
+It ends with `Created dist/DragonQuestIV`, or an `ERROR:` line saying what is missing (CMake, Ninja, 32-bit compiler support, the ROM). It does the same steps as `build.ps1` (compile, extract `assets` once from the ROM and `.obb`, pack), with the `linux-game` CMake preset and `cmake/linux-i686.cmake`. Intermediate files go to `build32`; only `dist/DragonQuestIV` matters.
+
+To play, the computer needs the same 32-bit libraries at run time (not their headers); systems with Steam installed usually have them. C++ and GCC's own libraries are built into the executable.
+
 ### Project contents
 
 | Folder / file | Contents |
@@ -193,9 +225,10 @@ The build is 32-bit (Win32), because the original game resources contain 32-bit 
 | `native\` | the PC layer: window, OpenGL rendering, sound, files, settings |
 | `addons\` | the PC version's additions: the party chat texts (English, French, German, Italian, Spanish) |
 | `ROMandOBBfileHere\` | where you put your ROM and `.obb` (never added to git) |
-| `assets\` | created by `build.ps1`: the game's data extracted from your ROM and `.obb` (never added to git) |
+| `assets\` | created by `build.ps1` or `build.sh`: the game's data extracted from your ROM and `.obb` (never added to git) |
 | `icon\` | the game's icon (`DragonQuestIV.ico`, built into the executable) |
 | `docs\images\` | the pictures of this page |
-| `cmake\` | placement of the game's modules (DS overlays) |
+| `cmake\` | placement of the game's modules (DS overlays); the 32-bit Linux toolchain (`linux-i686.cmake`) and the step that places the modules with GCC (`overlay-object.sh`) |
 | `build.bat` | double-click to run `build.ps1` |
 | `build.ps1` | builds the game and creates `dist\DragonQuestIV.exe` |
+| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` |
