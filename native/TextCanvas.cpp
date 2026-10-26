@@ -28,7 +28,8 @@ std::wstring wide(std::string_view utf8) {
 }
 #else
 // The system's sans-serif font (fontconfig's choice, else a common one), then
-// one with Japanese for the characters it lacks.
+// one with Japanese for the characters it lacks. Common places: Arch, Debian,
+// Fedora (and Bazzite).
 struct Font {
     std::vector<unsigned char> data;
     stbtt_fontinfo info{};
@@ -46,10 +47,13 @@ std::unique_ptr<Font> loadFont(std::initializer_list<std::string> candidates) {
     for(const auto& path:candidates) {
         if(path.empty())continue;
         std::ifstream file(path,std::ios::binary);
+        if(!file)continue;
         auto font=std::make_unique<Font>();
         font->data.assign(std::istreambuf_iterator<char>(file),{});
+        // A missing or truncated file has no font header to read.
+        if(font->data.size()<12)continue;
         const int offset=stbtt_GetFontOffsetForIndex(font->data.data(),0);
-        if(!font->data.empty()&&offset>=0&&stbtt_InitFont(&font->info,font->data.data(),offset))return font;
+        if(offset>=0&&stbtt_InitFont(&font->info,font->data.data(),offset))return font;
     }
     return nullptr;
 }
@@ -58,13 +62,24 @@ const std::vector<std::unique_ptr<Font>>& fonts(bool bold) {
         std::vector<std::unique_ptr<Font>> chain;
         if(auto font=bold?loadFont({fontMatch("sans-serif:bold"),"/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf","/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/noto/NotoSans-Bold.ttf","/usr/share/fonts/liberation/LiberationSans-Bold.ttf"}):
+            "/usr/share/fonts/noto/NotoSans-Bold.ttf","/usr/share/fonts/google-noto/NotoSans-Bold.ttf",
+            "/usr/share/fonts/liberation/LiberationSans-Bold.ttf","/usr/share/fonts/liberation-sans-fonts/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/Adwaita/AdwaitaSans-Regular.ttf","/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf"}):
             loadFont({fontMatch("sans-serif"),"/usr/share/fonts/TTF/DejaVuSans.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf","/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf",
-            "/usr/share/fonts/noto/NotoSans-Regular.ttf","/usr/share/fonts/liberation/LiberationSans-Regular.ttf"}))
+            "/usr/share/fonts/noto/NotoSans-Regular.ttf","/usr/share/fonts/google-noto/NotoSans-Regular.ttf",
+            "/usr/share/fonts/liberation/LiberationSans-Regular.ttf","/usr/share/fonts/liberation-sans-fonts/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/Adwaita/AdwaitaSans-Regular.ttf","/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf"}))
             chain.push_back(std::move(font));
-        if(auto font=loadFont({fontMatch(bold?"sans-serif:lang=ja:bold":"sans-serif:lang=ja")}))chain.push_back(std::move(font));
-        if(chain.empty())throw std::runtime_error("Interface text: no system font found (install fontconfig and a TrueType font)");
+        if(auto font=bold?loadFont({fontMatch("sans-serif:lang=ja:bold"),"/usr/share/fonts/noto-cjk/NotoSansCJK-Bold.ttc",
+            "/usr/share/fonts/google-noto-sans-cjk-fonts/NotoSansCJK-Bold.ttc","/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"}):
+            loadFont({fontMatch("sans-serif:lang=ja"),"/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/google-noto-sans-cjk-fonts/NotoSansCJK-Regular.ttc","/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"}))
+            chain.push_back(std::move(font));
+        // Without any font, the interface text (FPS, settings hints) is left out.
+        if(chain.empty())std::fprintf(stderr,"Interface text: no system font found (install fontconfig and a TrueType font)\n");
         return chain;
     };
     static const auto regular=load(false),strong=load(true);
@@ -140,6 +155,7 @@ void TextCanvas::text(int x,int y,std::string_view utf8,int size,std::uint32_t a
         std::fill_n(mask_+std::size_t(row)*width_+std::max(0,rect.left),std::max(0,std::min(width_,rect.right)-std::max(0,rect.left)),0u);
     // Each character in the first font that has it, `size` pixels per em as GDI's.
     const auto& chain=fonts(bold);
+    if(chain.empty())return;
     struct Glyph {const Font* font;int index;float scale;};
     std::vector<Glyph> glyphs;float width=0;
     for(std::size_t i=0;i<string.size();++i) {
