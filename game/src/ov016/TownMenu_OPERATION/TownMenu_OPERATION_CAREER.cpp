@@ -6,10 +6,10 @@
 #include "ov003/btl/BattleActorManager2.hpp"
 #include "ov037/PlayerTitle.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_02173d7c.hpp"
-#include "main/menu/UnkMenuPartsDraw.hpp"
-#include "main/menu/UnkMenuCommonDraw_0201e194.hpp"
-#include "main/menu/UnkMenuOverlay.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuOperationDraw.hpp"
+#include "main/menu/MenuPartsDraw.hpp"
+#include "main/menu/MenuCommonDraw.hpp"
+#include "main/menu/MaterielMenuOverlay.hpp"
 
 THUMB void TownMenu_OPERATION_CAREER::menuSetup()
 {
@@ -27,7 +27,7 @@ THUMB void TownMenu_OPERATION_CAREER::menuSetup()
     if (status::g_Party.haveItemSack_.isItem(0x9d)) {
         bookOfBeasts_ = 1;
     }
-    unkfunc_02039460(14);
+    loadMaterielMenuOverlay(14);
     cmn::PlayerTitle::setPlayerTitle(0);
     for (int i = 0; i < 3; i++) {
         status::g_BattleHistory.historyType_ = (status::BattleHistory::HistoryType)i;
@@ -55,10 +55,10 @@ THUMB void TownMenu_OPERATION_CAREER::menuDraw()
         type = 1;
     }
     SetTextPage(0, type);
-    unkfunc_0201e194(0, 0, 0x100, 0xc0, -1);
+    drawMenuFrame(0, 0, 0x100, 0xc0, -1);
     if (pageMax_ >= 1) {
         SetTextPage(1, type);
-        unkfunc_0201e194(0, 0, 0x100, 0xc0, -1);
+        drawMenuFrame(0, 0, 0x100, 0xc0, -1);
     }
 }
 
@@ -83,34 +83,34 @@ THUMB void TownMenu_OPERATION_CAREER::SetTextPage(int page, int type)
 {
     if (page != 0) {
         status::g_BattleHistory.historyType_ = (status::BattleHistory::HistoryType)type;
-        unkfunc_02050698(0, 0);
-        unkfunc_02173dec(status::g_BattleHistory.getHeroLevel(), 7, bookOfBeasts_, 1);
+        setMenuDrawOffset(0, 0);
+        drawCareerRecordLine(status::g_BattleHistory.getHeroLevel(), 7, bookOfBeasts_, 1);
         if (type == 1) {
-            unkfunc_02173e7c(status::g_BattleHistory.getAdventureTime(), 1);
+            drawCareerPlayTime(status::g_BattleHistory.getAdventureTime(), 1);
         } else {
-            unkfunc_02173e7c(status::g_BattleHistory.getAdventureTime(), 2);
+            drawCareerPlayTime(status::g_BattleHistory.getAdventureTime(), 2);
         }
-        unkfunc_02173f24(status::g_BattleHistory.getTitle());
+        drawCareerTitle(status::g_BattleHistory.getTitle());
     } else {
         status::g_BattleHistory.historyType_ = status::BattleHistory::RightNow;
         if (bookOfBeasts_ != 0) {
-            unkfunc_02173dec(status::g_BattleHistory.getRestMonsterCount(), 7, bookOfBeasts_, 0);
+            drawCareerRecordLine(status::g_BattleHistory.getRestMonsterCount(), 7, bookOfBeasts_, 0);
         }
         if (pageMax_ == 2) {
             if (type == 1) {
-                unkfunc_02173f4c(0);
+                drawCareerHistoryType(0);
             } else {
-                unkfunc_02173f4c(1);
+                drawCareerHistoryType(1);
             }
         }
-        unkfunc_02173f24(status::g_BattleHistory.getTitle());
-        unkfunc_02173e7c(status::g_BattleHistory.getAdventureTime(), 0);
+        drawCareerTitle(status::g_BattleHistory.getTitle());
+        drawCareerPlayTime(status::g_BattleHistory.getAdventureTime(), 0);
     }
-    unkfunc_02173dec(status::g_BattleHistory.getBattleCount(), 0, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getMonsterCount(), 1, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getTotalGold(), 2, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getVictoryCount(), 3, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getWipeoutCount(), 4, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getEscapeCount(), 5, 0, 0);
-    unkfunc_02173dec(status::g_BattleHistory.getMaxDamage(), 6, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getBattleCount(), 0, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getMonsterCount(), 1, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getTotalGold(), 2, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getVictoryCount(), 3, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getWipeoutCount(), 4, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getEscapeCount(), 5, 0, 0);
+    drawCareerRecordLine(status::g_BattleHistory.getMaxDamage(), 6, 0, 0);
 }

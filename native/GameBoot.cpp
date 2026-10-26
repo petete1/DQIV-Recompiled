@@ -38,8 +38,10 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance=1;
 extern "C" {
 #include <nitro/os/thread.h>
 }
-#include "main/global/UnkGameApplication.hpp"
+#include "main/global/GameApplication.hpp"
 #include "main/global/GlobalDQ4.hpp"
+#include "main/achievement/AchievementTriggers.hpp"
+#include "Achievements.hpp"
 #include <array>
 #include <cstdio>
 #include <exception>
@@ -95,7 +97,7 @@ void preferFastCores() {}
 }
 
 static_assert(sizeof(DataObject) == 0x10);
-static_assert(sizeof(UnkGameApplication) == 0xb4);
+static_assert(sizeof(GameApplication) == 0xb4);
 std::span<const pc::OverlayImage> gameOverlayImages();
 
 namespace {
@@ -169,9 +171,13 @@ int main() {
     try {
         std::cout.setf(std::ios::unitbuf);
         pc::loadSettings();
+        pc::loadAchievements();
         preferFastCores();
         pc::Assets assets=openResources();
         pc::GameWindow window(false,false);
+        pc::setPictureReader([&assets](const std::string& name,int& width,int& height) {
+            return assets.contains(name)?pc::decodePng(assets.read(name),width,height):std::vector<std::uint32_t>{};
+        });
         // Both DS screens become one picture, presented by the GPU.
         pc::dualScreen().unified=true;
         pc::dualScreen().canvasWidth=384*16/9.f;
@@ -218,7 +224,7 @@ int main() {
         threads.setIdleHandler([&] {
             running=window.poll();
             const bool shown=!fastFrame;
-            int boost=data_0210bb94.unkfunc_0205810c()==13?pc::gameSettings().battleBoost+1:1;
+            int boost=g_GlobalDQ4.unkfunc_0205810c()==13?pc::gameSettings().battleBoost+1:1;
             if(pc::fastForward())boost=std::max(boost,pc::fastForwardSpeed);
             fastFrame=boost>1&&++boostFrames%unsigned(boost)!=0;
             if(shown) {
@@ -234,23 +240,24 @@ int main() {
         pc::setWaitCallback([&] {OS_PauseThread(&frameQueue);threads.checkErrors();});
         struct ClearWait {~ClearWait(){pc::setWaitCallback({});pc::setFrameCallback({});}} clearWait;
         std::cout << "Original application initialization\n";
-        data_020c4fe4.unkfunc_02057f8c(0);
-        data_0210bb94.nativeStart(data_020c4fe4.vf10());
+        g_GameApplication.unkfunc_02057f8c(0);
+        g_GlobalDQ4.nativeStart(g_GameApplication.vf10());
         int scene=-1;
         for(unsigned frame=0;running;++frame) {
             // The journal keeps the scene changes (battle, town, field...).
-            const auto currentScene=int(data_0210bb94.unkfunc_0205810c());
+            const auto currentScene=int(g_GlobalDQ4.unkfunc_0205810c());
             if(scene!=currentScene) {scene=currentScene;std::cout<<"Scene "<<scene<<", frame "<<frame<<'\n';}
             threads.checkErrors();
             {
                 pc::ProfileScope step("frame");
-                if(!data_0210bb94.nativeStep())break;
+                if(!g_GlobalDQ4.nativeStep())break;
             }
+            achievement::onFrame();
             pc::profileFrame();
             geometry.clearTriangles();
         }
         threads.checkErrors();
-        data_0210bb94.nativeStop();
+        g_GlobalDQ4.nativeStop();
         pc::setButtons(0);
         return 0;
     } catch (const std::exception& error) {

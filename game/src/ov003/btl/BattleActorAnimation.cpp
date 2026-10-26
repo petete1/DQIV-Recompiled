@@ -5,7 +5,7 @@
 #include "main/status/HaveEquipment.hpp"
 #include "ov003/btl/BattleExecVictory.hpp"
 #include "main/dss/ScreenPosition.hpp"
-#include "main/menu/UnkMenuPartsDraw.hpp"
+#include "main/menu/MenuPartsDraw.hpp"
 
 int monsterChangeCount;
 
@@ -181,14 +181,14 @@ THUMB void btl::BattleActorAnimation::setResultAnimation(status::UseActionParam*
                         }
                     }
 
-                    int* ctrl = (int*)unkfunc_02057128(partyIndex);
+                    int* ctrl = (int*)getScreenPosition(partyIndex);
                     int a = ctrl[0];
                     int b = ctrl[1];
                     int value = b - status::HaveEquipment::getAbsoluteValue(tai[1] - tai[3]);
                     if (value <= 32) {
                         value = 32;
                     }
-                    unkfunc_02050e88(a, value, effectValue, 0);
+                    showHoppingNumber(a, value, effectValue, 0);
                     SoundManager::playSe(402, 0);
                 }
             }

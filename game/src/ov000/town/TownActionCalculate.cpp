@@ -9,7 +9,7 @@
 #include "main/cmn/CommonCalculate.hpp"
 #include "main/dss/Camera.hpp"
 #include <nitro/fx/fx_atan.h>
-#include "main/dss/UnkMatrix43.hpp"
+#include "main/dss/Matrix43.hpp"
 
 const dss::Fix32 TownActionCalculate::cos_PI_6(0xddb);
 
@@ -309,15 +309,15 @@ ARM void TownActionCalculate::normalMove(dss::Fix32Vector3& position, short& dir
         return;
     }
     unsigned short dirInput = TownPlayerManager::getSingleton()->player_.dirInput_;
-    dss::Fix32Vector3 dir(TownCamera::getSingleton()->camera_.unk_004.getDirection());
+    dss::Fix32Vector3 dir(TownCamera::getSingleton()->camera_.m_camera0.getDirection());
     dir.vy = 0L;
     dir.normalize();
-    dss::UnkMatrix43 mtx;
+    dss::Matrix43 mtx;
     mtx.unkfunc_020886d0(-dirInput);
     dir = mtx * dir;
     dir.vy = 0L;
     position = position + dir * speed;
-    dirIdx = 0x8000 - dirInput + TownCamera::getSingleton()->camera_.unk_004.getAngle().vy;
+    dirIdx = 0x8000 - dirInput + TownCamera::getSingleton()->camera_.m_camera0.getAngle().vy;
     dirIdx = (unsigned short&)dirIdx;
 }
 
@@ -370,7 +370,7 @@ ARM bool TownActionCalculate::checkGetDownShipAndIkada(dss::Fix32Vector3& nextPo
         vec = nextPos - surfacePos;
         vec.vy = 0L;
         length = vec * surfaceDir;
-        length.value = unkfunc_02031e84(length.value);
+        length.value = absInt(length.value);
         length += downL;
         checkPos = nextPos + (surfaceDir * -1) * length;
         dss::Fix32 fy;
@@ -491,7 +491,7 @@ ARM bool TownActionCalculate::checkGetDownIkada(dss::Fix32Vector3& nextPos, shor
         vec = nextPos - surfacePos;
         vec.vy = 0L;
         length = vec * surfaceDir;
-        length.value = unkfunc_02031e84(length.value);
+        length.value = absInt(length.value);
         length += downL;
         checkPos = nextPos + (surfaceDir * -1) * length;
         dss::Fix32 fy;

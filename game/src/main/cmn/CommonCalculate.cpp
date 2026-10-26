@@ -1,5 +1,5 @@
 #include "main/cmn/CommonCalculate.hpp"
-#include "main/dss/UnkMatrix43.hpp"
+#include "main/dss/Matrix43.hpp"
 
 // unreferenced
 const short data_020b5fa8 = 0x1000;
@@ -10,7 +10,7 @@ inline const long& frontLimitL() { static const long zero = 0L; return zero; }
 ARM void cmn::CommonCalculate::getDirByIdx(short dir, dss::Fix32Vector3& vec)
 {
     vec.set(0, 0, 0x1000);
-    dss::UnkMatrix43 rot;
+    dss::Matrix43 rot;
     rot.unkfunc_020886d0(dir);
     vec = rot * vec;
 }

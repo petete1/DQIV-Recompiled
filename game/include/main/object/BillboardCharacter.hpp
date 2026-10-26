@@ -24,9 +24,9 @@ struct CharacterShadow : PolygonObject {
 
 /* vtable 0x020c1d00 */
 
-#include "main/dss/UnkTextureBillboard.hpp"
+#include "main/dss/TextureBillboard.hpp"
 
-struct BillboardCharacter : UnkTextureBillboard {
+struct BillboardCharacter : TextureBillboard {
     enum {
         FLAG_ENABLE = 0x1,
         FLAG_DISPLAY = 0x2,
@@ -54,7 +54,7 @@ struct BillboardCharacter : UnkTextureBillboard {
     unsigned short flag_;                       // 0xC8
     DataObject data_;                           // 0xCC
     void* textures_[8];                         // 0xDC
-    dss::Fix32Vector3 unk_fc;                   // 0xFC palette rgb rate
+    dss::Fix32Vector3 paletteRgbRate_;                   // 0xFC palette rgb rate
     short textureIndex_;                        // 0x108
     dss::Vector2<dss::Fix32> uvOffset;          // 0x10C
     int anmIndex_;                              // 0x114

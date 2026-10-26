@@ -7,7 +7,7 @@
 #include "main/sound/SoundManager.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_0217d560.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
 THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuSetup()
 {
@@ -62,7 +62,7 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuDraw()
         found = 0;
     }
     list[count] = -1;
-    unkfunc_0217deb4(selectCharaAllocation_, list, active, count);
+    drawShiftPartyScreen(selectCharaAllocation_, list, active, count);
     menuItem_.drawActive();
     cancelItem_.drawActive();
 }
@@ -71,12 +71,12 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuUpdate()
 {
     status::g_Party.setMemberShiftMode();
     if (enableEnter_ == 1) {
-        unkfunc_0216cdd4();
+        applyNewOrder();
         return;
     }
-    if (data_020ed1bc.isOpen()) {
-        if (data_020ed1bc.stat_ == menu::MenuBase::MENUBASE_STAT_OK || data_020ed1bc.stat_ == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if (g_TownMenuMessage.stat_ == menu::MenuBase::MENUBASE_STAT_OK || g_TownMenuMessage.stat_ == menu::MenuBase::MENUBASE_STAT_CANCEL) {
+            g_TownMenuMessage.close();
             close();
             gTownMenu_ROOT.open();
             gTownMenu_ROOT.menuItem_.active_ = TownMenu_ROOT::ROOT_OPERATION;
@@ -107,12 +107,12 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuUpdate()
         return;
     }
     if (result == 2) {
-        unkfunc_0216ccbc();
+        selectMember();
     }
     redraw_ = 1;
 }
 
-THUMB void TownMenu_OPERATION_SHIFT_PARTY::unkfunc_0216ccbc()
+THUMB void TownMenu_OPERATION_SHIFT_PARTY::selectMember()
 {
     status::g_Party.setMemberShiftMode();
     int found = 0;
@@ -162,7 +162,7 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::unkfunc_0216ccbc()
     }
 }
 
-THUMB void TownMenu_OPERATION_SHIFT_PARTY::unkfunc_0216cdd4()
+THUMB void TownMenu_OPERATION_SHIFT_PARTY::applyNewOrder()
 {
     status::g_Party.setMemberShiftMode();
     for (int i = 0; i < 4; i++) {
@@ -177,7 +177,7 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::unkfunc_0216cdd4()
     close();
     stat_ = MENUBASE_STAT_OK;
     gTownMenu_ROOT.stat_ = MENUBASE_STAT_OK;
-    if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         SoundManager::fieldPlay();
     }
 }

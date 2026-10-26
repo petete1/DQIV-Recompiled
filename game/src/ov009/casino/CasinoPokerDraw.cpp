@@ -32,15 +32,15 @@ ARM CasinoPokerDraw* CasinoPokerDraw::getSingleton()
 
 ARM void CasinoPokerDraw::initialize()
 {
-    unk_4c[0].setup("data/minigame/poker/slime1.tex", 0, 0);
-    unk_4c[1].setup("data/minigame/poker/crown1.tex", 0, 0);
-    unk_4c[2].setup("data/minigame/poker/tate1.tex", 0, 0);
-    unk_4c[3].setup("data/minigame/poker/ken1.tex", 0, 0);
-    unk_4c[4].setup("data/minigame/poker/joker_omote.tex", 0, 0);
-    unk_4c[5].setup("data/minigame/poker/hikari.tex", 0, 0);
+    m_card_object[0].setup("data/minigame/poker/slime1.tex", 0, 0);
+    m_card_object[1].setup("data/minigame/poker/crown1.tex", 0, 0);
+    m_card_object[2].setup("data/minigame/poker/tate1.tex", 0, 0);
+    m_card_object[3].setup("data/minigame/poker/ken1.tex", 0, 0);
+    m_card_object[4].setup("data/minigame/poker/joker_omote.tex", 0, 0);
+    m_card_object[5].setup("data/minigame/poker/hikari.tex", 0, 0);
     for (int i = 0; i < 6; i++) {
-        unk_ac[i] = unk_4c[i].getAddr();
-        ((TextureObject*)unk_ac[i])->unkfunc_02086798(1);
+        m_card_texture[i] = m_card_object[i].getAddr();
+        ((TextureObject*)m_card_texture[i])->unkfunc_02086798(1);
     }
     s_vertex.v[0] = s_vertexLeftTop;
     s_vertex.v[1] = s_vertexRightTop;
@@ -55,8 +55,8 @@ ARM void CasinoPokerDraw::initialize()
     m_card_scale.value = 0x4000;
     m_card_depth.value = -0x2640;
     setPoolPosition();
-    unkfunc_02121804();
-    unkfunc_0212198c();
+    setupCardBacks();
+    setupCardEffects();
     for (int i = 0; i < 5; i++) {
         m_card[i].setAngle(0x8000);
     }
@@ -70,10 +70,10 @@ ARM void CasinoPokerDraw::setPoolPosition()
         pos.vx.value = m_card_space.value * (i * 2 - 4);
         pos.vz.value = m_card_depth.value;
         m_default_pos[i] = pos;
-        m_card[i].unkfunc_021249dc(m_card_scale.value);
-        m_card[i].unkfunc_02124a70(&s_vertex);
+        m_card[i].setScale(m_card_scale.value);
+        m_card[i].setVertex(&s_vertex);
         m_card[i].setPosition(pos);
-        m_card[i].unkfunc_02124e14(true);
+        m_card[i].setVisible(true);
         setCardReverse(i);
     }
 }
@@ -81,8 +81,8 @@ ARM void CasinoPokerDraw::setPoolPosition()
 ARM void CasinoPokerDraw::terminate()
 {
     for (int i = 0; i < 6; i++) {
-        ((TextureObject*)unk_ac[i])->unkfunc_02086868();
-        unk_4c[i].cleanup();
+        ((TextureObject*)m_card_texture[i])->unkfunc_02086868();
+        m_card_object[i].cleanup();
     }
 }
 
@@ -111,55 +111,55 @@ ARM void CasinoPokerDraw::setCardTexture(int index, int type, int number)
     dss::Vector2<dss::Fix32> rightTop((x + 1) * 42, y * 64);
     dss::Vector2<dss::Fix32> rightBottom((x + 1) * 42, (y + 1) * 64);
     dss::Vector2<dss::Fix32> leftBottom(x * 42, (y + 1) * 64);
-    m_card[index].unkfunc_02124bdc(unk_4c[type].getAddr());
+    m_card[index].setFrontTexture(m_card_object[type].getAddr());
     s_texCoord.v[0] = leftBottom;
     s_texCoord.v[1] = rightBottom;
     s_texCoord.v[2] = rightTop;
     s_texCoord.v[3] = leftTop;
-    m_card[index].unkfunc_02124b24(&s_texCoord);
+    m_card[index].setFrontTexCoord(&s_texCoord);
 }
 
-ARM void CasinoPokerDraw::unkfunc_02121804()
+ARM void CasinoPokerDraw::setupCardBacks()
 {
     for (int i = 0; i < 5; i++) {
         dss::Vector2<dss::Fix32> leftTop(42, 0);
         dss::Vector2<dss::Fix32> rightTop(84, 0);
         dss::Vector2<dss::Fix32> rightBottom(84, 64);
         dss::Vector2<dss::Fix32> leftBottom(42, 64);
-        m_card[i].unkfunc_02124be4(unk_4c[4].getAddr());
+        m_card[i].setBackTexture(m_card_object[4].getAddr());
         s_texCoord.v[0] = leftBottom;
         s_texCoord.v[1] = rightBottom;
         s_texCoord.v[2] = rightTop;
         s_texCoord.v[3] = leftTop;
-        m_card[i].unkfunc_02124b30(&s_texCoord);
+        m_card[i].setBackTexCoord(&s_texCoord);
     }
 }
 
-ARM void CasinoPokerDraw::unkfunc_0212198c()
+ARM void CasinoPokerDraw::setupCardEffects()
 {
     for (int i = 0; i < 5; i++) {
         dss::Vector2<dss::Fix32> leftTop(0, 0);
         dss::Vector2<dss::Fix32> rightTop(42, 0);
         dss::Vector2<dss::Fix32> rightBottom(42, 64);
         dss::Vector2<dss::Fix32> leftBottom(0, 64);
-        m_card[i].unkfunc_02124bec(unk_4c[5].getAddr());
+        m_card[i].setShineTexture(m_card_object[5].getAddr());
         s_texCoord.v[0] = leftBottom;
         s_texCoord.v[1] = rightBottom;
         s_texCoord.v[2] = rightTop;
         s_texCoord.v[3] = leftTop;
-        m_card[i].unkfunc_02124b40(&s_texCoord);
+        m_card[i].setShineTexCoord(&s_texCoord);
     }
     for (int i = 0; i < 5; i++) {
         dss::Vector2<dss::Fix32> leftTop(42, 0);
         dss::Vector2<dss::Fix32> rightTop(84, 0);
         dss::Vector2<dss::Fix32> rightBottom(84, 64);
         dss::Vector2<dss::Fix32> leftBottom(42, 64);
-        m_card[i].unkfunc_02124bf4(unk_4c[5].getAddr());
+        m_card[i].setGlowTexture(m_card_object[5].getAddr());
         s_texCoord.v[0] = leftBottom;
         s_texCoord.v[1] = rightBottom;
         s_texCoord.v[2] = rightTop;
         s_texCoord.v[3] = leftTop;
-        m_card[i].unkfunc_02124bcc(&s_texCoord);
+        m_card[i].setGlowTexCoord(&s_texCoord);
     }
 }
 
@@ -219,7 +219,7 @@ ARM void PokerCardPolygon::draw()
         ((TextureObject*)texture_)->unkfunc_02086abc();
         ((TextureObject*)texture_)->unkfunc_02086b3c();
     } else {
-        unkfunc_02086b28();
+        disableTexture();
     }
     unkfunc_02083680();
     G3_Begin(1);

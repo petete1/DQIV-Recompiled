@@ -1,0 +1,130 @@
+#include <nitro/native_video.h>
+#include "main/dss/VramManager.hpp"
+#include "nitro/os.hpp"
+
+VramTransferManager g_VramTransfer;
+
+ARM VramTransferManager::VramTransferManager()
+{
+    unk_00 = 0;
+    unk_810 = 0;
+    vblankTransfer_ = 1;
+}
+
+ARM VramTransferManager::~VramTransferManager()
+{
+}
+
+ARM void VramTransferManager::initTransferQueue()
+{
+    func_02072800(tasks_, 0x80);
+}
+
+unsigned char g_plttVramManagerWork[0x800];
+unsigned char g_texVramManagerWork[0x800];
+
+ARM void VramTransferManager::initVramManagers(int texSize, int plttSize)
+{
+    texSize_ = texSize;
+    unk_00 = 0;
+    plttUsed_ = 0;
+    unk_08 = texSize;
+    func_02072c5c(texSize, 0, g_texVramManagerWork, func_02072c54(0x80), 1);
+    if (texSize_ == 0x40000) {
+        int handle1 = allocTexVram(0x20000);
+        int handle2 = allocTexVram(0x20000);
+        freeTexVram(handle1);
+        freeTexVram(handle2);
+    }
+    func_02072fa8(plttSize, g_plttVramManagerWork, func_02072fa0(0x80), 1);
+}
+
+ARM void VramTransferManager::unkfunc_02086278()
+{
+}
+
+ARM int VramTransferManager::allocTexVram(int size)
+{
+    return (*data_020c403c)(size, 0, 0);
+}
+
+ARM void VramTransferManager::freeTexVram(unsigned int handle)
+{
+    (*data_020c4040)(handle);
+}
+
+ARM int VramTransferManager::getTexVramAddr(unsigned int handle)
+{
+    return (handle & 0xffff) << 3;
+}
+
+ARM int VramTransferManager::getTexVramSize(unsigned int handle)
+{
+    return ((handle & 0x7fff0000) >> 16) << 4;
+}
+
+ARM int VramTransferManager::allocPlttVram(int size)
+{
+    int handle = (*data_020c4044)(size, 0, 0);
+    plttUsed_ += size;
+    return handle;
+}
+
+ARM void VramTransferManager::freePlttVram(unsigned int handle)
+{
+    (*data_020c4048)(handle);
+    plttUsed_ -= getPlttVramSize(handle);
+}
+
+ARM int VramTransferManager::getPlttVramAddr(unsigned int handle)
+{
+    return (handle & 0xffff) << 3;
+}
+
+ARM int VramTransferManager::getPlttVramSize(unsigned int handle)
+{
+    return ((handle & 0xffff0000) >> 16) << 3;
+}
+
+ARM void VramTransferManager::transferToVram(int type, void* src, int address, unsigned int size, int flag)
+{
+    if (vblankTransfer_ != 0) {
+        func_02072884(type, address, src, size);
+        if (flag != 0) {
+            doTransfers();
+        }
+        return;
+    }
+    if (flag != 0 && func_020728ec() != 0) {
+        OS_Wait();
+        doTransfers();
+        while ((int)*VIDEO_REG(volatile unsigned short, 0x04000006) > 1) {
+        }
+    }
+    unsigned int remain = size;
+    do {
+        unsigned int length;
+        if (remain > 0x8000) {
+            length = 0x8000;
+            flag = 1;
+        } else {
+            length = remain;
+        }
+        func_02072884(type, address, src, length);
+        if (flag != 0) {
+            OS_Wait();
+            doTransfers();
+            while ((int)*VIDEO_REG(volatile unsigned short, 0x04000006) > 1) {
+            }
+        }
+        address += length;
+        src = (unsigned char*)src + length;
+        remain -= length;
+    } while (remain != 0);
+}
+
+ARM void VramTransferManager::doTransfers()
+{
+    func_02072824();
+    unk_810 = 0;
+}

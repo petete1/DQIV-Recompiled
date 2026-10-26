@@ -6,7 +6,7 @@
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
 #include "main/status/PartyStatus.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenuPokerHiandlow::menuSetup()
 {
@@ -29,7 +29,7 @@ THUMB void MaterielMenuPokerHiandlow::menuExecute()
 
 THUMB void MaterielMenuPokerHiandlow::menuDraw()
 {
-    unkfunc_0216fd48(haveCoin_, win_);
+    drawPokerHighLowScreen(haveCoin_, win_);
     menu_command_.drawActive();
 }
 
@@ -42,10 +42,10 @@ THUMB void MaterielMenuPokerHiandlow::menuUpdate()
 
 THUMB bool MaterielMenuPokerHiandlow::messageUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        int stat = data_020ed1bc.stat_;
+    if (g_TownMenuMessage.isOpen()) {
+        int stat = g_TownMenuMessage.stat_;
         if (stat == MENUBASE_STAT_OK || stat == MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             if (gameMode_ == 0) {
                 gameMode_ = 1;
             }
@@ -139,9 +139,9 @@ THUMB void MaterielMenuPokerHiandlow::judgementHiAndLow()
 
 THUMB void MaterielMenuPokerHiandlow::showMessage(int mes1, int mes2)
 {
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(mes1);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(mes1);
     if (mes2 != -1) {
-        data_020ed1bc.addMessage(mes2);
+        g_TownMenuMessage.addMessage(mes2);
     }
 }

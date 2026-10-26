@@ -8,7 +8,7 @@
 #include "main/sound/MenuSoundManager.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/cmn/CommonCounterInfo.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenu_SLOT::menuSetup()
 {
@@ -36,7 +36,7 @@ THUMB void MaterielMenu_SLOT::menuExecute()
 
 THUMB void MaterielMenu_SLOT::menuDraw()
 {
-    unkfunc_0216fd58(haveCoin_, 0);
+    drawSlotCoins(haveCoin_, 0);
 }
 
 THUMB void MaterielMenu_SLOT::menuUpdate()
@@ -50,19 +50,19 @@ THUMB void MaterielMenu_SLOT::menuUpdate()
 
 THUMB bool MaterielMenu_SLOT::messageUpdate()
 {
-    if (!data_020ed1bc.isOpen()) {
+    if (!g_TownMenuMessage.isOpen()) {
         return false;
     }
-    int stat = data_020ed1bc.stat_;
+    int stat = g_TownMenuMessage.stat_;
     if (status_ == SLOT_RETRY && messageCount_ == 0) {
         if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
             status_ = SLOT_START;
             messageCount_ = -1;
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
             status_ = SLOT_END;
             messageCount_ = -1;
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         }
     }
     closeMessage();
@@ -110,7 +110,7 @@ THUMB void MaterielMenu_SLOT::statusUpdate()
             }
         } else {
             showMessage(0xc96bc);
-            Casino_Slot::getSingleton()->unkfunc_02123944();
+            Casino_Slot::getSingleton()->clearBetCoin();
             status::g_Party.setCasinoCoin(haveCoin_);
             status_ = SLOT_RETRY;
             messageCount_ = -1;
@@ -123,12 +123,12 @@ THUMB void MaterielMenu_SLOT::statusUpdate()
     case SLOT_RETRY:
         if (messageCount_ == -1) {
             showMessage(0xc96bf);
-            data_020ed1bc.setYesNo();
+            g_TownMenuMessage.setYesNo();
             messageCount_++;
         }
         break;
     case SLOT_END:
-        data_020ed1bc.close();
+        g_TownMenuMessage.close();
         close();
         stat_ = menu::MenuBase::MENUBASE_STAT_OK;
         MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
@@ -185,7 +185,7 @@ THUMB void MaterielMenu_SLOT::resultEffectUpdate()
         Casino_Slot::getSingleton()->cashAllCoin(haveCoin_);
         status::g_Party.setCasinoCoin(haveCoin_);
         resultCoin_ = 0;
-        Casino_Slot::getSingleton()->unkfunc_02123944();
+        Casino_Slot::getSingleton()->clearBetCoin();
         status_ = SLOT_RETRY;
         messageCount_ = -1;
     }
@@ -212,13 +212,13 @@ THUMB void MaterielMenu_SLOT::gameUpdate()
 
 THUMB void MaterielMenu_SLOT::showMessage(int messageID)
 {
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(messageID);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(messageID);
 }
 
 THUMB void MaterielMenu_SLOT::closeMessage()
 {
-    if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-        data_020ed1bc.close();
+    if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+        g_TownMenuMessage.close();
     }
 }

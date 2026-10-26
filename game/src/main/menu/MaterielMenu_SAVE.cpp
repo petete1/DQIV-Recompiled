@@ -1,5 +1,10 @@
 #pragma ipa file
 #include "main/menu/MaterielMenu_SAVE.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "Settings.hpp"
+#include <nitro/pad.h>
+#endif
 #include "main/object/DisplayCharacter.hpp"
 #include "main/menu/MaterielMenuWindowManager.hpp"
 #include "main/menu/TownMenu_MESSAGE.hpp"
@@ -18,8 +23,8 @@
 #include "ov026/MaterielMenu_SURECHIGAI/MaterielMenu_SURECHIGAI.hpp"
 #include "main/menu/UiMsg.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_02177bac.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDrawExtra.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenu_SAVE::menuSetup()
 {
@@ -42,7 +47,7 @@ THUMB void MaterielMenu_SAVE::menuDraw()
 {
     if (status_ != MENU_SELECT || messageCounter_ == 0) {
         if (saveType_ == TYPE_CHURCH) {
-            unkfunc_0216ff18();
+            drawMoneyAndPartyWindows();
         }
         return;
     }
@@ -50,14 +55,14 @@ THUMB void MaterielMenu_SAVE::menuDraw()
         int savetype = diary_[i].savetype_;
         char* name = diary_[i].name_;
         if (savetype == 4) {
-            unkfunc_0217800c(i, name, -1, -1, -1, diary_[i].time_, 0x5a, name != 0);
+            drawJournalSlot(i, name, -1, -1, -1, diary_[i].time_, 0x5a, name != 0);
         } else {
-            unkfunc_0217800c(i, name, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, 0x22, name != 0);
+            drawJournalSlot(i, name, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, 0x22, name != 0);
         }
     }
-    unkfunc_02177c00(0, 0x10, 0x100, 0x68, 0);
+    drawFrameStyleB(0, 0x10, 0x100, 0x68, 0);
     if (saveType_ == TYPE_CHURCH) {
-        unkfunc_0216ff18();
+        drawMoneyAndPartyWindows();
     }
     menuItem_.drawActive();
 }
@@ -71,17 +76,17 @@ THUMB void MaterielMenu_SAVE::menuUpdate()
 
 THUMB bool MaterielMenu_SAVE::messageUpdate()
 {
-    if (!data_020ed1bc.isOpen()) {
+    if (!g_TownMenuMessage.isOpen()) {
         return false;
     }
-    int stat = data_020ed1bc.stat_;
+    int stat = g_TownMenuMessage.stat_;
     switch (status_) {
     case MENU_IS_SAVE:
         if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             setMode(MENU_READING);
         } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             firstCancelMessage();
         }
         break;
@@ -91,7 +96,7 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
             case TYPE_CHURCH:
             case TYPE_LASTDUNGEON:
             case TYPE_SURECHIGAI:
-                data_020ed1bc.setMessageLastCursor(false);
+                g_TownMenuMessage.setMessageLastCursor(false);
                 messageCounter_++;
                 redraw_ = 1;
                 break;
@@ -107,11 +112,11 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
         break;
     case MENU_IS_OVERWRITE:
         if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             setMode(MENU_WRITING);
         }
         if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             setMode(MENU_SELECT);
         }
         break;
@@ -129,7 +134,7 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
     case MENU_IS_END:
         if (messageCounter_ == 0) {
             if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 switch (saveType_) {
                 case TYPE_CHURCH:
                     setTalkMessage(0xc700b);
@@ -143,7 +148,7 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
                 setMode(MENU_END);
             }
             if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 switch (saveType_) {
                 case TYPE_CHURCH:
                     if (isSave_ != 0) {
@@ -169,24 +174,24 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
             }
         } else {
             if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 setTalkMessage(0xc6fbb);
                 setMode(MENU_GAME_END);
             }
             if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 setMode(MENU_READING);
             }
         }
         break;
     case MENU_GAME_END:
         if (messageCounter_ == 0 && (unsigned int)(stat - 1) <= 1) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         }
         break;
     case MENU_BLANK:
         if ((unsigned int)(stat - 1) <= 1) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         }
         return false;
     case MENU_READING:
@@ -194,19 +199,19 @@ THUMB bool MaterielMenu_SAVE::messageUpdate()
     case MENU_SUCCESS:
     case MENU_END:
         if ((unsigned int)(stat - 1) <= 1) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         }
         break;
     case MENU_SURECHIGAI_START:
         if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             setTalkMessage(0x929ff);
             setMode(MENU_END);
             MaterielMenu_WINDOW_MANAGER::getSingleton()->surechigaiStart_ = 1;
             startSurechigai_ = 1;
         }
         if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             setTalkMessage(0x92a2f);
             setMode(MENU_END);
             MaterielMenu_WINDOW_MANAGER::getSingleton()->surechigaiStart_ = 0;
@@ -308,8 +313,8 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         break;
     case MENU_BLANK:
         if (messageCounter_ == 0) {
-            if (data_020ed1bc.isOpen()) {
-                data_020ed1bc.isMessageWAITPROG();
+            if (g_TownMenuMessage.isOpen()) {
+                g_TownMenuMessage.isMessageWAITPROG();
             }
         }
         break;
@@ -334,7 +339,7 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         } else {
             if (saveType_ == TYPE_CLEAR || saveType_ == TYPE_CHAPTER) {
                 dataSelectUpdate();
-            } else if (data_020ed1bc.isOpen() && data_020ed1bc.isMessageWAITPROG()) {
+            } else if (g_TownMenuMessage.isOpen() && g_TownMenuMessage.isMessageWAITPROG()) {
                 dataSelectUpdate();
             }
         }
@@ -385,11 +390,11 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
             }
             messageCounter_++;
         }
-        data_020ed1bc.SetNoClose(true);
+        g_TownMenuMessage.SetNoClose(true);
         setMode(MENU_WRITINGEXEC);
         break;
     case MENU_WRITINGEXEC:
-        if (data_020ed1bc.isOpen() && data_020ed1bc.isMessageWAITPROG()) {
+        if (g_TownMenuMessage.isOpen() && g_TownMenuMessage.isMessageWAITPROG()) {
             saveResult_ = 0;
             dss::Fix32Vector3 pos;
             switch (saveType_) {
@@ -437,20 +442,20 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         break;
     case MENU_SOUNDWAIT:
         if (!playSound) {
-            data_020ed1bc.SetNoClose(false);
+            g_TownMenuMessage.SetNoClose(false);
             if (saveResult_ == 1) {
                 setMode(MENU_SUCCESS);
-                data_020ed1bc.clearMessageWAITPROG();
-                data_020ed1bc.close();
+                g_TownMenuMessage.clearMessageWAITPROG();
+                g_TownMenuMessage.close();
             } else if (saveResult_ == 0) {
                 setMode(MENU_FAILED);
-                data_020ed1bc.clearMessageWAITPROG();
-                data_020ed1bc.close();
+                g_TownMenuMessage.clearMessageWAITPROG();
+                g_TownMenuMessage.close();
             }
         }
         break;
     case MENU_FAILED:
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.openMessageForMENU();
         switch (saveType_) {
         case TYPE_CHURCH:
             setWaitMessage(0xc6fad, false);
@@ -475,7 +480,7 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         }
         break;
     case MENU_SUCCESS:
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.openMessageForMENU();
         switch (saveType_) {
         case TYPE_CHURCH:
             setTalkYesNoMessage(0xc6fb0, true);
@@ -504,12 +509,12 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         break;
     case MENU_GAME_END:
         if (messageCounter_ == 0) {
-            data_020f21f8.state_ = GlobalFade::FADE_NONE;
-            data_020f21f8.count_ = 0;
-            data_020f21f8.frames_ = 120;
-            data_020f21f8.sprite_[0].setColor(0, 0, 0);
-            data_020f21f8.sprite_[1].setColor(0, 0, 0);
-            data_0210bc18.unkfunc_02058294(&data_020f21f8);
+            g_SpriteFade.state_ = GlobalFade::FADE_NONE;
+            g_SpriteFade.count_ = 0;
+            g_SpriteFade.frames_ = 120;
+            g_SpriteFade.sprite_[0].setColor(0, 0, 0);
+            g_SpriteFade.sprite_[1].setColor(0, 0, 0);
+            g_GlobalGamePartManager.unkfunc_02058294(&g_SpriteFade);
             messageCounter_++;
             TownSystem::getSingleton()->fadeCount_ = 0;
             g_Global.bookingFlag_ = Global::BOOKING_GAMESET;
@@ -526,6 +531,12 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
                 messageCounter_++;
             }
         }
+#ifdef DQIV_NATIVE
+        // "Please turn the power OFF": the PC version closes on A, B or Start.
+        else if (dss::g_Pad.edge() & (PAD_BUTTON_A | PAD_BUTTON_B | PAD_BUTTON_START)) {
+            pc::requestQuit();
+        }
+#endif
         break;
     case MENU_END:
         close();
@@ -591,16 +602,16 @@ THUMB void MaterielMenu_SAVE::dataSelectUpdate()
         } else {
             setMode(MENU_IS_OVERWRITE);
         }
-        if (data_020ed1bc.isOpen()) {
-            data_020ed1bc.close();
+        if (g_TownMenuMessage.isOpen()) {
+            g_TownMenuMessage.close();
         }
         redraw_ = 1;
         break;
     case 3:
         menuItem_.result_ = 0;
         menuItem_.lastresult_ = 0;
-        if (data_020ed1bc.isOpen()) {
-            data_020ed1bc.close();
+        if (g_TownMenuMessage.isOpen()) {
+            g_TownMenuMessage.close();
         }
         firstCancelMessage();
         redraw_ = 1;
@@ -620,8 +631,8 @@ THUMB void MaterielMenu_SAVE::setMessage(int messageID)
     if (saveType_ == TYPE_CHURCH) {
         messageID += sexType_;
     }
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(messageID);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(messageID);
 }
 
 THUMB void MaterielMenu_SAVE::setWaitMessage(int messageID, bool sex)
@@ -629,9 +640,9 @@ THUMB void MaterielMenu_SAVE::setWaitMessage(int messageID, bool sex)
     if (saveType_ == TYPE_CHURCH && sex) {
         messageID += sexType_;
     }
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessageNOWAIT(messageID);
-    data_020ed1bc.addMessageWAITKEY();
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessageNOWAIT(messageID);
+    g_TownMenuMessage.addMessageWAITKEY();
 }
 
 THUMB void MaterielMenu_SAVE::setYesNoMessage(int messageID, bool yes)
@@ -639,9 +650,9 @@ THUMB void MaterielMenu_SAVE::setYesNoMessage(int messageID, bool yes)
     if (saveType_ == TYPE_CHURCH) {
         messageID += sexType_;
     }
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(messageID);
-    data_020ed1bc.setYesNo(yes ? 0 : 1);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(messageID);
+    g_TownMenuMessage.setYesNo(yes ? 0 : 1);
 }
 
 THUMB void MaterielMenu_SAVE::setTalkMessage(int messageID)
@@ -656,8 +667,8 @@ THUMB void MaterielMenu_SAVE::setTalkMessage(int messageID)
     } else if (saveType_ == TYPE_LASTDUNGEON) {
         ui_MsgSndSet(0x31);
     }
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(messageID);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(messageID);
 }
 
 THUMB void MaterielMenu_SAVE::setTalkMessage(int messageID1, int messageID2)
@@ -673,8 +684,8 @@ THUMB void MaterielMenu_SAVE::setTalkMessage(int messageID1, int messageID2)
     } else if (saveType_ == TYPE_LASTDUNGEON) {
         ui_MsgSndSet(0x31);
     }
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(messageID1, messageID2);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(messageID1, messageID2);
 }
 
 THUMB void MaterielMenu_SAVE::setTalkWaitMessage(int messageID)
@@ -689,9 +700,9 @@ THUMB void MaterielMenu_SAVE::setTalkWaitMessage(int messageID)
     } else if (saveType_ == TYPE_LASTDUNGEON) {
         ui_MsgSndSet(0x31);
     }
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessageNOWAIT(messageID);
-    data_020ed1bc.addMessageWAITKEY();
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessageNOWAIT(messageID);
+    g_TownMenuMessage.addMessageWAITKEY();
 }
 
 THUMB void MaterielMenu_SAVE::setTalkYesNoMessage(int messageID, bool yes)
@@ -706,9 +717,9 @@ THUMB void MaterielMenu_SAVE::setTalkYesNoMessage(int messageID, bool yes)
     } else if (saveType_ == TYPE_LASTDUNGEON) {
         ui_MsgSndSet(0x31);
     }
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(messageID);
-    data_020ed1bc.setYesNo(yes ? 0 : 1);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(messageID);
+    g_TownMenuMessage.setYesNo(yes ? 0 : 1);
 }
 
 THUMB void MaterielMenu_SAVE::setTalkYesNoMessage2(int messageID1, int messageID2, bool yes)
@@ -725,9 +736,9 @@ THUMB void MaterielMenu_SAVE::setTalkYesNoMessage2(int messageID1, int messageID
         ui_MsgSndSet(0x31);
     }
     int cursor = yes ? 0 : 1;
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(messageID1, messageID2);
-    data_020ed1bc.setYesNo(cursor);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(messageID1, messageID2);
+    g_TownMenuMessage.setYesNo(cursor);
 }
 
 THUMB void MaterielMenu_SAVE::firstCancelMessage()

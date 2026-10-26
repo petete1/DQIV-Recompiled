@@ -1,6 +1,6 @@
 #pragma ipa file
 #include "main/window/CommandWindow.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "main/menu/MenuAPI.hpp"
 #include "main/status/StageStatus.hpp"
@@ -8,7 +8,7 @@
 #include "nitro/g3.hpp"
 
 static int unk_020bea5c = -1;
-static UnkG2dImageAttr unk_020bea60 = {5, 5, 7, 0, 0, 0x100010};
+static G2dSoftImageAttr unk_020bea60 = {5, 5, 7, 0, 0, 0x100010};
 static char s_field[] = "field";
 
 ARM window::CommandWindow::CommandWindow()
@@ -154,13 +154,13 @@ ARM bool window::CommandWindow::isMessage()
     return phase_->getPhase() == PHASE_MESSAGE;
 }
 
-ARM bool window::CommandWindow::unkfunc_0202a8fc()
+ARM bool window::CommandWindow::updateTouchScreenCapture()
 {
-    if (data_0211a5d4.touch_ != 0) {
-        int x = data_0211a5d4.x_;
-        int y = data_0211a5d4.y_;
+    if (g_TouchPanel.touch_ != 0) {
+        int x = g_TouchPanel.x_;
+        int y = g_TouchPanel.y_;
         if (x < 0x20 && y < 0x20) {
-            unkfunc_020817d8();
+            requestScreenCapture();
             unk_020bea5c = 0;
             return true;
         }
@@ -171,11 +171,11 @@ ARM bool window::CommandWindow::unkfunc_0202a8fc()
     if (unk_020bea5c == -1) {
         return false;
     }
-    if (!unkfunc_0208198c()) {
+    if (!isScreenCaptureDone()) {
         return false;
     }
     unkfunc_02068ec8(0x6b);
-    UnkG2dSprite sprite;
+    G2dSoftSprite sprite;
     sprite.posX = 0;
     sprite.posY = 0;
     sprite.sizeX = 0x40;
@@ -201,7 +201,7 @@ ARM bool window::CommandWindow::unkfunc_0202a8fc()
     G3_PushMtx();
     unkfunc_02068eec(&sprite);
     G3_PopMtx(1);
-    UnkG2dSprite sprite2;
+    G2dSoftSprite sprite2;
     sprite2.posX = 0;
     sprite2.posY = 0x60;
     sprite2.sizeX = 0x40;
@@ -232,7 +232,7 @@ ARM bool window::CommandWindow::unkfunc_0202a8fc()
 
 ARM void window::CommandWindow::execute()
 {
-    if (unkfunc_0202a8fc()) {
+    if (updateTouchScreenCapture()) {
         return;
     }
     if (phase_->isNext()) {

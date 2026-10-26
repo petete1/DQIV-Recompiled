@@ -1,11 +1,11 @@
 #pragma once
 #include <globaldefs.h>
-#include "main/window/UnkMapBase_020381d0.hpp"
+#include "main/window/WorldMapBase.hpp"
 #include "main/dss/DssUtils.hpp"
 
 namespace window {
-    struct GlobalMap : UnkMapBase_020381d0 {
-        UnkMenuSprite unk_100;                  // 0x100
+    struct GlobalMap : WorldMapBase {
+        MenuSprite veilSprite_;                  // 0x100
 
         GlobalMap();
         ~GlobalMap();

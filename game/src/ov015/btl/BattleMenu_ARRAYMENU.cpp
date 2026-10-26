@@ -18,28 +18,28 @@ THUMB void BattleMenu_ARRAYMENU::menuSetup()
     gBattleMenuSub_HISTORY.update_ = 1;
     gBattleMenuSub_HISTORY.select_ = 0;
     btl::BattleMenuPlayerControl::getSingleton()->activeChara_ = -1;
-    unk_1c = 0;
+    cursorPos_ = 0;
 }
 
 THUMB void BattleMenu_ARRAYMENU::menuExecute()
 {
-    MenuTemplate_battle::BATTLE_ARRAYMENU_2x1(&menuItem_, unk_1c);
+    MenuTemplate_battle::BATTLE_ARRAYMENU_2x1(&menuItem_, cursorPos_);
     MenuTemplate_battle::BATTLE_CANCEL(&cancelItem_);
 }
 
 THUMB void BattleMenu_ARRAYMENU::menuDraw()
 {
-    if (!data_020ed1bc.isOpen()) {
-        unkfunc_0216bd94();
+    if (!g_TownMenuMessage.isOpen()) {
+        drawFormationMenu();
         menuItem_.drawActive();
     }
 }
 
 THUMB void BattleMenu_ARRAYMENU::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
         }
         return;
     }
@@ -55,7 +55,7 @@ THUMB void BattleMenu_ARRAYMENU::menuUpdate()
     menuItem_.execInput();
     switch (menuItem_.result_) {
     case 1:
-        unk_1c = menuItem_.active_;
+        cursorPos_ = menuItem_.active_;
         break;
     case 2:
         menuItem_.result_ = 0;
@@ -68,8 +68,8 @@ THUMB void BattleMenu_ARRAYMENU::menuUpdate()
                 gBattleMenu_ARRAY_CHANGE.open();
                 break;
             }
-            data_020ed1bc.openMessageForBATTLE();
-            data_020ed1bc.addMessage(0xc3c6d);
+            g_TownMenuMessage.openMessageForBATTLE();
+            g_TownMenuMessage.addMessage(0xc3c6d);
             break;
         }
         close();
@@ -77,11 +77,11 @@ THUMB void BattleMenu_ARRAYMENU::menuUpdate()
         gBattleMenu_ARRAY_ALL.open();
         break;
     case 7:
-        unk_1c = 1;
+        cursorPos_ = 1;
         menuItem_.active_ = 1;
         break;
     case 8:
-        unk_1c = 0;
+        cursorPos_ = 0;
         menuItem_.active_ = 0;
         break;
     }

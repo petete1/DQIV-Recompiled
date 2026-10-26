@@ -1,7 +1,7 @@
 #include "main/dss/DssVectorDefault.hpp"
 #include "ov000/town/riseup/TownRiseup.hpp"
 #include "main/cmn/CommonEffectData.hpp"
-#include "main/menu/UnkMenuIconDisplay.hpp"
+#include "main/menu/MenuIconDisplay.hpp"
 #include "nitro/os.hpp"
 
 static dss::Vector2<dss::Fix16> s_vertexLeftBottom(-0.48f, -0.0f);
@@ -51,7 +51,7 @@ THUMB void BillboardItem::setup(const char* name, int icon)
     RenderObject::texture_ = texture_;
     setScale(s_scale);
     unsigned char* dst = (unsigned char*)((TextureObject*)texture_)->unkfunc_02086a9c();
-    void* src = unkfunc_0205182c(0xf0000000, icon);
+    void* src = getMenuIconData(0xf0000000, icon);
     switch (*(unsigned int*)src & 0xf0) {
     case 0x10:
         func_02067b88(src, buf);
@@ -76,7 +76,7 @@ THUMB void BillboardItem::setup(const char* name, int icon)
             }
         }
     }
-    void* palette = unkfunc_0205182c(0xf0000000, 9999);
+    void* palette = getMenuIconData(0xf0000000, 9999);
     dss::memcpy((void*)((TextureObject*)texture_)->unkfunc_02086aac(), palette, 0x100);
     ((TextureObject*)texture_)->unkfunc_02086968(1);
 }

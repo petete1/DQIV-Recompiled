@@ -1,0 +1,79 @@
+#include "main/menu/MenuFrameDisplay.hpp"
+#include "nitro/g2.hpp"
+
+THUMB MenuFrameDisplay::MenuFrameDisplay()
+{
+    requestCount_ = 0;
+    setType(2);
+}
+
+THUMB void MenuFrameDisplay::setup(int id)
+{
+    id_ = id;
+    requestCount_ = 0;
+}
+
+THUMB void MenuFrameDisplay::update(OamBuffer* main, OamBuffer* sub)
+{
+    requestCount_ = 0;
+}
+
+THUMB void MenuFrameDisplay::execute(OamBuffer* main, OamBuffer* sub)
+{
+}
+
+THUMB void MenuFrameDisplay::draw(OamBuffer* main, OamBuffer* sub)
+{
+    setEnable(1);
+    if (isDrawable(main, sub)) {
+        MenuFrameRequest* request = requests_;
+        for (int i = 0; i < requestCount_; i++) {
+            request->draw(main, sub);
+            request++;
+        }
+        requestCount_ = 0;
+    }
+}
+
+THUMB void MenuFrameDisplay::addFrame(int x, int y, int w, int h, int priority, int palette)
+{
+    addFrameSprites(x, y, w, h, priority, palette, 0, 1);
+}
+
+THUMB void MenuFrameDisplay::addRoundedFrame(int x, int y, int w, int h, int priority, int palette)
+{
+    addFrameSprites(x, y, w, h, priority, palette, 1, 1);
+}
+
+THUMB void MenuFrameDisplay::addOpaqueFrame(int x, int y, int w, int h, int priority, int palette)
+{
+    addFrameSprites(x, y, w, h, priority, palette, 0, 0);
+}
+
+// OAM attribute writer used by the frame requests (attr01 terms in mode, y, shape, x, effect order)
+inline void G2_SetOBJAttrFrame(GXOamAttr* oam, int x, int y, int priority, int mode, int mosaic, int effect, int shape,
+                               int color, int charName, int cParam, int rsParam)
+{
+    oam->attr01 = (u32)((mode << 10) | (y & 0xff) | (mosaic << 12) | color | shape | ((x & 0x1ff) << 16) |
+                        (rsParam << 25) | effect);
+    oam->attr2 = (u16)(charName | (priority << 10) | (cParam << 12));
+}
+
+#pragma opt_propagation off
+THUMB void MenuFrameRequest::draw(OamBuffer* main, OamBuffer* sub)
+{
+    OamBuffer* oam = NULL;
+    int screen = y_ / 192;
+    int y = y_ % 192;
+    if (screen == 0) {
+        oam = main;
+    }
+    if (screen == 1) {
+        oam = sub;
+    }
+    if (oam) {
+        GXOamAttr* obj = oam->allocEntry();
+        G2_SetOBJAttrFrame(obj, x_, y, priority_, mode_, 0, effect_, shape_, GX_OAM_COLORMODE_16, chr_, palette_, 0);
+    }
+}
+#pragma opt_propagation reset

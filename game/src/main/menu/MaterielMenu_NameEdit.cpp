@@ -12,28 +12,28 @@
 #include "ov016/MaterielMenu_LOAD/MaterielMenu_LOAD.hpp"
 #include "ov026/MaterielMenu_SURECHIGAI/MaterielMenu_SURECHIGAI.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_02177bac.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
-#include "main/cmn/UnkEnvoyManager.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDrawExtra.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
+#include "main/cmn/EnvoyManager.hpp"
 
-int data_020f17bc;
-int data_020f17c0;
-int data_020f17c4[45];
-int data_020f1878[45];
+int g_nameEditMaxLength;
+int g_nameEditLength;
+int s_nameEditCharCodes[45];
+int g_nameEditLabels[45];
 int data_020f192c[45];
-int data_020f19e0[66];
-char data_020f1ae8[0x8c];
-char data_020f1b74[0xb8];
-char data_020f1c2c[0x14c];
+int s_nameEditKeyLabels[66];
+char s_nameEditUtf8Buffer[0x8c];
+char s_nameEditLabelBuffer[0xb8];
+char s_nameEditKeyLabelBuffer[0x14c];
 
 THUMB void MaterielMenu_NameEdit::menuSetup()
 {
-    data_020f0078.mode_ = 1;
+    g_EnvoyManager.mode_ = 1;
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_ACTIVE);
-    keyboard_.unkfunc_0216a980();
+    keyboard_.init();
     language_ = 0;
     unk_88 = 0;
-    unk_98 = 0;
+    changeTaishi_ = 0;
     bCloseEditTownName_ = 0;
     setNameEditMode();
 }
@@ -42,19 +42,19 @@ THUMB void MaterielMenu_NameEdit::setNameEditMode()
 {
     language_ = status::g_Game.language;
     inputType_ = TYPE_NAME_EDIT;
-    data_020f17bc = 8;
+    g_nameEditMaxLength = 8;
 }
 
 THUMB void MaterielMenu_NameEdit::setTownNameMode()
 {
     inputType_ = TYPE_TOWN_NAME;
-    data_020f17bc = 9;
+    g_nameEditMaxLength = 9;
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b004()
+THUMB void MaterielMenu_NameEdit::setMessageMode()
 {
     inputType_ = TYPE_MESSAGE;
-    data_020f17bc = 45;
+    g_nameEditMaxLength = 45;
 }
 
 THUMB void MaterielMenu_NameEdit::menuExecute()
@@ -68,52 +68,52 @@ THUMB void MaterielMenu_NameEdit::menuExecute()
 
 THUMB void MaterielMenu_NameEdit::menuDraw()
 {
-    if (data_020ed1bc.isOpen()) {
+    if (g_TownMenuMessage.isOpen()) {
         return;
     }
     for (int i = 0; i < 66; i++) {
-        data_020f19e0[i] = 0;
+        s_nameEditKeyLabels[i] = 0;
     }
-    unkfunc_0203b0f0(data_020f19e0);
-    unkfunc_0203b750(data_020f1878);
-    int message = unkfunc_0203b158();
+    buildKeyLabels(s_nameEditKeyLabels);
+    buildNameLabels(g_nameEditLabels);
+    int message = getPromptMessage();
     if (inputType_ == TYPE_MESSAGE) {
-        unkfunc_02178180(data_020f19e0, 1);
-        unkfunc_02177c00(0, 0x48, 0x100, 0x78, 0x60);
-        unkfunc_0203b184(message);
+        drawNameEditCharTable(s_nameEditKeyLabels, 1);
+        drawFrameStyleB(0, 0x48, 0x100, 0x78, 0x60);
+        drawMessageInput(message);
     } else {
-        unkfunc_02178180(data_020f19e0, 0);
-        unkfunc_02177c00(0x38, 0x10, 0xa0, 0x20, -1);
-        unkfunc_0203b1c8(message);
+        drawNameEditCharTable(s_nameEditKeyLabels, 0);
+        drawFrameStyleB(0x38, 0x10, 0xa0, 0x20, -1);
+        drawNameInput(message);
     }
     menuItem_.drawActive();
     switch (returnMenu_) {
     case RETURN_MENU_SURECHIGAI:
-        unkfunc_0216feb8(-1, data_020f0078.unkfunc_0203a5ec());
+        drawNameEditScreen(-1, g_EnvoyManager.getType());
         break;
     case RETURN_MENU_SURECHIGAI_MESSAGE:
         break;
     }
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b0f0(int* label)
+THUMB void MaterielMenu_NameEdit::buildKeyLabels(int* label)
 {
     int pos = 0;
     for (int i = 0; i < 66; i++) {
-        char* buffer = &data_020f1c2c[pos];
+        char* buffer = &s_nameEditKeyLabelBuffer[pos];
         *label = (int)buffer;
-        if (!keyboard_.unkfunc_0216ac54(i) || keyboard_.unkfunc_0216ac08(i) == 0x20) {
-            pos += unkfunc_0203b798(keyboard_.unkfunc_0216ac08(i), buffer);
-            data_020f1c2c[pos] = 0;
+        if (!keyboard_.getKeyType(i) || keyboard_.getKeyChar(i) == 0x20) {
+            pos += unpackCharCode(keyboard_.getKeyChar(i), buffer);
+            s_nameEditKeyLabelBuffer[pos] = 0;
             pos++;
         } else {
-            *label = keyboard_.unkfunc_0216ac08(i);
+            *label = keyboard_.getKeyChar(i);
         }
         label++;
     }
 }
 
-THUMB int MaterielMenu_NameEdit::unkfunc_0203b158()
+THUMB int MaterielMenu_NameEdit::getPromptMessage()
 {
     switch (inputType_) {
     case TYPE_MESSAGE:
@@ -126,41 +126,41 @@ THUMB int MaterielMenu_NameEdit::unkfunc_0203b158()
     return 0;
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b184(int message)
+THUMB void MaterielMenu_NameEdit::drawMessageInput(int message)
 {
-    unkfunc_02178278(data_020f1878, data_020f17c0);
-    unkfunc_02177c00(0, 0, 0x100, 0x48, -1);
-    unkfunc_02177fe0(&message, 8, 0x4a, 0xf0, 0x58);
+    drawNameEditCommentField(g_nameEditLabels, g_nameEditLength);
+    drawFrameStyleB(0, 0, 0x100, 0x48, -1);
+    drawCenteredMessage(&message, 8, 0x4a, 0xf0, 0x58);
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b1c8(int message)
+THUMB void MaterielMenu_NameEdit::drawNameInput(int message)
 {
     int blink = 0;
-    if (unk_94 == 15 && unk_94 == 30) {
+    if (blinkCount_ == 15 && blinkCount_ == 30) {
         redraw_ = 1;
     }
-    if (unk_94 > 30) {
-        unk_94 = 0;
+    if (blinkCount_ > 30) {
+        blinkCount_ = 0;
     }
-    if (unk_94 >= 15) {
+    if (blinkCount_ >= 15) {
         blink = 1;
     }
-    unk_94++;
-    unkfunc_021781c4(language_, data_020f1878, data_020f17c0, data_020f17bc, blink, 0);
-    unkfunc_02177c00(0, 0x30, 0x100, 0x78, 0x48);
-    unkfunc_02177fe0(&message, 8, 0x4a, 0xf0, 0x2c);
+    blinkCount_++;
+    drawNameEditField(language_, g_nameEditLabels, g_nameEditLength, g_nameEditMaxLength, blink, 0);
+    drawFrameStyleB(0, 0x30, 0x100, 0x78, 0x48);
+    drawCenteredMessage(&message, 8, 0x4a, 0xf0, 0x2c);
 }
 
 THUMB void MaterielMenu_NameEdit::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if (data_020ed1bc.stat_ == MENUBASE_STAT_OK) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if (g_TownMenuMessage.stat_ == MENUBASE_STAT_OK) {
+            g_TownMenuMessage.close();
             if (bCloseEditTownName_ == 1) {
                 MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
             }
-        } else if (data_020ed1bc.stat_ == MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+        } else if (g_TownMenuMessage.stat_ == MENUBASE_STAT_CANCEL) {
+            g_TownMenuMessage.close();
             if (bCloseEditTownName_ == 1) {
                 MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
             }
@@ -173,22 +173,22 @@ THUMB void MaterielMenu_NameEdit::menuUpdate()
         if (result == menu::MenuItem::MENUITEM_RESULT_OK) {
             menuItem_.result_ = 0;
             menuItem_.lastresult_ = 0;
-            int code = keyboard_.unkfunc_0216a9b4();
+            int code = keyboard_.pressKey();
             int index = keyboard_.index_;
             if (code & 0x80000000) {
-                unkfunc_0203b4e4();
+                onSpecialKey();
             } else {
-                unkfunc_0203b398(index, code);
+                appendChar(index, code);
             }
             redraw_ = 1;
         }
         if (result == menu::MenuItem::MENUITEM_RESULT_CANCEL) {
             menuItem_.result_ = 0;
             menuItem_.lastresult_ = 0;
-            if (data_020f17c0 == 0) {
-                unkfunc_0203b514(false);
+            if (g_nameEditLength == 0) {
+                finishNameEdit(false);
             } else {
-                unkfunc_0203b3d8();
+                deleteLastChar();
             }
             redraw_ = 1;
         }
@@ -208,51 +208,51 @@ THUMB void MaterielMenu_NameEdit::menuUpdate()
             }
         }
         if (result == menu::MenuItem::MENUITEM_RESULT_UP) {
-            menuItem_.active_ = keyboard_.unkfunc_0216aa5c();
+            menuItem_.active_ = keyboard_.moveUp();
         }
         if (result == menu::MenuItem::MENUITEM_RESULT_DOWN) {
-            menuItem_.active_ = keyboard_.unkfunc_0216aa6c();
+            menuItem_.active_ = keyboard_.moveDown();
         }
         if (result == menu::MenuItem::MENUITEM_RESULT_LEFT) {
-            menuItem_.active_ = keyboard_.unkfunc_0216aa7c();
+            menuItem_.active_ = keyboard_.moveLeft();
         }
         if (result == menu::MenuItem::MENUITEM_RESULT_RIGHT) {
-            menuItem_.active_ = keyboard_.unkfunc_0216aa8c();
+            menuItem_.active_ = keyboard_.moveRight();
         }
     } else if (dss::g_Pad.edge() & 8) {
-        if (data_020f17c0 > 0) {
-            menuItem_.active_ = keyboard_.unkfunc_0216abbc(0x41);
+        if (g_nameEditLength > 0) {
+            menuItem_.active_ = keyboard_.setCursorToKey(0x41);
         }
     }
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b398(int index, int code)
+THUMB void MaterielMenu_NameEdit::appendChar(int index, int code)
 {
-    int max = data_020f17bc;
-    if (data_020f17c0 < max) {
-        data_020f17c0++;
+    int max = g_nameEditMaxLength;
+    if (g_nameEditLength < max) {
+        g_nameEditLength++;
     }
-    int length = data_020f17c0;
-    data_020f17c4[length - 1] = code;
+    int length = g_nameEditLength;
+    s_nameEditCharCodes[length - 1] = code;
     data_020f192c[length - 1] = index;
     if (length == max) {
-        menuItem_.active_ = keyboard_.unkfunc_0216abbc(0x41);
+        menuItem_.active_ = keyboard_.setCursorToKey(0x41);
     }
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b3d8()
+THUMB void MaterielMenu_NameEdit::deleteLastChar()
 {
-    if (data_020f17c0 > 0) {
-        data_020f17c0--;
-        data_020f17c4[data_020f17c0] = 0;
-        data_020f192c[data_020f17c0] = 0;
+    if (g_nameEditLength > 0) {
+        g_nameEditLength--;
+        s_nameEditCharCodes[g_nameEditLength] = 0;
+        data_020f192c[g_nameEditLength] = 0;
     }
 }
 
-THUMB int MaterielMenu_NameEdit::unkfunc_0203b400()
+THUMB int MaterielMenu_NameEdit::validateName()
 {
     int space = 1;
-    for (int i = 0; i < data_020f17c0; i++) {
+    for (int i = 0; i < g_nameEditLength; i++) {
         if (getNameUTF8()[i] != ' ') {
             space = 0;
         }
@@ -260,7 +260,7 @@ THUMB int MaterielMenu_NameEdit::unkfunc_0203b400()
     if (space) {
         clearName();
         menuItem_.active_ = 0;
-        keyboard_.unkfunc_0216abbc(0);
+        keyboard_.setCursorToKey(0);
         return 0;
     }
     int ng = 0;
@@ -268,49 +268,49 @@ THUMB int MaterielMenu_NameEdit::unkfunc_0203b400()
         ng = 1;
     }
     if (returnMenu_ == RETURN_MENU_LOAD || returnMenu_ == RETURN_MENU_SURECHIGAI) {
-        if (unkfunc_020549f0(getNameUTF8())) {
+        if (isNameTooWide(getNameUTF8())) {
             ng = 1;
         }
     }
     if (ng) {
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.openMessageForMENU();
         switch (returnMenu_) {
         case RETURN_MENU_LOAD:
-            data_020ed1bc.addMessage(0xcb5f3);
+            g_TownMenuMessage.addMessage(0xcb5f3);
             break;
         case RETURN_MENU_SURECHIGAI:
-            data_020ed1bc.addMessage(0x92a76);
+            g_TownMenuMessage.addMessage(0x92a76);
             break;
         case RETURN_MENU_SURECHIGAI_MESSAGE:
-            data_020ed1bc.addMessage(0x92a91);
+            g_TownMenuMessage.addMessage(0x92a91);
             break;
         case RETURN_MENU_SURECHIGAI_TOWNNAME:
-            data_020ed1bc.addMessage(0x92a51);
+            g_TownMenuMessage.addMessage(0x92a51);
             break;
         }
         return 0;
     }
-    if (data_020f17c0 > 0) {
+    if (g_nameEditLength > 0) {
         return 1;
     }
     return 0;
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b4e4()
+THUMB void MaterielMenu_NameEdit::onSpecialKey()
 {
     switch (keyboard_.key_->type_) {
     case 1:
-        unkfunc_0203b3d8();
+        deleteLastChar();
         break;
     case 3:
-        if (unkfunc_0203b400()) {
-            unkfunc_0203b514(true);
+        if (validateName()) {
+            finishNameEdit(true);
         }
         break;
     }
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b514(bool ok)
+THUMB void MaterielMenu_NameEdit::finishNameEdit(bool ok)
 {
     if (returnMenu_ == RETURN_MENU_LOAD || returnMenu_ == RETURN_MENU_SURECHIGAI) {
         close();
@@ -322,40 +322,40 @@ THUMB void MaterielMenu_NameEdit::unkfunc_0203b514(bool ok)
             gMaterielMenu_LOAD.changeStatus(MaterielMenu_LOAD::LOAD_SEXUALITY);
             break;
         case RETURN_MENU_SURECHIGAI:
-            data_020f0078.unkfunc_0203a604(getNameUTF8());
+            g_EnvoyManager.setName(getNameUTF8());
             gUnkMaterielMenu_02189a80.open();
-            if (unk_98 == 1) {
-                gUnkMaterielMenu_02189a80.unk_24 = 1;
+            if (changeTaishi_ == 1) {
+                gUnkMaterielMenu_02189a80.changeTaishi_ = 1;
             }
             break;
         case RETURN_MENU_SURECHIGAI_MESSAGE:
-            data_020f0078.unkfunc_0203a83c(getNameUTF8());
-            data_020ed1bc.openMessageForMENU();
+            g_EnvoyManager.setComment(getNameUTF8());
+            g_TownMenuMessage.openMessageForMENU();
             if (MaterielMenu_WINDOW_MANAGER::getSingleton()->editMessageForScript_ == 1) {
-                data_020ed1bc.addMessage(0x92a93);
+                g_TownMenuMessage.addMessage(0x92a93);
             } else {
                 ui_MsgSndSet(0x32);
-                data_020ed1bc.addMessage(0x92a80);
+                g_TownMenuMessage.addMessage(0x92a80);
             }
-            data_020ed1bc.setYesNo();
-            data_020ed1bc.setYesNoPosition(0xc0, 0x40);
+            g_TownMenuMessage.setYesNo();
+            g_TownMenuMessage.setYesNoPosition(0xc0, 0x40);
             close();
             gUnkMaterielMenu_02189a80.open();
-            gUnkMaterielMenu_02189a80.unk_1c = 6;
-            if (unk_98 == 1) {
-                gUnkMaterielMenu_02189a80.unk_24 = 1;
+            gUnkMaterielMenu_02189a80.step_ = 6;
+            if (changeTaishi_ == 1) {
+                gUnkMaterielMenu_02189a80.changeTaishi_ = 1;
             }
             break;
         case RETURN_MENU_SURECHIGAI_TOWNNAME:
-            data_020f0078.unkfunc_0203a7a8(getNameUTF8());
+            g_EnvoyManager.setTownName(getNameUTF8());
             bCloseEditTownName_ = 1;
-            data_020ed1bc.openMessageForMENU();
-            if (unkfunc_0203b7b8() == 1) {
+            g_TownMenuMessage.openMessageForMENU();
+            if (isDefaultTownName() == 1) {
                 ui_MsgSndSet(0x32);
-                data_020ed1bc.addMessage(0x92a54, 0x92a55);
+                g_TownMenuMessage.addMessage(0x92a54, 0x92a55);
             } else {
                 ui_MsgSndSet(0x32);
-                data_020ed1bc.addMessage(0x92a59);
+                g_TownMenuMessage.addMessage(0x92a59);
             }
             break;
         }
@@ -367,17 +367,17 @@ THUMB void MaterielMenu_NameEdit::unkfunc_0203b514(bool ok)
             break;
         case RETURN_MENU_SURECHIGAI:
             gMaterielMenu_SURECHIGAI_SELECT_OBJECT.open();
-            if (unk_98 == 1) {
+            if (changeTaishi_ == 1) {
                 gMaterielMenu_SURECHIGAI_SELECT_OBJECT.changeTaishi_ = 1;
             }
             break;
         case RETURN_MENU_SURECHIGAI_MESSAGE:
-            data_020ed1bc.openMessageForMENU();
+            g_TownMenuMessage.openMessageForMENU();
             if (MaterielMenu_WINDOW_MANAGER::getSingleton()->editMessageForScript_ == 1) {
-                data_020ed1bc.addMessage(0x92a8e);
+                g_TownMenuMessage.addMessage(0x92a8e);
             } else {
                 ui_MsgSndSet(0x32);
-                data_020ed1bc.addMessage(0x92a7b);
+                g_TownMenuMessage.addMessage(0x92a7b);
             }
             break;
         case RETURN_MENU_SURECHIGAI_TOWNNAME:
@@ -388,35 +388,35 @@ THUMB void MaterielMenu_NameEdit::unkfunc_0203b514(bool ok)
 
 THUMB void MaterielMenu_NameEdit::clearName()
 {
-    dss::memset(data_020f17c4, (int)"@ ", sizeof(data_020f17c4));
+    dss::memset(s_nameEditCharCodes, (int)"@ ", sizeof(s_nameEditCharCodes));
     dss::memset(data_020f192c, 0, sizeof(data_020f192c));
-    dss::memset(data_020f1878, 0, sizeof(data_020f1878));
-    data_020f17c0 = 0;
+    dss::memset(g_nameEditLabels, 0, sizeof(g_nameEditLabels));
+    g_nameEditLength = 0;
 }
 
 THUMB char* MaterielMenu_NameEdit::getNameUTF8()
 {
     int pos = 0;
-    for (int i = 0; i < data_020f17c0; i++) {
-        pos += unkfunc_0203b798(data_020f17c4[i], &data_020f1ae8[pos]);
+    for (int i = 0; i < g_nameEditLength; i++) {
+        pos += unpackCharCode(s_nameEditCharCodes[i], &s_nameEditUtf8Buffer[pos]);
     }
-    data_020f1ae8[pos] = 0;
-    unkfunc_02088078(data_020f1ae8);
-    return data_020f1ae8;
+    s_nameEditUtf8Buffer[pos] = 0;
+    convertUtf8ToSjisWork(s_nameEditUtf8Buffer);
+    return s_nameEditUtf8Buffer;
 }
 
-THUMB void MaterielMenu_NameEdit::unkfunc_0203b750(int* label)
+THUMB void MaterielMenu_NameEdit::buildNameLabels(int* label)
 {
     int pos = 0;
-    for (int i = 0; i < data_020f17c0; i++) {
-        label[i] = (int)&data_020f1b74[pos];
-        pos += unkfunc_0203b798(data_020f17c4[i], &data_020f1b74[pos]);
-        data_020f1b74[pos] = 0;
+    for (int i = 0; i < g_nameEditLength; i++) {
+        label[i] = (int)&s_nameEditLabelBuffer[pos];
+        pos += unpackCharCode(s_nameEditCharCodes[i], &s_nameEditLabelBuffer[pos]);
+        s_nameEditLabelBuffer[pos] = 0;
         pos++;
     }
 }
 
-THUMB int MaterielMenu_NameEdit::unkfunc_0203b798(unsigned int code, char* buffer)
+THUMB int MaterielMenu_NameEdit::unpackCharCode(unsigned int code, char* buffer)
 {
     int length = 0;
     for (int i = 3; i >= 0; i--) {
@@ -429,7 +429,7 @@ THUMB int MaterielMenu_NameEdit::unkfunc_0203b798(unsigned int code, char* buffe
     return length;
 }
 
-THUMB int MaterielMenu_NameEdit::unkfunc_0203b7b8()
+THUMB int MaterielMenu_NameEdit::isDefaultTownName()
 {
     char townName[0x2a];
     char landName[0x2a];
@@ -451,11 +451,11 @@ THUMB int MaterielMenu_NameEdit::unkfunc_0203b7b8()
     }
     dss::strcpy_s(townName, 0x2a, status::g_Story.heroName);
     dss::strcpy_s(landName, 0x2a, status::g_Story.heroName);
-    unkfunc_02087e08(townSuffix, 0x2a, town);
-    unkfunc_02087e08(landSuffix, 0x2a, land);
+    convertSjisToUtf8(townSuffix, 0x2a, town);
+    convertSjisToUtf8(landSuffix, 0x2a, land);
     dss::strcat_s(townName, 0x2a, townSuffix);
     dss::strcat_s(landName, 0x2a, landSuffix);
-    if (dss::strcmp((char*)data_020f0078.unkfunc_0203a820(), townName) == 0 || dss::strcmp((char*)data_020f0078.unkfunc_0203a820(), landName) == 0) {
+    if (dss::strcmp((char*)g_EnvoyManager.getTownName(), townName) == 0 || dss::strcmp((char*)g_EnvoyManager.getTownName(), landName) == 0) {
         return 1;
     }
     return 0;

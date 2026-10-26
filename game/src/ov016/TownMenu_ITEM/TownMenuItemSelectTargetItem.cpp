@@ -7,7 +7,7 @@
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_0217d560.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
 
 THUMB void TownMenuItemSelectTargetItem::menuSetup()
@@ -61,8 +61,8 @@ THUMB void TownMenuItemSelectTargetItem::menuExecute()
 THUMB void TownMenuItemSelectTargetItem::menuDraw()
 {
     int targetChara = TownMenuPlayerControl::getSingleton()->targetChara_;
-    unkfunc_0217d900(TownMenuPlayerControl::getSingleton()->activeChara_, targetChara, giveItemID_, startPage_, sound_);
-    if (!data_020ed1bc.isOpen() && sound_ == 0) {
+    drawItemTargetItemScreen(TownMenuPlayerControl::getSingleton()->activeChara_, targetChara, giveItemID_, startPage_, sound_);
+    if (!g_TownMenuMessage.isOpen() && sound_ == 0) {
         menuItem_.drawActive();
     }
 }
@@ -96,7 +96,7 @@ THUMB void TownMenuItemSelectTargetItem::menuUpdate()
     if (result != 0) {
         startPage_ = navigator->getPageNo();
         TownMenuPlayerControl::getSingleton()->setTargetItemPage(startPage_);
-        if (unkfunc_021734f4()) {
+        if (isEmptySlotSelected()) {
             TownMenuPlayerControl::getSingleton()->targetItem_ = -1;
         } else {
             TownMenuPlayerControl::getSingleton()->setTargetItem(menuItem_.active_);
@@ -130,7 +130,7 @@ THUMB void TownMenuItemSelectTargetItem::menuUpdate()
         menuItem_.active_ = active;
         startPage_ = navigator->getPageNo();
         TownMenuPlayerControl::getSingleton()->setTargetItemPage(startPage_);
-        if (unkfunc_021734f4()) {
+        if (isEmptySlotSelected()) {
             TownMenuPlayerControl::getSingleton()->targetItem_ = -1;
         } else {
             TownMenuPlayerControl::getSingleton()->setTargetItem(menuItem_.active_);
@@ -139,7 +139,7 @@ THUMB void TownMenuItemSelectTargetItem::menuUpdate()
     }
 }
 
-THUMB int TownMenuItemSelectTargetItem::unkfunc_021734f4()
+THUMB int TownMenuItemSelectTargetItem::isEmptySlotSelected()
 {
     int targetChara = TownMenuPlayerControl::getSingleton()->targetChara_;
     if (TownMenuPlayerControl::getSingleton()->targetFukuro_ == 0 && status::PlayerItemInfo::getItemMaxCount(targetChara) != 12 &&

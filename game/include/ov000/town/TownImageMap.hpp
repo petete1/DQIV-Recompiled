@@ -2,13 +2,13 @@
 #include "globaldefs.h"
 #include "main/window/ImageMap.hpp"
 #include "main/dss/DssUtils.hpp"
-#include "main/dss/UnkSprite2D.hpp"
+#include "main/dss/Sprite2D.hpp"
 
 /* vtable 0x021483b8 */
 struct TownImageMap : window::ImageMap {
-    dss::Vector2<int> unk_04;                   // 0x04
-    UnkMenuSprite mapSprite_;                   // 0x0C
-    UnkMenuSprite pointSprite_;                 // 0x5C
+    dss::Vector2<int> pointScreenPos_;                   // 0x04
+    MenuSprite mapSprite_;                   // 0x0C
+    MenuSprite pointSprite_;                 // 0x5C
     dss::Fix32Vector3 unk_ac;                   // 0xAC
     int isEnable_;                              // 0xB8
     int frame_;                                 // 0xBC
@@ -28,7 +28,7 @@ struct TownImageMap : window::ImageMap {
     virtual int isOpen();
     virtual int isClose();
     void calcTargetPos();
-    void unkfunc_02137c00();
+    void updatePointScreenPos();
     void initialize();
     virtual int isEnable() { return isEnable_; }
 };

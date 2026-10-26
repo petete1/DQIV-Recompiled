@@ -16,6 +16,7 @@ The game keeps its files in a `saves` folder next to the executable:
 | --- | --- |
 | `dqiv_eur.sav` | the game save |
 | `settings.ini` | the PC settings |
+| `achievements.ini` | the achievements unlocked |
 | `journal.txt` | the log (details of an error, if the game stops) |
 
 Moving the game together with its `saves` folder keeps your progress. On the first start, a save from an earlier version (`%LOCALAPPDATA%\DQIV-PC`) is copied into `saves` automatically.
@@ -43,7 +44,7 @@ Function keys:
 - **F9**: window size.
 - **F10**: stretch or keep proportions.
 - **F11**: fullscreen.
-- **F12**: PNG screenshot, saved in `%APPDATA%\DQIV-PC`.
+- **F12**: PNG screenshot, saved in `%AppData\Roaming\DQIV-PC`.
 
 ## What's new
 
@@ -138,15 +139,20 @@ The same screen, in the game's style, opens from "Settings" in the adventure log
 
 On laptops with two graphics chips, the game asks for the dedicated one (NVIDIA / AMD).
 
+### Achievements
+
+The 80 achievements of [RetroAchievements' set](https://retroachievements.org/game/9770) are earned in the game itself: when one is unlocked, a notification with its badge, its title and its description slides in at the bottom right of the screen. **Misc > Achievements** during a game, or "Achievements" in the adventure log menu, lists them on two pages (L / R): those unlocked and those still missing, with their badges and descriptions. Titles and descriptions follow the game's language (French, German, Italian and Spanish use the names of the official translations; Japanese shows the English ones). They are kept in `saves\achievements.ini`, for every adventure log. The badges are in `addons\achievements`.
+
 ### More
 
+- **Quitting**: "Quit game" in the adventure log menu closes the game (keyboard or gamepad). After "End adventure" at a church, the "turn the power off" screen closes the game on A, B or Start.
 - **Quick save anywhere**: Misc > Quick save works everywhere, dungeons included, except in the middle of an action (rope, fall, stairs). The game then goes on; on the DS it stopped. Resuming the interrupted adventure from the adventure log menu brings you back to the exact same spot.
 - **Shops**: the buy list has tabs at the top: every item first, then the categories the shop sells (weapons, armour, shields, helmets, accessories, items); L / R switch tabs. Every item has its HD icon next to its name.
 - **Menus over the world**: the scenery stays on the whole 16:9 picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.
 - **Two-screen scenes** (logos, casino, monster book, adventure log menus): both screens are placed side by side and enlarged. When one screen stays empty, the other is shown alone at twice the size.
 - **Transitions**: the shattering effect when a battle starts covers the whole 16:9 picture. The ending's staff roll scrolls from one screen to the other without a break.
 - **Wireless**: the DS radio is emulated with no other console in range (tag mode, exchanges). The game behaves like a single DS and stays fully playable.
-- **Crash fixes**: a division by zero that crashed the original code after the Master Kung battle (chapter 2) now behaves as on the DS. Any other error shows a message, with its details in `saves\journal.txt`.
+
 
 ## Building
 
@@ -158,7 +164,7 @@ The project contains no game data: it comes from your own copies of the game. Pu
 | The **Android version's data file** (`main.xxxxx.com.square_enix.android_googleplay.dq4.obb`) | optional: HD music and sound effects; without it, the game uses the DS sound |
 
 You also need:
-- Visual Studio 2022 (the free Community edition is enough) with the **Desktop development with C++** workload, which brings the Windows SDK and CMake;
+- Visual Studio 2026 or 2022 (the free Community edition is enough) with the **Desktop development with C++** workload, which brings the Windows SDK and CMake (with Visual Studio 2026, CMake 4.2 or later: the one it comes with is);
 - Internet access on the first build: SDL3 and stb_vorbis are downloaded and checked.
 
 Then double-click **`build.bat`**, or run in a terminal:

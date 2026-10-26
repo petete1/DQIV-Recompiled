@@ -1,11 +1,11 @@
 #pragma once
 #include <globaldefs.h>
 #include "main/dss/DssUtils.hpp"
-#include "main/dss/UnkSprite2D.hpp"
+#include "main/dss/Sprite2D.hpp"
 #include "main/data/DataObject.hpp"
 
 /* vtable 0x020c1db4 */
-struct SpriteShadow : UnkSprite2D {
+struct SpriteShadow : Sprite2D {
     virtual void draw();
 
     SpriteShadow();
@@ -16,7 +16,7 @@ struct SpriteShadow : UnkSprite2D {
 };
 
 /* vtable 0x020c1dd4 */
-struct SpriteCharacter : UnkSprite2D {
+struct SpriteCharacter : Sprite2D {
     enum {
         FLAG_ENABLE = 1,
         FLAG_DISPLAY = 2,
@@ -34,13 +34,13 @@ struct SpriteCharacter : UnkSprite2D {
     int unk_40;                                 // 0x40
     DataObject data_;                           // 0x44
     int textureNum_;                            // 0x54
-    void* unk_58;                               // 0x58 texture shown
+    void* dispTexture_;                               // 0x58 texture shown
     int unk_5c[7];                              // 0x5C
-    void* unk_78[8];                            // 0x78 textures of the file, one per direction
+    void* textures_[8];                            // 0x78 textures of the file, one per direction
     short direction_;                           // 0x98
     short dispDirection_;                       // 0x9A
-    int unk_9c;                                 // 0x9C width
-    int unk_a0;                                 // 0xA0 height
+    int frameWidth_;                                 // 0x9C width
+    int frameHeight_;                                 // 0xA0 height
     SpriteShadow shadow_;                       // 0xA4
 
     virtual void draw();
@@ -56,7 +56,7 @@ struct SpriteCharacter : UnkSprite2D {
     void reload(int dir);
     void setPosition(int x, int y);
     void setPosition(dss::Vector2<int> pos);
-    void setDepth(int depth) { unk_28 = depth; }
+    void setDepth(int depth) { depth_ = depth; }
     void setShadowWH(int w, int h) { shadow_.unkfunc_0208456c(w, h); }
     void setDirection(unsigned short dir);
     void setDisplayEnable(int flag);

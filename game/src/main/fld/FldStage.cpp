@@ -48,17 +48,17 @@ ARM void FldStage::setup()
     void* model = m_model.getAddr();
     void* texture = m_texture.getAddr();
     void* coll = m_coll.getAddr();
-    m_fld.Setup(model, texture, coll, (int)*unkfunc_0207f88c(&data_0211a60c));
+    m_fld.Setup(model, texture, coll, (int)*getHeap0(&g_appHeap));
     dss::Fix32Vector3 scale(1, 1, 1);
-    unkfunc_020857a8(0, scale);
+    setPaletteRgbRate(0, scale);
     int color = m_fld.m_scene->backColor;
-    unkfunc_02084c78((color & 0xff) >> 3, ((color >> 8) & 0xff) >> 3, ((color >> 16) & 0xff) >> 3);
+    setBackgroundColor((color & 0xff) >> 3, ((color >> 8) & 0xff) >> 3, ((color >> 16) & 0xff) >> 3);
     extraObjectNum_ = 0;
 }
 
 ARM void FldStage::cleanup()
 {
-    unkfunc_02084c78(0, 0, 0);
+    setBackgroundColor(0, 0, 0);
     unkfunc_02085348();
     m_fld.Final();
     m_model.cleanup();
@@ -85,10 +85,10 @@ ARM void FldStage::load(const char* name)
     char buf[0x80];
     dss::sprintf_s(buf, sizeof(buf), "%s/%s.lz", path_, name);
     m_data.setup(buf, 1, 1);
-    m_model.setup(unkfunc_0207f8dc(m_data.getAddr(), 0));
-    m_texture.setup(unkfunc_0207f8dc(m_data.getAddr(), 1));
-    if (unkfunc_0207f8cc(m_data.getAddr(), 2)) {
-        m_coll.setup(unkfunc_0207f8dc(m_data.getAddr(), 2));
+    m_model.setup(getArchiveFile(m_data.getAddr(), 0));
+    m_texture.setup(getArchiveFile(m_data.getAddr(), 1));
+    if (getArchiveFileSize(m_data.getAddr(), 2)) {
+        m_coll.setup(getArchiveFile(m_data.getAddr(), 2));
     }
     if (m_coll.getAddr()) {
         collisionFlag_ = 1;
@@ -99,16 +99,16 @@ static void resetGlbMatrix();
 
 ARM void FldStage::draw()
 {
-    drawTick = unkfunc_0207e7e8();
+    drawTick = getTick();
     resetGlbMatrix();
-    m_fld.unkfunc_02045004();
+    m_fld.calc();
     resetGlbMatrix();
     if (collisionDrawFlag_ == 0) {
         func_0206ae30((VecFx32*)&scale_);
-        m_fld.unkfunc_0204545c();
+        m_fld.draw();
     }
     resetGlbMatrix();
-    drawTick = unkfunc_0207e7e8() - drawTick;
+    drawTick = getTick() - drawTick;
 }
 
 ARM void FldStage::execAnime()
@@ -153,13 +153,13 @@ ARM void FldStage::setMapUidOnOff(int uid, int flag)
 ARM int FldStage::eventAnim(int anim, int frame)
 {
     if (frame == 0) {
-        m_fld.unkfunc_020465b4(anim);
+        m_fld.setEventAnimation(anim);
         return 1;
     }
-    if (m_fld.unkfunc_02046e40(frame) != m_fld.unkfunc_02046eac(frame)) {
+    if (m_fld.getMapObjAnimFrame(frame) != m_fld.getMapObjAnimFrameMax(frame)) {
         return 0;
     }
-    m_fld.unkfunc_020465b4(anim);
+    m_fld.setEventAnimation(anim);
     return 1;
 }
 
@@ -267,7 +267,7 @@ ARM int FldStage::collCrossCheckPoly(dss::Fix32Vector3& start, dss::Fix32Vector3
             poly++;
             continue;
         }
-        d = unkfunc_02031e84(d);
+        d = absInt(d);
         if (d < min) {
             ret = poly;
             min = d;
@@ -302,7 +302,7 @@ ARM int FldStage::collCrossCheckOtherNo(dss::Fix32Vector3& start, dss::Fix32Vect
 ARM void FldStage::setRotObjectUid(int uid, dss::Fix32Vector3& rot)
 {
     VecFx32 v = getVecFx32(rot);
-    m_fld.unkfunc_0204627c(uid, &v);
+    m_fld.setMapUidRotFX32(uid, &v);
 }
 
 ARM int FldStage::collGetPoly(int poly, COLL_POLY* out)
@@ -444,7 +444,7 @@ ARM bool FldStage::IsCommonAnimationEnd(int uid)
     return true;
 }
 
-ARM int unkfunc_020484ec(VecFx32* pos, VecFx32* rot, VecFx32* scale, VecFx32* box, dss::Fix32* rate)
+ARM int fldBoxTest(VecFx32* pos, VecFx32* rot, VecFx32* scale, VecFx32* box, dss::Fix32* rate)
 {
     int result;
     G3_PushMtx();
@@ -603,7 +603,7 @@ ARM int FldStage::getCrossPolygonOtherSurface(dss::Fix32Vector3& start, dss::Fix
             poly++;
             continue;
         }
-        d = unkfunc_02031e84(d);
+        d = absInt(d);
         if (d < min) {
             ret = poly;
             min = d;

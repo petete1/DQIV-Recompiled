@@ -1,5 +1,5 @@
 #include "ov000/town/TownCharacterManager.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "main/object/DisplayCharacter.hpp"
 #include "ov000/town/TownCamera.hpp"
 #include "ov000/town/TownSystem.hpp"
@@ -87,11 +87,11 @@ ARM void TownCharacterManager::terminate()
 
 ARM void TownCharacterManager::execute()
 {
-    int even = (unkfunc_02081254() & 1) == 0;
+    int even = (getDisplayFrame() & 1) == 0;
     for (int i = 0; i < TOWN_CHARACTER_MAX; i++) {
         if (character_[i]) {
             character_[i]->execute();
-            character_[i]->setPosition2d(even, *unkfunc_02057128(i));
+            character_[i]->setPosition2d(even, *getScreenPosition(i));
         }
     }
     TownCharacterBase::areaCheck_ = 0;
@@ -112,12 +112,12 @@ ARM int TownCharacterManager::setup(TOWN_CHARACTER& chara)
             }
             character_[i] = characterStorage.getContainer(drawType);
             character_[i]->render_ = &TownSystem::getSingleton()->render_;
-            character_[i]->unk_d0 = &TownCamera::getSingleton()->camera_.unk_004;
+            character_[i]->camera_ = &TownCamera::getSingleton()->camera_.m_camera0;
             character_[i]->setup(chara);
             character_[i]->type_ = drawType;
             character_[i]->data_.ctrlNo = i;
             character_[i]->setMonsterSpeak(TownCharacterBase::monsterTalk_);
-            unkfunc_0205710c(i, &character_[i]->data_.position);
+            setWorldPosition(i, &character_[i]->data_.position);
             result = i;
             break;
         }
@@ -345,7 +345,7 @@ ARM void TownCharacterManager::characterColl(dss::Fix32Vector3& nowPos, dss::Fix
         if (character_[i] && character_[i]->isDisplay()) {
             dss::Fix32Vector3& target = character_[i]->data_.position;
             vec = target - pos;
-            if (unkfunc_02031e84(vec.vy.value) < 0x1000) {
+            if (absInt(vec.vy.value) < 0x1000) {
                 vec.vy = 0L;
                 if (vec.length() <= TownPlayerAction::talkR) {
                     character_[i]->setSpeak(1);

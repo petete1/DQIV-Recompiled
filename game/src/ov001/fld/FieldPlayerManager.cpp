@@ -705,7 +705,7 @@ ARM bool FieldPlayerManager::moveToTarget()
     bool ret = false;
     dss::Fix32Vector3 vec;
     vec = targetPos_ - position_;
-    if (vec.length().value > unkfunc_02031e84(speedToTarget_.value)) {
+    if (vec.length().value > absInt(speedToTarget_.value)) {
         vec.normalize();
         vec *= speedToTarget_;
         position_.vx += vec.vx;
@@ -963,11 +963,11 @@ ARM void FieldPlayerManager::setCarrierDepth()
 {
     if (balloonDraw_.getPosition().vy < shipDraw_.getPosition().vy) {
         balloonDraw_.setDepth(2);
-        balloonDraw_.carrier_->shadow_.unk_28 = 2;
+        balloonDraw_.carrier_->shadow_.depth_ = 2;
         shipDraw_.setDepth(3);
     } else {
         balloonDraw_.setDepth(3);
-        balloonDraw_.carrier_->shadow_.unk_28 = 3;
+        balloonDraw_.carrier_->shadow_.depth_ = 3;
         shipDraw_.setDepth(2);
     }
 }

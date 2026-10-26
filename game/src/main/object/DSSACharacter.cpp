@@ -19,13 +19,13 @@ ARM void DSSACharacter::setup(void* texture, DataObject* data)
     dataObject_ = data;
     palette_.unkfunc_02086ccc((TextureObject*)texture, 0);
     currentAnimationIndex_ = -1;
-    for (int i = 0; i < unkfunc_0207f8c4(dataObject_->getAddr()); i++) {
+    for (int i = 0; i < getArchiveFileCount(dataObject_->getAddr()); i++) {
         if (isEnable(i)) {
             if (currentAnimationIndex_ == -1) {
                 currentAnimationIndex_ = i;
                 firstAnimationIndex_ = i;
             }
-            dssaObject_[i].setup(unkfunc_0207f8dc(dataObject_->getAddr(), i));
+            dssaObject_[i].setup(getArchiveFile(dataObject_->getAddr(), i));
             dssaObject_[i].setTexture(texture_);
             dssaObject_[i].setPalette(&palette_);
         }
@@ -35,7 +35,7 @@ ARM void DSSACharacter::setup(void* texture, DataObject* data)
 ARM void DSSACharacter::cleanup()
 {
     palette_.unkfunc_02086d4c();
-    if (unk_34 != 0) {
+    if (textureLoaded_ != 0) {
         ((TextureObject*)texture_)->unkfunc_02086868();
     }
     for (int i = 0; i < 14; i++) {
@@ -43,7 +43,7 @@ ARM void DSSACharacter::cleanup()
             dssaObject_[i].cleanup();
         }
     }
-    unk_34 = 0;
+    textureLoaded_ = 0;
     dataObject_ = 0;
 }
 
@@ -182,7 +182,7 @@ ARM bool DSSACharacter::isEnable(int index)
     if (dataObject_ == 0) {
         return false;
     }
-    if (unkfunc_0207f8cc(dataObject_->getAddr(), index) != 0) {
+    if (getArchiveFileSize(dataObject_->getAddr(), index) != 0) {
         return true;
     }
     return false;

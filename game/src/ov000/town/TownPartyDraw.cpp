@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include "ov000/town/TownPartyDraw.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "ov000/town/TownCamera.hpp"
 #include "DualScreen.hpp"
 #include "ov000/town/TownStageManager.hpp"
@@ -81,7 +81,7 @@ ARM void TownPartyDraw::setup()
             }
             dss::sprintf_s(path, sizeof(path), "data/chr/h%03d.pack", chara);
             partyCharacter_[i].setRender(&TownSystem::getSingleton()->render_);
-            BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.unk_004);
+            BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.m_camera0);
             partyCharacter_[i].setup(path, 0);
             partyCharacter_[i].setPosition(defaultPosition);
             partyCharacter_[i].setRotate(0);
@@ -114,7 +114,7 @@ ARM void TownPartyDraw::setup()
             }
             dss::sprintf_s(path, sizeof(path), "data/chr/h%03d.pack", chara);
             partyCharacter_[i].setRender(&TownSystem::getSingleton()->render_);
-            BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.unk_004);
+            BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.m_camera0);
             partyCharacter_[i].setup(path, 0);
             partyCharacter_[i].setPosition(defaultPosition);
             partyCharacter_[i].setRotate(0);
@@ -280,7 +280,7 @@ ARM void TownPartyDraw::execute()
         return;
     }
 #endif
-    if (unkfunc_02081254() & 1) {
+    if (getDisplayFrame() & 1) {
         for (int i = 0; i < 8; i++) {
             partyCharacter_[i].unkfunc_020497bc(1);
             partyCharacter_[i].setBoxTestOff(true);
@@ -380,7 +380,7 @@ ARM void TownPartyDraw::setVanAndBasha()
         }
         dss::sprintf_s(path, sizeof(path), "data/chr/h%03d.pack", chara);
         partyCharacter_[i].setRender(&TownSystem::getSingleton()->render_);
-        BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.unk_004);
+        BillboardCharacter::setCamera(&TownCamera::getSingleton()->camera_.m_camera0);
         partyCharacter_[i].setup(path, 0);
         partyCharacter_[i].setPosition(defaultPosition);
         partyCharacter_[i].setRotate(0);

@@ -8,7 +8,7 @@
 #include "GameInfo.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "main/dss/UnkLanguage.hpp"
-#include "main/dss/UnkModelMember.hpp"
+#include "main/dss/ModelResource.hpp"
 #include "main/global/StageLink.hpp"
 #include "ov000/town/TownCharacterManager.hpp"
 #include "ov000/town/TownCamera.hpp"
@@ -18,7 +18,7 @@
 #include "main/cmn/CommonEffectLocation.hpp"
 #include "ov016/casino/MaterielMenu_SLOT/MaterielMenu_SLOT.hpp"
 #include "main/profile/Profile.hpp"
-#include "main/dss/UnkPaletteEffect.hpp"
+#include "main/dss/PaletteEffect.hpp"
 
 struct TownPartyDraw;
 struct TownFurnitureManager;
@@ -28,8 +28,8 @@ struct TownPlayerManager;
 struct TownCharaMoveParam {
     dss::Fix32Vector3 pos_[4];
     dss::Fix32 speed_;
-    int unk_34;
-    int unk_38;
+    int frame_;
+    int counter_;
 };
 
 void searchItem(int index, int* found, int* items);

@@ -16,7 +16,7 @@ THUMB void BattleMenu_MAGIC::menuSetup()
     status::g_Party.setBattleMode();
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD, menu::MenuItem::CURSORTYPE_ACTIVE);
     cancelItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_CANCEL, menu::MenuItem::CURSORTYPE_NONE);
-    unk_e4.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH, menu::MenuItem::CURSORTYPE_NONE);
+    pageItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH, menu::MenuItem::CURSORTYPE_NONE);
     BattleMonsterMask::getSingleton()->select(-1);
     count_ = 0;
     dss::memset(haveAction_, -1, sizeof(haveAction_));
@@ -47,13 +47,13 @@ THUMB void BattleMenu_MAGIC::menuExecute()
     MenuTemplate_battle::BATTLE_MAGIC_2x3(&menuItem_, navigator_.getCountInPage());
     MenuTemplate_battle::BATTLE_CANCEL(&cancelItem_);
     int max = navigator_.getPageMaxCount() - 1;
-    MenuTemplate_Common::TOWN_PAGE_1x1(&unk_e4, navigator_.getIndex(unk_e4.active_), max, 0xd8, 0x78);
+    MenuTemplate_Common::TOWN_PAGE_1x1(&pageItem_, navigator_.getIndex(pageItem_.active_), max, 0xd8, 0x78);
 }
 
 THUMB void BattleMenu_MAGIC::menuDraw()
 {
-    if (!data_020ed1bc.isOpen()) {
-        unkfunc_0216bb00(haveAction_, count_, navigator_.getPageNo());
+    if (!g_TownMenuMessage.isOpen()) {
+        drawMagicMenu(haveAction_, count_, navigator_.getPageNo());
         menuItem_.drawActive();
         cancelItem_.drawActive();
     }
@@ -65,9 +65,9 @@ THUMB void BattleMenu_MAGIC::menuUpdate()
     short pos = navigator_.getIndex(menuItem_.active_);
     int action = haveAction_[pos];
     int magic = haveActionIndex_[navigator_.getIndex(menuItem_.active_)];
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
             return;
         }
     } else {
@@ -77,7 +77,7 @@ THUMB void BattleMenu_MAGIC::menuUpdate()
             return;
         }
         int active = menuItem_.active_;
-        if (MenuUpdate_Assist::isPageFlipOne(unk_e4, navigator_, active)) {
+        if (MenuUpdate_Assist::isPageFlipOne(pageItem_, navigator_, active)) {
             menuItem_.active_ = active;
             redraw_ = 1;
             return;
@@ -90,13 +90,13 @@ THUMB void BattleMenu_MAGIC::menuUpdate()
                 menuItem_.lastresult_ = 0;
                 if (!status::UseAction::isUse(action, info)) {
                     TextAPI::setMACRO0(1, 0x50000000, info->haveStatus_.playerIndex_);
-                    data_020ed1bc.openMessageForBATTLE();
-                    data_020ed1bc.addMessage(0xc3c6f);
+                    g_TownMenuMessage.openMessageForBATTLE();
+                    g_TownMenuMessage.addMessage(0xc3c6f);
                     return;
                 }
                 if (action == 0x13 && !status::g_Party.isExecMinadein()) {
-                    data_020ed1bc.openMessageForBATTLE();
-                    data_020ed1bc.addMessage(0xc394d);
+                    g_TownMenuMessage.openMessageForBATTLE();
+                    g_TownMenuMessage.addMessage(0xc394d);
                     return;
                 }
                 btl::BattleMenuPlayerControl::getSingleton()->setMagicPosition(pos);

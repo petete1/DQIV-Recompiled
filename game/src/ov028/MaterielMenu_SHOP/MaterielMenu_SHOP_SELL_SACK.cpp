@@ -3,7 +3,7 @@
 #include "main/status/PartyStatus.hpp"
 #include "main/status/UseItem.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
 
 THUMB void MaterielMenu_SHOP_SELL_SACK::menuSetup()
@@ -35,19 +35,19 @@ THUMB void MaterielMenu_SHOP_SELL_SACK::menuExecute()
 
 THUMB void MaterielMenu_SHOP_SELL_SACK::menuDraw()
 {
-    if (data_020ed1bc.isOpen()) {
-        unkfunc_0216fc58();
+    if (g_TownMenuMessage.isOpen()) {
+        drawShopScreen();
         return;
     }
-    unkfunc_0216fbf4();
+    drawShopSellSackScreen();
     menuItem_.drawActive();
 }
 
 THUMB void MaterielMenu_SHOP_SELL_SACK::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
         }
         return;
     }

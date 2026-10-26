@@ -1,15 +1,15 @@
 #include "ov028/MaterielMenu_SHOP/MaterielMenu_SHOP.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/UseItem.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 #ifdef DQIV_NATIVE
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216ce4c.hpp"
-#include "main/menu/UnkMenuCommonDraw_0201e194.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDraw.hpp"
+#include "main/menu/MenuCommonDraw.hpp"
 #include "main/dss/Pad.hpp"
 #include <nitro/pad.h>
 
@@ -65,7 +65,7 @@ int MaterielMenu_SHOP_BUYMENU::rowOf(int item) const
 THUMB void MaterielMenu_SHOP_BUYMENU::menuSetup()
 {
     status::g_Party.setPlayerMode();
-    unkfunc_02080e64(-4, 0);
+    setCaptureOffset(-4, 0);
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD, menu::MenuItem::CURSORTYPE_ACTIVE);
     menuItem2_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_NONE);
     navigator_.setupBase();
@@ -121,38 +121,38 @@ THUMB void MaterielMenu_SHOP_BUYMENU::menuExecute()
 
 THUMB void MaterielMenu_SHOP_BUYMENU::menuDraw()
 {
-    if (data_020ed1bc.isOpen()) {
-        unkfunc_0216fc58();
+    if (g_TownMenuMessage.isOpen()) {
+        drawShopScreen();
         return;
     }
 #ifdef DQIV_NATIVE
     {
-        // As unkfunc_0216fb24, with the category tabs above the list and icons in it.
+        // As drawShopBuyScreen, with the category tabs above the list and icons in it.
         unkfunc_native_shopTabs(tabs_, tabCount_, tab_);
         unkfunc_native_shopBuyList(rows_, rowCount_);
-        unkfunc_0216d0d4();
-        unkfunc_0201e350(0x88, 0xa0, 0);
+        drawShopItemKind();
+        drawMoneyWindow(0x88, 0xa0, 0);
         MaterielMenuPlayerControl* ctrl = MaterielMenuPlayerControl::getSingleton();
         const int item = MaterielMenu_SHOP_MANAGER::getSingleton()->getItem(ctrl->activeItem_);
-        unkfunc_0216d058(fukuroItemCount_);
+        drawShopSackCount(fukuroItemCount_);
         if (status::UseItem::getItemType(item) <= 4) {
-            unkfunc_0216ced4();
+            drawShopEquipCompare();
         } else {
-            unkfunc_0216cfac();
+            drawShopHeldCounts();
         }
         menuItem_.drawActive();
         return;
     }
 #endif
-    unkfunc_0216fb24(fukuroItemCount_, 0);
+    drawShopBuyScreen(fukuroItemCount_, 0);
     menuItem_.drawActive();
 }
 
 THUMB void MaterielMenu_SHOP_BUYMENU::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
             if (message_) {
                 menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_ACTIVE);
                 message_ = 0;
@@ -162,9 +162,9 @@ THUMB void MaterielMenu_SHOP_BUYMENU::menuUpdate()
     }
     if (MenuUpdate_Assist::isCancel(menuItem2_)) {
         close();
-        data_020ed1bc.openMessageForTALK();
-        data_020ed1bc.addMessageNOWAIT(MaterielMenu_SHOP_MESSAGE_MANAGER::getSingleton()->cancel());
-        data_020ed1bc.addMessageWAITKEY();
+        g_TownMenuMessage.openMessageForTALK();
+        g_TownMenuMessage.addMessageNOWAIT(MaterielMenu_SHOP_MESSAGE_MANAGER::getSingleton()->cancel());
+        g_TownMenuMessage.addMessageWAITKEY();
         gMaterielMenu_SHOP_ROOT.open();
         gMaterielMenu_SHOP_ROOT.mode_ = 1;
         return;
@@ -226,14 +226,14 @@ THUMB void MaterielMenu_SHOP_BUYMENU::menuUpdate()
 THUMB void MaterielMenu_SHOP_BUYMENU::checkBuy()
 {
     MaterielMenu_SHOP_MANAGER* manager = MaterielMenu_SHOP_MANAGER::getSingleton();
-    data_020ed1bc.openMessageForTALK();
+    g_TownMenuMessage.openMessageForTALK();
     unsigned int gold = status::g_Party.gold_;
     if (gold < manager->getItemPriceSum(activeItem_)) {
         int mes[2];
         MaterielMenu_SHOP_MESSAGE_MANAGER::getSingleton()->noMoney(mes);
-        data_020ed1bc.addMessage(mes[0]);
-        data_020ed1bc.addMessageNOWAIT(mes[1]);
-        data_020ed1bc.addMessageWAITKEY();
+        g_TownMenuMessage.addMessage(mes[0]);
+        g_TownMenuMessage.addMessageNOWAIT(mes[1]);
+        g_TownMenuMessage.addMessageWAITKEY();
         close();
         gMaterielMenu_SHOP_ROOT.open();
         gMaterielMenu_SHOP_ROOT.mode_ = 1;
@@ -260,11 +260,11 @@ THUMB void MaterielMenu_SHOP_BUYMENU::checkBuy()
     }
     TextAPI::setMACRO0(0x54, 0xf0000000, manager->getItemQuantity(activeItem_));
     if (mes[2] == 0) {
-        data_020ed1bc.addMessage(mes[0], mes[1]);
+        g_TownMenuMessage.addMessage(mes[0], mes[1]);
     } else {
-        data_020ed1bc.addMessage(mes[0], mes[1], mes[2]);
+        g_TownMenuMessage.addMessage(mes[0], mes[1], mes[2]);
     }
-    data_020ed1bc.setMessageLastCursor(true);
+    g_TownMenuMessage.setMessageLastCursor(true);
     close();
     int activeItem = activeItem_;
     MaterielMenuPlayerControl::getSingleton()->activeItem_ = activeItem;

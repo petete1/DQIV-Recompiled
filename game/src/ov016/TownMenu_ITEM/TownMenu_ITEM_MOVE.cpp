@@ -17,7 +17,7 @@
 #include "main/status/UseActionMacro.hpp"
 #include "main/text/TextAPI.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_0217d560.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
 THUMB void TownMenu_ITEM_MOVE::menuSetup()
 {
@@ -65,17 +65,17 @@ THUMB void TownMenu_ITEM_MOVE::menuExecute()
 THUMB void TownMenu_ITEM_MOVE::menuDraw()
 {
     int activeChara = TownMenuPlayerControl::getSingleton()->activeChara_;
-    unkfunc_0217dac4(-1, -1, activeChara, navigator_.getPageNo(), moveTown_);
-    if (!data_020ed1bc.isOpen()) {
+    drawWarpTownSelectScreen(-1, -1, activeChara, navigator_.getPageNo(), moveTown_);
+    if (!g_TownMenuMessage.isOpen()) {
         menuItem_.drawActive();
     }
 }
 
 THUMB void TownMenu_ITEM_MOVE::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if (data_020ed1bc.stat_ == MENUBASE_STAT_OK) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if (g_TownMenuMessage.stat_ == MENUBASE_STAT_OK) {
+            g_TownMenuMessage.close();
             close();
             gTownMenu_ROOT.stat_ = MENUBASE_STAT_OK;
             if (rulaOK_ != 0) {
@@ -120,7 +120,7 @@ THUMB void TownMenu_ITEM_MOVE::moveTown()
     int message[4] = { 0 };
     int resMessage[4] = { 0 };
     int index = 0;
-    data_020ed1bc.openMessageForMENU();
+    g_TownMenuMessage.openMessageForMENU();
     if (TownMenuPlayerControl::getSingleton()->activeFukuro_) {
         int maxCharaCount = status::g_Party.getCount();
         while (status::g_Party.getPlayerStatus(index)->haveStatusInfo_.isDeath()) {

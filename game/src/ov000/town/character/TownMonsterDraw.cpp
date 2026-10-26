@@ -1,9 +1,9 @@
 #include "ov000/town/TownCharacter.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "ov000/town/TownCamera.hpp"
 #include "DualScreen.hpp"
 #include "main/object/DSSAObject.hpp"
-#include "main/dss/UnkPaletteEffect.hpp"
+#include "main/dss/PaletteEffect.hpp"
 
 ARM TownMonsterDraw::TownMonsterDraw()
 {
@@ -43,15 +43,15 @@ ARM void TownMonsterDraw::draw()
         return;
     }
     DSSAObject::calcType_ = 0;
-    bool even = (unkfunc_02081254() & 1) == 0;
+    bool even = (getDisplayFrame() & 1) == 0;
     TownCamera* camera = TownCamera::getSingleton();
-    unkfunc_0212ed58(!even || pc::unifiedFrame() ? &camera->camera_.unk_004 : &camera->camera_.unk_068);
+    setCamera(!even || pc::unifiedFrame() ? &camera->camera_.m_camera0 : &camera->camera_.m_camera1);
     monster_.draw();
     dss::Fix32Vector3 pos = *monster_.getPosition();
     DSSAObject::calcType_ = 1;
 }
 
-ARM void TownMonsterDraw::unkfunc_0212ed58(dss::Camera* camera)
+ARM void TownMonsterDraw::setCamera(dss::Camera* camera)
 {
     DSSAObjectWithCamera::camera_ = camera;
 }
@@ -94,7 +94,7 @@ ARM void TownMonsterDraw::setPaletteRate(dss::Fix32 r, dss::Fix32 g, dss::Fix32 
     rate[0] = r;
     rate[1] = g;
     rate[2] = b;
-    unkfunc_02086034((TextureObject*)palette, rate);
+    applyTexturePaletteRgbRate((TextureObject*)palette, rate);
 }
 
 ARM void TownMonsterDraw::setMotion(int motion, int loop)

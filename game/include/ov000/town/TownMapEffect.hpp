@@ -1,6 +1,6 @@
 #pragma once
 #include "globaldefs.h"
-#include "main/dss/UnkSprite2D.hpp"
+#include "main/dss/Sprite2D.hpp"
 
 struct TownMapEffect {
     enum EFFECT_TYPE {
@@ -10,8 +10,8 @@ struct TownMapEffect {
         EFFECT_TYPE_EVILPRIEST = 3
     };
 
-    UnkMenuSprite sprite0_;                     // 0x00
-    UnkMenuSprite sprite1_;                     // 0x50
+    MenuSprite sprite0_;                     // 0x00
+    MenuSprite sprite1_;                     // 0x50
     int exist_;                                 // 0xA0
     EFFECT_TYPE type_;                          // 0xA4
     int m_enable;                               // 0xA8
@@ -33,7 +33,7 @@ struct TownMapEffect {
     void draw();
     void setPisaroEvent(int count);
     void cleanup();
-    void unkfunc_02142790();
-    void unkfunc_02142850(fx32 scaleX);
-    void unkfunc_02142854(fx32 scaleY);
+    void checkTextureExist();
+    void setScaleX(fx32 scaleX);
+    void setScaleY(fx32 scaleY);
 };

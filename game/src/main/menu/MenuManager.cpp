@@ -1,7 +1,7 @@
 #include "main/menu/MenuManager.hpp"
-#include "main/dss/UnkDisplay.hpp"
-#include "main/menu/UnkMenuBg.hpp"
-#include "main/menu/UnkMenuPartsDraw.hpp"
+#include "main/dss/Display.hpp"
+#include "main/menu/MenuBg.hpp"
+#include "main/menu/MenuPartsDraw.hpp"
 
 static int s_updateTime;
 static MenuSubManager* s_currentMenu;
@@ -34,22 +34,22 @@ THUMB void MenuManager::setup()
 THUMB void MenuManager::setMenuDisplay(int mode)
 {
     if (mode == MENUDISPLAY_OFF) {
-        unkfunc_02081728(4);
-        data_020facb8.icon_.unkfunc_0204fea8(0);
-        unkfunc_0208120c(&dss::g_DISPLAYPLUGIN_DOUBLE3D);
+        setDisplayTextCounter(4);
+        g_MenuBg.icon_.init(0);
+        requestDisplayPlugin(&dss::g_DISPLAYPLUGIN_DOUBLE3D);
     }
     if (mode == MENUDISPLAY_NORMAL) {
-        unkfunc_02081728(4);
-        data_020facb8.icon_.unkfunc_0204fea8(0);
-        unkfunc_0208120c(&dss::g_DISPLAYPLUGIN_DOUBLE3D);
+        setDisplayTextCounter(4);
+        g_MenuBg.icon_.init(0);
+        requestDisplayPlugin(&dss::g_DISPLAYPLUGIN_DOUBLE3D);
     }
     if (mode == MENUDISPLAY_EXTRA) {
-        unkfunc_02081728(4);
-        unkfunc_0208120c(&dss::g_DISPLAYPLUGIN_CAPTURE);
-        data_020facb8.icon_.unkfunc_0204fea8(1);
+        setDisplayTextCounter(4);
+        requestDisplayPlugin(&dss::g_DISPLAYPLUGIN_CAPTURE);
+        g_MenuBg.icon_.init(1);
     }
     clearMenuAll();
-    data_02116ce0.unkfunc_0207e810();
+    g_DebugConsole.unkfunc_0207e810();
     s_currentMenu->m_update = 1;
 }
 
@@ -74,7 +74,7 @@ THUMB int MenuManager::isRequesting()
 
 THUMB void MenuManager::execute()
 {
-    if (data_0210bc40.unkfunc_02058380() == 1) {
+    if (g_DebugMenu.unkfunc_02058380() == 1) {
         s_redraw = 1;
         return;
     }
@@ -85,8 +85,8 @@ THUMB void MenuManager::execute()
         enable = request;
         s_redraw = 1;
         if (request == 0) {
-            unkfunc_02050614(1);
-            unkfunc_02050494();
+            setupMenuBgDraw(1);
+            requestMenuBgTransfer();
             return;
         }
     }
@@ -107,17 +107,17 @@ THUMB void MenuManager::execute()
     if (s_currentMenu->m_update) {
         s_redraw = 1;
     }
-    int start = unkfunc_0207e7e8();
-    unkfunc_02050614(s_redraw);
+    int start = getTick();
+    setupMenuBgDraw(s_redraw);
     s_currentMenu->draw(0, 0xc0);
     s_currentMenu->m_update = 0;
-    int drawTime = unkfunc_0207e7e8() - start;
+    int drawTime = getTick() - start;
     if (s_redraw) {
-        unkfunc_02050494();
+        requestMenuBgTransfer();
     }
-    start = unkfunc_0207e7e8();
+    start = getTick();
     s_currentMenu->update();
-    int updateTime = unkfunc_0207e7e8() - start;
+    int updateTime = getTick() - start;
     if (s_redraw) {
         s_redraw = 0;
         s_drawTimeRedraw = drawTime;

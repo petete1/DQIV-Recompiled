@@ -8,10 +8,10 @@
 #include "main/profile/Profile.hpp"
 
 // surechigai menus whose code (ov026) is not decompiled yet, named after their menuSetup address
-struct UnkMaterielMenu_02189360 : menu::MenuBase
+struct MaterielMenu_SURECHIGAI_REMOVE_ENVOY : menu::MenuBase
 {
-    int unk_1c;                         /* 0x1C */
-    int unk_20;                         /* 0x20 */
+    int mode_;                         /* 0x1C */
+    int envoyCount_;                         /* 0x20 */
     menu::MenuItem menuItem_;           /* 0x24 */
     CursorMoveGridLoop navigator_;     /* 0x88 */
 
@@ -21,9 +21,9 @@ struct UnkMaterielMenu_02189360 : menu::MenuBase
     virtual void menuUpdate();
 };
 
-struct UnkMaterielMenu_02189630 : menu::MenuBase
+struct MaterielMenu_SURECHIGAI_TENANT_LIST : menu::MenuBase
 {
-    unsigned char unk_1c;               /* 0x1C */
+    unsigned char tenantCount_;               /* 0x1C */
     menu::MenuItem menuItem_;           /* 0x20 */
     CursorMoveGridLoop navigator_;     /* 0x84 */
 
@@ -33,11 +33,11 @@ struct UnkMaterielMenu_02189630 : menu::MenuBase
     virtual void menuUpdate();
 };
 
-struct UnkMaterielMenu_02189a80 : menu::MenuBase
+struct MaterielMenu_SURECHIGAI_SETTING : menu::MenuBase
 {
-    int unk_1c;                         /* 0x1C */
-    int unk_20;                         /* 0x20 */
-    int unk_24;                         /* 0x24 */
+    int step_;                         /* 0x1C */
+    int envoyType_;                         /* 0x20 */
+    int changeTaishi_;                         /* 0x24 */
     menu::MenuItem menuItem_;           /* 0x28 */
     CursorMoveGridLoop navigator_;     /* 0x8C */
 
@@ -45,7 +45,7 @@ struct UnkMaterielMenu_02189a80 : menu::MenuBase
     virtual void menuExecute();
     virtual void menuDraw();
     virtual void menuUpdate();
-    void unkfunc_02189d70();
+    void proceedStep();
 };
 
 struct MaterielMenu_SURECHIGAI_MAKE_TAISHI : menu::MenuBase
@@ -76,9 +76,9 @@ struct MaterielMenu_SURECHIGAI_ROOT : menu::MenuBase
     void selectCommand();
 };
 
-extern UnkMaterielMenu_02189630 gUnkMaterielMenu_02189630;                /* surechigai list menu */
-extern UnkMaterielMenu_02189360 gUnkMaterielMenu_02189360;                /* surechigai list menu */
+extern MaterielMenu_SURECHIGAI_TENANT_LIST gUnkMaterielMenu_02189630;                /* surechigai list menu */
+extern MaterielMenu_SURECHIGAI_REMOVE_ENVOY gUnkMaterielMenu_02189360;                /* surechigai list menu */
 extern MaterielMenu_SURECHIGAI_ROOT gMaterielMenu_SURECHIGAI_ROOT;
 extern MaterielMenu_SURECHIGAI_MAKE_TAISHI gMaterielMenu_SURECHIGAI_SELECT_OBJECT;
-extern UnkMaterielMenu_02189a80 gUnkMaterielMenu_02189a80;                /* surechigai menu opened by MAKE_TAISHI */
+extern MaterielMenu_SURECHIGAI_SETTING gUnkMaterielMenu_02189a80;                /* surechigai menu opened by MAKE_TAISHI */
 

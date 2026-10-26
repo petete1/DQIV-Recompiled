@@ -4,7 +4,7 @@
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::menuSetup()
 {
@@ -27,16 +27,16 @@ THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::menuExecute()
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::menuDraw()
 {
-    unkfunc_0216fb6c(1);
+    drawShopWhoseScreen(1);
     menuItem_.drawActive();
     menuItem2_.drawActive();
 }
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
         }
         return;
     }
@@ -61,11 +61,11 @@ THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::menuUpdate()
 THUMB void MaterielMenu_CHANGEGIFT_SELECTCHARA::cancelChange()
 {
     int leadpc = MaterielMenuPlayerControl::getSingleton()->leadpc_;
-    data_020ed1bc.openMessageForTALK();
+    g_TownMenuMessage.openMessageForTALK();
     TextAPI::setMACRO0(0xb, 0x50000000, status::g_Party.getPlayerStatus(leadpc)->haveStatusInfo_.haveStatus_.playerIndex_);
     TextAPI::setMACRO0(0x2a, 0xf0000000, status::g_Party.casinoCoin_);
-    data_020ed1bc.addMessage(0xc8afa);
-    data_020ed1bc.setYesNo();
+    g_TownMenuMessage.addMessage(0xc8afa);
+    g_TownMenuMessage.setYesNo();
     close();
     gMaterielMenu_CHANGEGIFT_ROOT.open();
     gMaterielMenu_CHANGEGIFT_ROOT.mode_ = 3;

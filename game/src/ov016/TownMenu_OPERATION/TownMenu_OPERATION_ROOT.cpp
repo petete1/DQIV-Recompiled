@@ -2,6 +2,9 @@
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CAREER.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_EQUIP.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SETTING.hpp"
+#ifdef DQIV_NATIVE
+#include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ACHIEVEMENTS.hpp"
+#endif
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_TACTICS.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SHIFT_PARTY.hpp"
 #include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
@@ -18,7 +21,7 @@
 #include "main/status/UseAction.hpp"
 #include "main/text/TextAPI.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_0217d560.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
 THUMB void TownMenu_OPERATION_ROOT::menuSetup()
 {
@@ -29,7 +32,7 @@ THUMB void TownMenu_OPERATION_ROOT::menuSetup()
     charaItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD, menu::MenuItem::CURSORTYPE_ACTIVE);
     mode_ = 0;
     abort_ = 0;
-    unk_1ac = 0;
+    sortDone_ = 0;
     saveResult_ = 0;
     isMantan_ = 0;
     useKiari_ = 0;
@@ -37,13 +40,13 @@ THUMB void TownMenu_OPERATION_ROOT::menuSetup()
     seCount_ = 0;
     navigator_.setupBase();
     charaNavigator_.setupBase();
-    commandCount_ = unkfunc_0217a4e4(command_);
+    commandCount_ = setupCommandList(command_);
     menuItem_.active_ = TownMenuPlayerControl::getSingleton()->activeTactics_;
 }
 
 THUMB void TownMenu_OPERATION_ROOT::menuExecute()
 {
-    if (data_020ed1bc.isOpen()) {
+    if (g_TownMenuMessage.isOpen()) {
         return;
     }
     MenuTemplate_town::TOWN_CANCEL(&cancelItem_);
@@ -64,11 +67,11 @@ THUMB void TownMenu_OPERATION_ROOT::menuExecute()
 THUMB void TownMenu_OPERATION_ROOT::menuDraw()
 {
     if (charaItem_.getActive() == status::g_Party.getCount()) {
-        unkfunc_0217dcb0(mode_, command_, commandCount_, -2);
+        drawOperationRootScreen(mode_, command_, commandCount_, -2);
     } else {
-        unkfunc_0217dcb0(mode_, command_, commandCount_, charaItem_.getActive());
+        drawOperationRootScreen(mode_, command_, commandCount_, charaItem_.getActive());
     }
-    if (data_020ed1bc.isOpen()) {
+    if (g_TownMenuMessage.isOpen()) {
         return;
     }
     cancelItem_.drawActive();
@@ -92,16 +95,16 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
             isMantan_ = 0;
         }
     }
-    if (data_020ed1bc.isOpen()) {
-        int stat = data_020ed1bc.stat_;
-        if (s_draw->unkfunc_0204e004()) {
+    if (g_TownMenuMessage.isOpen()) {
+        int stat = g_TownMenuMessage.stat_;
+        if (s_draw->isFinish()) {
             isMantan_ = 0;
             if (mode_ == 3) {
                 status::UseActionParam useActionParam;
                 useActionParam.clear();
                 if (status::g_Party.isRecoveryForMantan()) {
                     if (status::g_Party.recoveryForMantan(useActionParam)) {
-                        data_020ed1bc.restartMessage();
+                        g_TownMenuMessage.restartMessage();
                         allRecoveryMessage(useActionParam);
                         redraw_ = 1;
                         isMantan_ = 1;
@@ -111,7 +114,7 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
                     }
                 } else if (status::g_Party.isPoisonForMantan()) {
                     if (status::g_Party.destroyPoisonForMantan(useActionParam)) {
-                        data_020ed1bc.restartMessage();
+                        g_TownMenuMessage.restartMessage();
                         allRecoveryMessage(useActionParam);
                         useKiari_ = 1;
                         redraw_ = 1;
@@ -130,33 +133,33 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         if (isMantan_ == 1) {
             seCount_++;
         }
-        if (data_020ed1bc.isMessageWAITPROG()) {
+        if (g_TownMenuMessage.isMessageWAITPROG()) {
             if (abort_ == 2) {
                 saveResult_ = profile::SaveLoad::savebank(3, profile::SAVETYPE_RESUME);
                 abort_ = 3;
             }
-            unkfunc_0217a67c();
+            updateAbortSaveMessage();
             return;
         }
         if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
             if (mode_ == 8) {
-                unkfunc_0217a67c();
+                updateAbortSaveMessage();
                 return;
             }
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             if (mode_ == 1 || mode_ == 2) {
-                if (unk_1ac == 1) {
+                if (sortDone_ == 1) {
                     menuItem_.ctype_ = menu::MenuItem::CURSORTYPE_ACTIVE;
                     menuItem_.drawActive();
                     mode_ = 0;
-                    unk_1ac = 0;
+                    sortDone_ = 0;
                     return;
                 }
-                unkfunc_0217a438();
+                sortItems();
                 return;
             }
         } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             if (mode_ != 1) {
                 mode_ = 0;
                 menuItem_.ctype_ = menu::MenuItem::CURSORTYPE_ACTIVE;
@@ -188,7 +191,7 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
             return;
         }
         if (result == 2) {
-            unkfunc_0217a2a0();
+            askSortSack();
         }
         redraw_ = 1;
         return;
@@ -199,7 +202,7 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
             return;
         }
         if (result == 2) {
-            unkfunc_0217a278();
+            askSortCharaItems();
         }
         redraw_ = 1;
         return;
@@ -212,14 +215,14 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         TownMenuPlayerControl::getSingleton()->setActiveTactics(menuItem_.active_);
         switch (command_[menuItem_.active_]) {
         case 0:
-            unkfunc_0217a318();
+            useFullRecovery();
             break;
         case 1:
             close();
             gTownMenu_OPERATION_EQUIP.open();
             break;
         case 2:
-            unkfunc_0217a3e0();
+            openShiftParty();
             break;
         case 3:
             if (status::g_Party.getCount() > 2 ||
@@ -243,17 +246,23 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
             close();
             gTownMenu_OPERATION_SETTING.open();
             break;
+#ifdef DQIV_NATIVE
+        case COMMAND_ACHIEVEMENTS:
+            close();
+            gTownMenu_OPERATION_ACHIEVEMENTS.open();
+            break;
+#endif
         case 8:
             mode_ = 8;
-            data_020ed1bc.openMessageForMENU();
+            g_TownMenuMessage.openMessageForMENU();
             if (!g_Stage.isAbortSaveDungeon()) {
-                data_020ed1bc.addMessage(0xcba22, 0xcba23);
+                g_TownMenuMessage.addMessage(0xcba22, 0xcba23);
             } else if (!g_Stage.isAbortSaveTown()) {
-                data_020ed1bc.addMessage(0xcba25, 0xcba26, 0xcba2a);
+                g_TownMenuMessage.addMessage(0xcba25, 0xcba26, 0xcba2a);
             } else {
-                data_020ed1bc.addMessage(0xcba12);
-                data_020ed1bc.setYesNo();
-                data_020ed1bc.setYesNoSuperCancel(false);
+                g_TownMenuMessage.addMessage(0xcba12);
+                g_TownMenuMessage.setYesNo();
+                g_TownMenuMessage.setYesNoSuperCancel(false);
                 abort_ = 2;
             }
             break;
@@ -262,40 +271,40 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
     redraw_ = 1;
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a278()
+THUMB void TownMenu_OPERATION_ROOT::askSortCharaItems()
 {
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(0xc3d5b);
-    data_020ed1bc.setYesNo();
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(0xc3d5b);
+    g_TownMenuMessage.setYesNo();
     menuItem_.ctype_ = menu::MenuItem::CURSORTYPE_NONE;
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a2a0()
+THUMB void TownMenu_OPERATION_ROOT::askSortSack()
 {
     if (status::g_Party.haveItemSack_.getItem(0) != 0) {
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.openMessageForMENU();
         if (sortItem_.active_ == 0) {
             g_Option.setSackSort(0);
-            data_020ed1bc.addMessage(0xc3d60);
+            g_TownMenuMessage.addMessage(0xc3d60);
         } else {
             g_Option.setSackSort(1);
-            data_020ed1bc.addMessage(0xc3d65);
+            g_TownMenuMessage.addMessage(0xc3d65);
         }
-        data_020ed1bc.setYesNo();
+        g_TownMenuMessage.setYesNo();
         menuItem_.ctype_ = menu::MenuItem::CURSORTYPE_NONE;
         return;
     }
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(0xc3d68);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(0xc3d68);
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a318()
+THUMB void TownMenu_OPERATION_ROOT::useFullRecovery()
 {
     status::g_Party.setBattleMode();
     int noRecovery = 1;
     status::UseActionParam useActionParam;
     useActionParam.clear();
-    data_020ed1bc.openMessageForMENU();
+    g_TownMenuMessage.openMessageForMENU();
     if (status::g_Party.isRecoveryForMantan()) {
         if (status::g_Party.recoveryForMantan(useActionParam)) {
             allRecoveryMessage(useActionParam);
@@ -313,19 +322,19 @@ THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a318()
     }
     if (noRecovery) {
         isMantan_ = 0;
-        data_020ed1bc.addMessage(0xc3d6b);
+        g_TownMenuMessage.addMessage(0xc3d6b);
     }
     status::g_Party.setPlayerMode();
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a3e0()
+THUMB void TownMenu_OPERATION_ROOT::openShiftParty()
 {
     status::g_Party.setMemberShiftMode();
     if (status::g_Party.getCount() == 1 && !status::g_Party.getCarriageEnableOnGame()) {
         menuItem_.result_ = 0;
         menuItem_.lastresult_ = 0;
-        data_020ed1bc.openMessageForMENU();
-        data_020ed1bc.addMessage(0xc3d59);
+        g_TownMenuMessage.openMessageForMENU();
+        g_TownMenuMessage.addMessage(0xc3d59);
         status::g_Party.setPlayerMode();
         return;
     }
@@ -333,7 +342,7 @@ THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a3e0()
     gTownMenu_OPERATION_SHIFT_PARTY.open();
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a438()
+THUMB void TownMenu_OPERATION_ROOT::sortItems()
 {
     int count = status::g_Party.getCount();
     if (mode_ == 1) {
@@ -341,8 +350,8 @@ THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a438()
             return;
         }
         status::g_Party.haveItemSack_.sortOutSack((status::HaveItemSack::SortType)g_Option.getSackSort());
-        data_020ed1bc.openMessageForMENU();
-        data_020ed1bc.addMessage(0xc3d63);
+        g_TownMenuMessage.openMessageForMENU();
+        g_TownMenuMessage.addMessage(0xc3d63);
     } else {
         if (count == charaItem_.active_) {
             for (int i = 0; i < count; i++) {
@@ -351,24 +360,34 @@ THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a438()
         } else {
             status::g_Party.haveItemSack_.sortOutItem(&status::g_Party.getPlayerStatus(charaItem_.active_)->haveStatusInfo_.haveItem_);
         }
-        data_020ed1bc.openMessageForMENU();
-        data_020ed1bc.addMessage(0xc3d5e);
+        g_TownMenuMessage.openMessageForMENU();
+        g_TownMenuMessage.addMessage(0xc3d5e);
     }
-    unk_1ac = 1;
+    sortDone_ = 1;
 }
 
-THUMB int TownMenu_OPERATION_ROOT::unkfunc_0217a4e4(char* command)
+THUMB int TownMenu_OPERATION_ROOT::setupCommandList(char* command)
 {
     if (status::g_Story.chapter_ >= 5 && g_AreaFlag.check(0x132) == true) {
         for (char i = 0; i < 9; i++) {
             command[i] = i;
         }
+#ifdef DQIV_NATIVE
+        command[9] = COMMAND_ACHIEVEMENTS;
+        return 10;
+#endif
         return 9;
     }
     char normal[8] = { 0, 1, 2, 4, 5, 6, 8, 7 };
     for (char i = 0; i < 8; i++) {
         command[i] = normal[i];
     }
+#ifdef DQIV_NATIVE
+    // The PC version's achievements, after the settings.
+    command[8] = COMMAND_ACHIEVEMENTS;
+    command[9] = -1;
+    return 9;
+#endif
     command[8] = -1;
     return 8;
 }
@@ -392,7 +411,7 @@ THUMB void TownMenu_OPERATION_ROOT::allRecoveryMessage(status::UseActionParam& u
     messageCount = 0;
     message[messageCount] = useActionMessage->execMessage_[messageCount];
     while (message[messageCount] != 0) {
-        data_020ed1bc.addMessageNOWAIT(message[messageCount]);
+        g_TownMenuMessage.addMessageNOWAIT(message[messageCount]);
         messageCount++;
         message[messageCount] = useActionMessage->execMessage_[messageCount];
         SoundManager::playSe(0x132, 0);
@@ -404,12 +423,12 @@ THUMB void TownMenu_OPERATION_ROOT::allRecoveryMessage(status::UseActionParam& u
         while (message[messageCount] != 0) {
             if (!status::g_Party.isRecoveryForMantan() && !status::g_Party.isRecoveryForMantan()) {
                 if (i != targetCount) {
-                    data_020ed1bc.addMessageNOWAIT(message[messageCount]);
+                    g_TownMenuMessage.addMessageNOWAIT(message[messageCount]);
                 } else {
-                    data_020ed1bc.addMessage(message[messageCount]);
+                    g_TownMenuMessage.addMessage(message[messageCount]);
                 }
             } else {
-                data_020ed1bc.addMessageNOWAIT(message[messageCount]);
+                g_TownMenuMessage.addMessageNOWAIT(message[messageCount]);
             }
             messageCount++;
             message[messageCount] = useActionMessage->resultMessage_[messageCount];
@@ -418,41 +437,41 @@ THUMB void TownMenu_OPERATION_ROOT::allRecoveryMessage(status::UseActionParam& u
     actionIndex_ = useActionParam.actionIndex_;
 }
 
-THUMB void TownMenu_OPERATION_ROOT::unkfunc_0217a67c()
+THUMB void TownMenu_OPERATION_ROOT::updateAbortSaveMessage()
 {
     switch (abort_) {
     case 0:
-        data_020ed1bc.close();
+        g_TownMenuMessage.close();
         break;
     case 1:
         break;
     case 2:
-        data_020ed1bc.close();
-        data_020ed1bc.openMessageForMENU();
-        data_020ed1bc.addMessageNOWAIT(0xcba15);
-        data_020ed1bc.addMessageWAITKEY();
+        g_TownMenuMessage.close();
+        g_TownMenuMessage.openMessageForMENU();
+        g_TownMenuMessage.addMessageNOWAIT(0xcba15);
+        g_TownMenuMessage.addMessageWAITKEY();
         break;
     case 3:
-        data_020ed1bc.close();
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.close();
+        g_TownMenuMessage.openMessageForMENU();
         if (saveResult_ == 0) {
-            data_020ed1bc.addMessage(0xcba1c);
+            g_TownMenuMessage.addMessage(0xcba1c);
             abort_ = 1;
         } else {
 #ifdef DQIV_NATIVE
             // The PC version keeps playing after a quick save (the DS asks to
             // switch the console off).
-            data_020ed1bc.addMessage(0xcba18);
+            g_TownMenuMessage.addMessage(0xcba18);
             abort_ = 4;
 #else
-            data_020ed1bc.addMessage(0xcba18, 0xcba19);
+            g_TownMenuMessage.addMessage(0xcba18, 0xcba19);
             abort_ = 1;
 #endif
         }
         break;
 #ifdef DQIV_NATIVE
     case 4:
-        data_020ed1bc.close();
+        g_TownMenuMessage.close();
         abort_ = 0;
         mode_ = 0;
         menuItem_.ctype_ = menu::MenuItem::CURSORTYPE_ACTIVE;

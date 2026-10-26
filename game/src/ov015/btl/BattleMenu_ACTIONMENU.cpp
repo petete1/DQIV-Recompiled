@@ -31,15 +31,15 @@ THUMB void BattleMenu_ACTIONMENU::menuExecute()
 
 THUMB void BattleMenu_ACTIONMENU::menuDraw()
 {
-    unkfunc_0216b9e8(0xf0);
+    drawBattleActionMenu(0xf0);
     pageItem_.drawActive();
 }
 
 THUMB void BattleMenu_ACTIONMENU::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
         }
         return;
     }

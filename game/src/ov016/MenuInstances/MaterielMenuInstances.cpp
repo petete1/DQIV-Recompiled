@@ -15,7 +15,7 @@
 #include "ov028/MaterielMenu_CHANGEGIFT/MaterielMenu_CHANGEGIFT.hpp"
 #include "ov016/MaterielMenu_PICTUREBOOK/MaterielMenu_PICTUREBOOK.hpp"
 #include "ov036/MaterielMenuExtraChangeHostage/MaterielMenuExtraChangeHostage.hpp"
-#include "ov016/UnkMaterielMenu_0216b304/UnkMaterielMenu_0216b304.hpp"
+#include "ov016/MaterielMenu_SHOP_EXTRA_SELL/MaterielMenu_SHOP_EXTRA_SELL.hpp"
 #include "ov032/MaterielMenu_EXTRA_PRESENT_EXP/MaterielMenu_EXTRA_PRESENT_EXP.hpp"
 #include "ov035/MaterielMenu_EXTRA_NENE/MaterielMenu_EXTRA_NENE.hpp"
 #include "ov033/MaterielMenu_MARTIAL_COLOSSEUM/MaterielMenu_MARTIAL_COLOSSEUM.hpp"
@@ -25,7 +25,7 @@
 #include "main/menu/MaterielMenu_NameEdit.hpp"
 #include "ov026/MaterielMenu_SURECHIGAI/MaterielMenu_SURECHIGAI.hpp"
 #include "ov025/MaterielMenu_EXTRA_SIDEJOB/MaterielMenu_EXTRA_SIDEJOB.hpp"
-#include "main/menu/UnkMaterielMenu_0203d7e4.hpp"
+#include "main/menu/MaterielMenu_StartAdventure.hpp"
 
 // global instances of the materiel menus (their code is in the shop/church/bank/... overlays)
 THUMB
@@ -61,7 +61,7 @@ MaterielMenu_CHANGEGIFT_EQUIPCHECK gMaterielMenu_CHANGEGIFT_EQUIPCHECK;
 MaterielMenu_PICTUREBOOK_ROOT gMaterielMenu_PICTUREBOOK_ROOT;
 MaterielMenu_PICTUREBOOK_DETAIL gMaterielMenu_PICTUREBOOK_DETAIL;
 MaterielMenuExtraChangeHostage gMaterielMenuExtra_ChangeHostage;
-UnkMaterielMenu_0216b304 gUnkMaterielMenu_0216b304;
+MaterielMenu_SHOP_EXTRA_SELL gUnkMaterielMenu_0216b304;
 MaterielMenu_EXTRA_PRESENT_EXP gMaterielMenu_EXTRA_PRESENT_EXP;
 MaterielMenu_EXTRA_NENE gMaterielMenu_EXTRA_NENE;
 MaterielMenu_MARTIAL_COLOSSEUM gMaterielMenu_MARTIAL_COLOSSEUM;
@@ -70,11 +70,11 @@ MaterielMenu_LOAD gMaterielMenu_LOAD;
 MaterielMenu_SAVE gMaterielMenu_SAVE;
 MaterielMenu_NameEdit gMaterielMenu_NameEdit;
 MaterielMenu_SURECHIGAI_ROOT gMaterielMenu_SURECHIGAI_ROOT;
-UnkMaterielMenu_02189630 gUnkMaterielMenu_02189630;
-UnkMaterielMenu_02189360 gUnkMaterielMenu_02189360;
+MaterielMenu_SURECHIGAI_TENANT_LIST gUnkMaterielMenu_02189630;
+MaterielMenu_SURECHIGAI_REMOVE_ENVOY gUnkMaterielMenu_02189360;
 MaterielMenu_SURECHIGAI_MAKE_TAISHI gMaterielMenu_SURECHIGAI_SELECT_OBJECT;
-UnkMaterielMenu_02189a80 gUnkMaterielMenu_02189a80;
+MaterielMenu_SURECHIGAI_SETTING gUnkMaterielMenu_02189a80;
 MaterielMenu_EXTRA_SIDEJOB_ROOT gMaterielMenu_EXTRA_SIDEJOB_ROOT;
 MaterielMenu_EXTRA_SIDEJOB_BUY gMaterielMenu_EXTRA_SIDEJOB_BUY;
 MaterielMenu_EXTRA_SIDEJOB_SELL gMaterielMenu_EXTRA_SIDEJOB_SELL;
-UnkMaterielMenu_0203d7e4 gUnkMaterielMenu_0203d7e4;
+MaterielMenu_StartAdventure gMaterielMenu_StartAdventure;

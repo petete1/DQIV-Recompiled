@@ -3,7 +3,7 @@
 
 // town map shop list menu
 struct TownShopMenu : menu::MenuBase {
-    int unk_1c;     /* shown shop list index (0..5), -1 = none */
+    int shopIndex_;     /* shown shop list index (0..5), -1 = none */
 
     TownShopMenu();
     ~TownShopMenu();
@@ -11,8 +11,8 @@ struct TownShopMenu : menu::MenuBase {
     virtual void menuExecute();
     virtual void menuDraw();
     virtual void menuUpdate();
-    int unkfunc_02177250(int index);
-    int unkfunc_02177300();
+    int selectShopFrom(int index);
+    int selectNextShop();
 };
 
 extern TownShopMenu gTownShopMenu;

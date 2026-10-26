@@ -5,9 +5,12 @@
 #include "DualScreen.hpp"
 #include "Profile.hpp"
 #include "Settings.hpp"
+#include "Achievements.hpp"
+#include "HdPictures.hpp"
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -17,7 +20,25 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1};
+enum Overlay : unsigned {overlayFps=1,overlayToast=2};
+// The achievement notification: slides in, stays, slides out (nanoseconds).
+constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
+}
+std::vector<std::uint32_t> decodePng(const std::vector<std::uint8_t>& data,int& width,int& height) {
+    std::vector<std::uint32_t> pixels;
+    if(data.empty())return pixels;
+    SDL_Surface* loaded=SDL_LoadPNG_IO(SDL_IOFromConstMem(data.data(),data.size()),true);
+    if(!loaded)return pixels;
+    if(SDL_Surface* surface=SDL_ConvertSurface(loaded,SDL_PIXELFORMAT_ARGB8888)) {
+        width=surface->w;height=surface->h;pixels.resize(std::size_t(width)*height);
+        for(int row=0;row<height;++row)
+            std::memcpy(pixels.data()+std::size_t(row)*width,static_cast<const std::uint8_t*>(surface->pixels)+std::size_t(row)*surface->pitch,std::size_t(width)*4);
+        SDL_DestroySurface(surface);
+    }
+    SDL_DestroySurface(loaded);
+    return pixels;
+}
+namespace {
 // Trigger travel (0..32767) past which it counts as pressed.
 constexpr int triggerThreshold=16000;
 }
@@ -35,7 +56,7 @@ GameWindow::GameWindow(bool hidden,bool mute):hidden_(hidden) {
         context_=SDL_GL_CreateContext(window_);
         require(context_!=nullptr);
         require(SDL_GL_MakeCurrent(window_,static_cast<SDL_GLContext>(context_)));
-        if(!SDL_GL_SetSwapInterval(-1))SDL_GL_SetSwapInterval(1);
+        SDL_GL_SetSwapInterval(1);
         gl::load();
         gpu_=std::make_unique<GpuRenderer>();
         std::printf("OpenGL: %s / %s\n",reinterpret_cast<const char*>(gl::GetString(GL_RENDERER)),reinterpret_cast<const char*>(gl::GetString(GL_VERSION)));
@@ -66,8 +87,12 @@ void GameWindow::applySettings() {
         SDL_SetWindowSize(window_,windowSizes[s.windowSize][0],windowSizes[s.windowSize][1]);
         SDL_SetWindowPosition(window_,SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED);
     } else setFullscreen(true);
-    if(!s.vsync)SDL_GL_SetSwapInterval(0);
-    else if(!SDL_GL_SetSwapInterval(-1))SDL_GL_SetSwapInterval(1);
+    // Strict vertical sync: the adaptive one (-1) shows a frame that misses
+    // the refresh at once, and the game's own 60 Hz pace makes that steady,
+    // a tear across the middle of the screen.
+    SDL_GL_SetSwapInterval(s.vsync?1:0);
+    int interval=0;SDL_GL_GetSwapInterval(&interval);
+    std::printf("Vertical sync: %d\n",interval);
     dualScreen().canvasWidth=s.wide?384*16/9.f:256.f;
     stretch_=s.stretch;
     gpu_->settings.autoQuality=s.quality==0;
@@ -89,7 +114,8 @@ void GameWindow::canvasPixels(const GpuLayout& layout,float& width,float& height
 bool GameWindow::poll() {
     // Settings changed in the game's own menu.
     if(takeSettingsApply())applySettings();
-    if(exitRequested())running_=false;
+    // The game's own way out (its "turn the power off" screens, its menu).
+    if(takeQuitRequest())running_=false;
     SDL_Event e;
     while(SDL_PollEvent(&e)) {
         if(e.type==SDL_EVENT_QUIT)running_=false;
@@ -186,6 +212,9 @@ bool GameWindow::poll() {
         const int zoom=SDL_GetGamepadAxis(gamepad_,SDL_GAMEPAD_AXIS_RIGHTY);
         if(zoom<-16000||zoom>16000) {zoomCamera(zoom<0?1:-1);stickZoom_=true;}
         else if(stickZoom_) {stickZoom_=false;if(settingsUsed_)saveSettings();}
+        // Left and right, it turns the camera as R and L do (in towns, while held).
+        const int turn=SDL_GetGamepadAxis(gamepad_,SDL_GAMEPAD_AXIS_RIGHTX);
+        if(turn>16000)buttons|=256;if(turn<-16000)buttons|=512;
     }
     // While a control is being bound, and until the key that bound it is
     // released, the game gets no input.
@@ -227,6 +256,56 @@ void GameWindow::drawInterface(int width,int height) {
         gpu_->drawOverlay(overlayFps,fpsPicture_->pixels(),fpsPicture_->width(),fpsPicture_->height(),rebuild,
             int(std::lround(10*scale)),int(std::lround(10*scale)),width,height);
     }
+    drawToast(width,height,scale);
+}
+void GameWindow::buildToast(float scale) {
+    const int language=gameSettings().language;
+    const auto px=[&](float value) {return int(std::lround(value*scale));};
+    const int w=px(340),h=px(64),border=std::max(1,px(2)),badge=px(48),margin=px(8);
+    toastPicture_=std::make_unique<TextCanvas>(w,h);
+    auto& picture=*toastPicture_;
+    picture.clear(0);
+    // A dark window with a golden frame, like the game's.
+    picture.fill(0,0,w,h,0xffd9b44a);
+    picture.fill(border,border,w-2*border,h-2*border,0xf0101a33);
+    if(const auto pixels=achievementBadge(toast_,false)) {
+        picture.image(margin,margin,badge,badge,pixels->data(),hdCellSize,hdCellSize);
+    } else {
+        // No badge in the resources: a golden medal.
+        picture.fill(margin,margin,badge,badge,0xff6b4a12);
+        picture.fill(margin+border,margin+border,badge-2*border,badge-2*border,0xffd9b44a);
+        picture.text(margin,margin+badge/2-px(14),"\xe2\x98\x85",px(26),0xff6b4a12,true,1,badge);
+    }
+    const int textX=margin*2+badge,textWidth=w-textX-margin;
+    picture.text(textX,px(7),achievementUnlockedBanner(language),px(11),0xffffd75e,true,0,textWidth);
+    picture.text(textX,px(20),achievementTitle(toast_,language),px(15),0xffffffff,true,0,textWidth);
+    picture.text(textX,px(40),achievementDescription(toast_,language),px(11),0xffc8cede,false,0,textWidth);
+}
+void GameWindow::drawToast(int width,int height,float scale) {
+    const auto now=SDL_GetTicksNS();
+    if(toast_<0) {
+        toast_=takeAchievementToast();
+        if(toast_<0)return;
+        toastStart_=now;
+        buildToast(scale);
+    }
+    const auto elapsed=now-toastStart_;
+    if(elapsed>=toastShown) {toast_=-1;toastPicture_.reset();return;}
+    // Slides up from below the window's bottom right corner, then back down.
+    const float in=std::min(1.f,float(elapsed)/toastSlide),out=std::min(1.f,float(toastShown-elapsed)/toastSlide);
+    const float shown=std::min(in,out),eased=1-(1-shown)*(1-shown);
+    const auto& picture=*toastPicture_;
+    toastFaded_.resize(picture.pixels().size());
+    const unsigned alpha=unsigned(std::lround(255*shown));
+    for(std::size_t i=0;i<toastFaded_.size();++i) {
+        const auto p=picture.pixels()[i];
+        std::uint32_t faded=0;
+        for(unsigned shift:{0u,8u,16u,24u})faded|=(((p>>shift)&255)*alpha/255)<<shift;
+        toastFaded_[i]=faded;
+    }
+    const int x=width-picture.width()-int(std::lround(16*scale));
+    const int y=height-int(std::lround((picture.height()+16*scale)*eased));
+    gpu_->drawOverlay(overlayToast,toastFaded_,picture.width(),picture.height(),true,x,y,width,height);
 }
 void GameWindow::present(const GpuLayout& layout,std::span<const std::uint32_t> recipes) {
     layout_=layout;recipes_=recipes;

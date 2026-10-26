@@ -1,7 +1,7 @@
 #pragma ipa file
 #include "main/task/PartTaskManager.hpp"
 #include "main/btl/BattleAutoFeed.hpp"
-#include "main/dss/UnkVramTransfer.hpp"
+#include "main/dss/VramManager.hpp"
 
 task::PartTaskManager g_PartTaskManager;
 task::Sample00Task g_Sample00Task;
@@ -36,7 +36,7 @@ THUMB void task::PartTaskManager::run() {
         currentTask_ = parts_[currentTaskID_];
         currentTask_->initialize();
 
-        data_0211e450.unk_814 = 0;
+        g_VramTransfer.vblankTransfer_ = 0;
     }
 
     BattleAutoFeed::printCounter();

@@ -8,7 +8,7 @@
 #include "main/sound/MenuSoundManager.hpp"
 #include "main/sound/SoundManager.hpp"
 #include "main/status/PartyStatus.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_02177bac.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDrawExtra.hpp"
 
 THUMB void MaterielMenuPokerBetcoin::menuSetup()
 {
@@ -20,7 +20,7 @@ THUMB void MaterielMenuPokerBetcoin::menuSetup()
     }
     haveCoin_ = status::g_Party.casinoCoin_ - betCoin_;
     messageMode_ = 0;
-    unk_28 = 0;
+    blinkCount_ = 0;
     MenuSoundManager::getSingleton()->initialize();
 }
 
@@ -31,31 +31,31 @@ THUMB void MaterielMenuPokerBetcoin::menuExecute()
 
 THUMB void MaterielMenuPokerBetcoin::menuDraw()
 {
-    if (unk_28 > 15) {
-        unkfunc_02177d24(haveCoin_, 0xffff, 0, 0);
+    if (blinkCount_ > 15) {
+        drawPokerCoinsAndBet(haveCoin_, 0xffff, 0, 0);
     } else {
-        unkfunc_02177d24(haveCoin_, betCoin_, 0, 0);
+        drawPokerCoinsAndBet(haveCoin_, betCoin_, 0, 0);
     }
-    unkfunc_02177bac(0x90, 0, 0x70, 0x30, -1);
-    unkfunc_02177e34(betCoin_, -1, 0);
-    unkfunc_02177bac(0, 0, 0x100, 0xc0, -1);
+    drawFrameStyleA(0x90, 0, 0x70, 0x30, -1);
+    drawPokerPayoutTable(betCoin_, -1, 0);
+    drawFrameStyleA(0, 0, 0x100, 0xc0, -1);
     menuItem_.drawActive();
 }
 
 THUMB void MaterielMenuPokerBetcoin::menuUpdate()
 {
-    if (!unkfunc_021700f0()) {
-        unkfunc_02170024();
+    if (!updateBetInput()) {
+        updateMessage();
     }
 }
 
-THUMB bool MaterielMenuPokerBetcoin::unkfunc_02170024()
+THUMB bool MaterielMenuPokerBetcoin::updateMessage()
 {
-    if (data_020ed1bc.isOpen()) {
-        int stat = data_020ed1bc.stat_;
+    if (g_TownMenuMessage.isOpen()) {
+        int stat = g_TownMenuMessage.stat_;
         if (stat == MENUBASE_STAT_OK) {
             if (messageMode_ != 2) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
             }
             if (messageMode_ == 3) {
                 MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
@@ -65,16 +65,16 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_02170024()
                     showMessage(0xc92ca);
                     messageMode_ = 3;
                 } else {
-                    data_020ed1bc.openMessageForMENU();
-                    data_020ed1bc.addMessageNOWAIT(0xc92cd);
-                    data_020ed1bc.addMessageWAITKEY();
+                    g_TownMenuMessage.openMessageForMENU();
+                    g_TownMenuMessage.addMessageNOWAIT(0xc92cd);
+                    g_TownMenuMessage.addMessageWAITKEY();
                     messageMode_ = 2;
                 }
             }
             return true;
         }
         if (stat == MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             if (messageMode_ == 1) {
                 MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
             }
@@ -86,9 +86,9 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_02170024()
             showMessage(0xc92ca);
             messageMode_ = 3;
         } else {
-            data_020ed1bc.openMessageForMENU();
-            data_020ed1bc.addMessageNOWAIT(0xc92cd);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.openMessageForMENU();
+            g_TownMenuMessage.addMessageNOWAIT(0xc92cd);
+            g_TownMenuMessage.addMessageWAITKEY();
             messageMode_ = 2;
         }
         return true;
@@ -96,18 +96,18 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_02170024()
     return false;
 }
 
-THUMB bool MaterielMenuPokerBetcoin::unkfunc_021700f0()
+THUMB bool MaterielMenuPokerBetcoin::updateBetInput()
 {
-    if (!data_020ed1bc.isOpen()) {
+    if (!g_TownMenuMessage.isOpen()) {
         return false;
     }
-    if (!data_020ed1bc.isMessageWAITPROG()) {
+    if (!g_TownMenuMessage.isMessageWAITPROG()) {
         return false;
     }
-    if (unk_28 > 30) {
-        unk_28 = 0;
+    if (blinkCount_ > 30) {
+        blinkCount_ = 0;
         redraw_ = 1;
-    } else if (++unk_28 > 15) {
+    } else if (++blinkCount_ > 15) {
         redraw_ = 1;
     }
     cursor_.setup(1, 1, 1);
@@ -121,8 +121,8 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_021700f0()
                 haveCoin_++;
                 PokerManager::getSingleton()->setBetCoin(betCoin_, status::g_Party.casinoCoin_);
                 PokerManager::getSingleton()->cardPosition_ = 0;
-                data_020ed1bc.close();
-                data_020ed1bc.clearMessageWAITPROG();
+                g_TownMenuMessage.close();
+                g_TownMenuMessage.clearMessageWAITPROG();
                 close();
                 gMaterielMenu_POKER_CHANGECARD.open();
             } else {
@@ -143,22 +143,22 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_021700f0()
             if (bet == 0) {
                 showMessage(0xc92c5);
                 messageMode_ = 3;
-                unk_28 = 0;
+                blinkCount_ = 0;
                 return false;
             }
             PokerManager::getSingleton()->setBetCoin(bet, status::g_Party.casinoCoin_);
             PokerManager::getSingleton()->cardPosition_ = 0;
-            data_020ed1bc.close();
-            data_020ed1bc.clearMessageWAITPROG();
+            g_TownMenuMessage.close();
+            g_TownMenuMessage.clearMessageWAITPROG();
             close();
             gMaterielMenu_POKER_CHANGECARD.open();
         }
         if (result == 3) {
             showMessage(0xc92f9);
-            data_020ed1bc.setYesNo();
-            data_020ed1bc.setYesNoPosition(0xc0, 0x40);
+            g_TownMenuMessage.setYesNo();
+            g_TownMenuMessage.setYesNoPosition(0xc0, 0x40);
             messageMode_ = 1;
-            unk_28 = 0;
+            blinkCount_ = 0;
             return false;
         }
         redraw_ = 1;
@@ -168,6 +168,6 @@ THUMB bool MaterielMenuPokerBetcoin::unkfunc_021700f0()
 
 THUMB void MaterielMenuPokerBetcoin::showMessage(int mes)
 {
-    data_020ed1bc.openMessageForMENU();
-    data_020ed1bc.addMessage(mes);
+    g_TownMenuMessage.openMessageForMENU();
+    g_TownMenuMessage.addMessage(mes);
 }

@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "ov027/MaterielMenu_CHURCH/MaterielMenu_CHURCH.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
 #include "main/global/Global.hpp"
@@ -13,7 +16,7 @@
 #include "main/cmn/TalkSoundManager.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenu_CHURCH_ROOT::menuSetup()
 {
@@ -24,7 +27,7 @@ THUMB void MaterielMenu_CHURCH_ROOT::menuSetup()
     activeCommand_ = -1;
     expMessageCount_ = -1;
     firstFlag_ = 1;
-    unk_164 = 1;
+    listPending_ = 1;
     churchType_ = status::g_Shop.getChurchType(0);
     int mother = false;
     const char* town = "mc";
@@ -78,8 +81,8 @@ THUMB void MaterielMenu_CHURCH_ROOT::menuExecute()
 THUMB void MaterielMenu_CHURCH_ROOT::menuDraw()
 {
     if (activeCommand_ != 7) {
-        unkfunc_0216fc94(activeCommand_, firstFlag_);
-        if (activeCommand_ == -1 && firstFlag_ == 0 && data_020ed1bc.isMessageWAITPROG()) {
+        drawChurchScreen(activeCommand_, firstFlag_);
+        if (activeCommand_ == -1 && firstFlag_ == 0 && g_TownMenuMessage.isMessageWAITPROG()) {
             menuItem_.drawActive();
         }
     }
@@ -98,37 +101,43 @@ THUMB void MaterielMenu_CHURCH_ROOT::menuUpdate()
 
 THUMB bool MaterielMenu_CHURCH_ROOT::rootUpdate()
 {
-    int stat = data_020ed1bc.stat_;
+    int stat = g_TownMenuMessage.stat_;
     switch (activeCommand_) {
     case -1:
         if (stat == 1 || stat == 2) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             redraw_ = 1;
             return true;
         }
         break;
     case 7:
+#ifdef DQIV_NATIVE
+        // "Please turn the power OFF": the PC version closes once it is read.
+        if (stat == 1 || stat == 2) {
+            pc::requestQuit();
+        }
+#endif
         return true;
     case 1:
         if (stat == 1 || stat == 2) {
-            data_020ed1bc.restartMessage();
+            g_TownMenuMessage.restartMessage();
             selectNextExp();
             redraw_ = 1;
         }
         break;
     case 6:
         if (stat == 1) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             activeCommand_ = -1;
             redraw_ = 1;
         } else if (stat == 2) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             selectEnd();
         }
         break;
     case 5:
         if (stat == 1 || stat == 2) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
             activeCommand_ = -1;
             MaterielMenu_WINDOW_MANAGER::getSingleton()->closeMaterielWindow();
         }
@@ -139,9 +148,9 @@ THUMB bool MaterielMenu_CHURCH_ROOT::rootUpdate()
 
 THUMB bool MaterielMenu_CHURCH_ROOT::commandUpdate()
 {
-    if (data_020ed1bc.isOpen() && data_020ed1bc.isMessageWAITPROG()) {
-        if (unk_164) {
-            unk_164 = 0;
+    if (g_TownMenuMessage.isOpen() && g_TownMenuMessage.isMessageWAITPROG()) {
+        if (listPending_) {
+            listPending_ = 0;
             redraw_ = 1;
             return false;
         }
@@ -154,7 +163,7 @@ THUMB bool MaterielMenu_CHURCH_ROOT::commandUpdate()
                 switch (cmd) {
                 case 0:
                     close();
-                    data_020ed1bc.close();
+                    g_TownMenuMessage.close();
                     gMaterielMenu_SAVE.open();
                     gMaterielMenu_SAVE.saveType_ = MaterielMenu_SAVE::TYPE_CHURCH;
                     redraw_ = 1;
@@ -163,27 +172,27 @@ THUMB bool MaterielMenu_CHURCH_ROOT::commandUpdate()
                     selectNextExp();
                     break;
                 case 2:
-                    data_020ed1bc.openMessageForTALK();
-                    data_020ed1bc.addMessage(sexType_ + 0xc6fcd);
-                    data_020ed1bc.addMessageWAITKEY();
+                    g_TownMenuMessage.openMessageForTALK();
+                    g_TownMenuMessage.addMessage(sexType_ + 0xc6fcd);
+                    g_TownMenuMessage.addMessageWAITKEY();
                     close();
                     gMaterielMenu_CHURCH_MIRACLE.open();
                     gMaterielMenu_CHURCH_MIRACLE.menuItem_.active_ = 0;
                     gMaterielMenu_CHURCH_MIRACLE.miracle_ = MIRACLE_ORDER_REVIVAL;
                     break;
                 case 3:
-                    data_020ed1bc.openMessageForTALK();
-                    data_020ed1bc.addMessage(sexType_ + 0xc6fe2);
-                    data_020ed1bc.addMessageWAITKEY();
+                    g_TownMenuMessage.openMessageForTALK();
+                    g_TownMenuMessage.addMessage(sexType_ + 0xc6fe2);
+                    g_TownMenuMessage.addMessageWAITKEY();
                     close();
                     gMaterielMenu_CHURCH_MIRACLE.open();
                     gMaterielMenu_CHURCH_MIRACLE.menuItem_.active_ = 0;
                     gMaterielMenu_CHURCH_MIRACLE.miracle_ = MIRACLE_ORDER_ANTIDOTE;
                     break;
                 case 4:
-                    data_020ed1bc.openMessageForTALK();
-                    data_020ed1bc.addMessage(sexType_ + 0xc6ff5);
-                    data_020ed1bc.addMessageWAITKEY();
+                    g_TownMenuMessage.openMessageForTALK();
+                    g_TownMenuMessage.addMessage(sexType_ + 0xc6ff5);
+                    g_TownMenuMessage.addMessageWAITKEY();
                     close();
                     gMaterielMenu_CHURCH_MIRACLE.open();
                     gMaterielMenu_CHURCH_MIRACLE.menuItem_.active_ = 0;
@@ -216,15 +225,15 @@ THUMB void MaterielMenu_CHURCH_ROOT::selectNextExp()
     int count = expMessageCount_;
     if (count == -1) {
         oneMessage(0xc6fbf);
-        data_020ed1bc.setMessageCursor(true);
+        g_TownMenuMessage.setMessageCursor(true);
         activeCommand_ = 1;
     } else if (count >= status::g_Party.getCount()) {
         activeCommand_ = -1;
         expMessageCount_ = -1;
-        unk_164 = 1;
-        data_020ed1bc.openMessageForTALK();
-        data_020ed1bc.addMessageNOWAIT(sexType_ + 0xc7008);
-        data_020ed1bc.addMessageWAITKEY();
+        listPending_ = 1;
+        g_TownMenuMessage.openMessageForTALK();
+        g_TownMenuMessage.addMessageNOWAIT(sexType_ + 0xc7008);
+        g_TownMenuMessage.addMessageWAITKEY();
         return;
     } else {
         status::HaveStatusInfo& statusInfo = status::g_Party.getPlayerStatus(count)->haveStatusInfo_;
@@ -237,20 +246,20 @@ THUMB void MaterielMenu_CHURCH_ROOT::selectNextExp()
         if (statusInfo.haveStatus_.level_ == 99) {
             int playerID = status::g_Party.getPlayerIndex(expMessageCount_);
             TextAPI::setMACRO0(6, 0x50000000, playerID);
-            data_020ed1bc.addMessage(sexType_ + 0xc6fc3);
-            data_020ed1bc.setMessageCursor(true);
+            g_TownMenuMessage.addMessage(sexType_ + 0xc6fc3);
+            g_TownMenuMessage.setMessageCursor(true);
         } else if (exp <= 0) {
             int playerID = status::g_Party.getPlayerIndex(expMessageCount_);
             TextAPI::setMACRO0(6, 0x50000000, playerID);
-            data_020ed1bc.addMessage(sexType_ + 0xc6fc6);
-            data_020ed1bc.addMessage(sexType_ + 0xc6fc7);
-            data_020ed1bc.setMessageCursor(true);
+            g_TownMenuMessage.addMessage(sexType_ + 0xc6fc6);
+            g_TownMenuMessage.addMessage(sexType_ + 0xc6fc7);
+            g_TownMenuMessage.setMessageCursor(true);
         } else {
             int playerID = status::g_Party.getPlayerIndex(expMessageCount_);
             TextAPI::setMACRO0(6, 0x50000000, playerID);
             TextAPI::setMACRO0(8, 0xf0000000, exp);
-            data_020ed1bc.addMessage(sexType_ + 0xc6fca);
-            data_020ed1bc.setMessageCursor(true);
+            g_TownMenuMessage.addMessage(sexType_ + 0xc6fca);
+            g_TownMenuMessage.setMessageCursor(true);
         }
     }
     expMessageCount_++;
@@ -264,24 +273,24 @@ THUMB void MaterielMenu_CHURCH_ROOT::selectEnd()
 
 THUMB void MaterielMenu_CHURCH_ROOT::firstMessage()
 {
-    data_020ed1bc.openMessageForTALK();
+    g_TownMenuMessage.openMessageForTALK();
     if (activeCommand_ != 7) {
         if (timeType_ == 4 || timeType_ == 1) {
-            data_020ed1bc.addMessageNOWAIT(sexType_ + 0xc6f9d);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.addMessageNOWAIT(sexType_ + 0xc6f9d);
+            g_TownMenuMessage.addMessageWAITKEY();
         } else {
-            data_020ed1bc.addMessageNOWAIT(sexType_ + 0xc6f9a);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.addMessageNOWAIT(sexType_ + 0xc6f9a);
+            g_TownMenuMessage.addMessageWAITKEY();
         }
         return;
     }
     ui_MsgSndSet(0x30);
-    data_020ed1bc.addMessageNOWAIT(sexType_ + 0xc6fbc);
-    data_020ed1bc.addMessageWAITKEY();
+    g_TownMenuMessage.addMessageNOWAIT(sexType_ + 0xc6fbc);
+    g_TownMenuMessage.addMessageWAITKEY();
 }
 
 THUMB void MaterielMenu_CHURCH_ROOT::oneMessage(int mess)
 {
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(mess + sexType_);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(mess + sexType_);
 }

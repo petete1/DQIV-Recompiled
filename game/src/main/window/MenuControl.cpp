@@ -3,7 +3,7 @@
 #include "main/object/DisplayCharacter.hpp"
 #include "main/global/GlobalDQ4.hpp"
 #include "main/menu/MenuAPI.hpp"
-#include "ov016/UnkTownMenu_02176fa0/UnkTownMenu_02176fa0.hpp"
+#include "ov016/TownMenuItemSelectItem/TownMenuItemSelectItem.hpp"
 #include "main/menu/TownMenu_PARTY_TALK.hpp"
 #include "ov016/TownMenu_MAGIC/TownMenu_MAGIC_ROOT.hpp"
 #include "ov016/TownMenu_ITEM/TownMenuItemSelectChara.hpp"
@@ -24,10 +24,10 @@ ARM window::MenuControl::~MenuControl()
 
 ARM void window::MenuControl::setup()
 {
-    if (data_0210bb94.unkfunc_02058114(0xc)) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc)) {
         TownStageManager::getSingleton()->stage_.m_fld.SetPause(1);
         BillboardCharacter::setAllCharaAnim(false);
-    } else if (data_0210bb94.unkfunc_02058114(0xe)) {
+    } else if (g_GlobalDQ4.unkfunc_02058114(0xe)) {
         fld::FieldStage::getSingleton()->fieldData.pause_ = 1;
         SpriteCharacter::setAllCharaAnim(false);
     }
@@ -69,7 +69,7 @@ ARM void window::MenuControl::execute()
             }
             break;
         case RELEASE_WAIT:
-            if (data_0210bb94.unkfunc_02058114(0xc)) {
+            if (g_GlobalDQ4.unkfunc_02058114(0xc)) {
                 TownStageManager::getSingleton()->stage_.m_fld.SetPause(0);
                 BillboardCharacter::setAllCharaAnim(true);
             } else {
@@ -102,10 +102,10 @@ ARM void window::MenuControl::openMenu()
         gTownMenu_ROOT.close();
         gTownMenuItemSelectChara.open();
         open = 1;
-    } else if (data_0210bb94.unkfunc_02058114(0xc) || data_0210bb94.unkfunc_02058114(0xe)) {
+    } else if (g_GlobalDQ4.unkfunc_02058114(0xc) || g_GlobalDQ4.unkfunc_02058114(0xe)) {
         SoundManager::playSe(0x12c, 0);
     }
-    if (data_0210bb94.unkfunc_02058114(0xe) && open == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) && open == 1) {
         SoundManager::fieldPlay();
     }
     menu_ = OPEN_MENU_ROOT;

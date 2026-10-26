@@ -10,7 +10,7 @@
 #include "main/sound/SoundManager.hpp"
 #include "main/status/BaseStatus.hpp"
 #include "nitro/os.hpp"
-#include "main/dss/UnkPaletteEffect.hpp"
+#include "main/dss/PaletteEffect.hpp"
 
 static const dss::Fix32 bigRockSpeed(0x133);
 static const dss::Fix32 collLine(0x1733);
@@ -33,7 +33,7 @@ ARM TownModelDraw::~TownModelDraw()
 ARM void TownModelDraw::setup(TOWN_CHARACTER& data)
 {
     TownCharacterBase::setup(data);
-    unkfunc_0212f19c(data.charaIndex);
+    loadModel(data.charaIndex);
     model_.start(1);
     model_.setPosition(data_.position);
     dirIdx_ = 0;
@@ -52,7 +52,7 @@ ARM void TownModelDraw::cleanup()
     }
 }
 
-ARM void TownModelDraw::unkfunc_0212f19c(int index)
+ARM void TownModelDraw::loadModel(int index)
 {
     int anim = 0;
     OS_Wait();
@@ -111,7 +111,7 @@ ARM void TownModelDraw::changePose(int pose)
 {
     model_.cleanup(1);
     data_.charaIndex = pose;
-    unkfunc_0212f19c(pose);
+    loadModel(pose);
     model_.start(1);
     model_.setPosition(data_.position);
     dirIdx_ = 0;
@@ -123,7 +123,7 @@ ARM void TownModelDraw::restorePose()
 {
     model_.cleanup(1);
     data_.charaIndex = defaultIndex_;
-    unkfunc_0212f19c(data_.charaIndex);
+    loadModel(data_.charaIndex);
     model_.start(1);
     model_.setPosition(data_.position);
     dirIdx_ = 0;
@@ -135,7 +135,7 @@ ARM void TownModelDraw::requestReload()
 {
     int anim = model_.m_animation_index;
     model_.cleanup(1);
-    unkfunc_0212f19c(data_.charaIndex);
+    loadModel(data_.charaIndex);
     model_.start(1);
     model_.setPosition(data_.position);
     dirIdx_ = 0;
@@ -168,9 +168,9 @@ ARM dss::Fix32Vector3 TownModelDraw::getPosition()
 
 ARM void TownModelDraw::setPaletteRate(dss::Fix32 r, dss::Fix32 g, dss::Fix32 b)
 {
-    unkfunc_02085798(model_.unk_b5c.unk_08);
+    setPaletteEffectTexture(model_.modelResource_.texture_);
     dss::Fix32Vector3 rate(r, g, b);
-    unkfunc_020857c8(model_.unk_b5c.unk_08, rate);
+    applyModelPaletteRgbRate(model_.modelResource_.texture_, rate);
 }
 
 ARM void TownModelDraw::setPaletteRate(unsigned char r, unsigned char g, unsigned char b, dss::Fix32 rate)
@@ -179,7 +179,7 @@ ARM void TownModelDraw::setPaletteRate(unsigned char r, unsigned char g, unsigne
     int gg = status::BaseStatus::getClampValue(0, g, 0x1f);
     int bb = status::BaseStatus::getClampValue(0, b, 0x1f);
     rate.value = dss::clamp<int>(0, rate.value, basePalletRate_.value);
-    unkfunc_020860b8(model_.unk_b5c.unk_08, rr, gg, bb, rate);
+    blendModelPaletteToColor(model_.modelResource_.texture_, rr, gg, bb, rate);
 }
 
 ARM void TownModelDraw::setMotion(int motion, int loop)

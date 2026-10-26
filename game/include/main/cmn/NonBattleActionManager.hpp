@@ -4,8 +4,8 @@
 #include "main/dss/DssUtils.hpp"
 #include "main/global/Global.hpp"
 #include "ov000/town/TownCharacterManager.hpp"
-#include "main/dss/UnkBgBuffer.hpp"
-#include "main/effect/UnkScreenEffectManager.hpp"
+#include "main/dss/BgBuffer.hpp"
+#include "main/effect/ScreenEffectManager.hpp"
 
 struct TownStageManager;
 struct TownPlayerManager;
@@ -34,4 +34,4 @@ namespace cmn
 }
 
 
-extern char data_020c1328[8];
+extern char g_fieldMapNameText[8];

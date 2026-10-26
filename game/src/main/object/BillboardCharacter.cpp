@@ -6,9 +6,9 @@ namespace dss {
 template<typename T> inline Vector3<T>::Vector3() : vz(0L), vy(0L), vx(0L) {}
 template<typename T> inline Vector2<T>::Vector2() : vy(bcLiteral_Ey), vx(bcLiteral_Ex) {}
 }
-#include "main/dss/UnkMatrix43.hpp"
+#include "main/dss/Matrix43.hpp"
 #include "main/dss/UnkMemory.hpp"
-#include "main/dss/UnkPaletteEffect.hpp"
+#include "main/dss/PaletteEffect.hpp"
 #include "main/formation/FormationId.hpp"
 #include "nitro/fx/fx_atan.h"
 #include "nitro/os.hpp"
@@ -21,7 +21,7 @@ namespace dss {
 }
 
 
-struct UnkBillboardAnimation {
+struct BillboardAnimationFrame {
     int index;
     unsigned int time;
 };
@@ -85,7 +85,7 @@ static DataObject s_shadowData;
 #pragma explicit_zero_data on
 long bcLiteral_Ty = 0;
 #pragma explicit_zero_data off
-static UnkBillboardAnimation s_animation[] = {
+static BillboardAnimationFrame s_animation[] = {
     { 0, 12 },
     { 1, 12 },
     { 2, 12 },
@@ -103,7 +103,7 @@ ARM int unkfunc_unused_32(int index) { static const unsigned char table[512] = {
 long bcLiteral_Tz = 0;
 #pragma explicit_zero_data off
 ARM int unkfunc_unused_31(int index) { static const unsigned char table[512] = {1,2,3}; return table[index]; }
-static UnkShadowPolygon s_shadowPolygons[32];
+static ShadowPolygon s_shadowPolygons[32];
 #pragma explicit_zero_data on
 long bcLiteral_Ey = 0;
 #pragma explicit_zero_data off
@@ -117,9 +117,9 @@ ARM BillboardCharacter::BillboardCharacter() : direction_(0), flag_(0)
 
 ARM void BillboardCharacter::setTexture(void* data)
 {
-    textureNum_ = unkfunc_0207f8c4(data);
+    textureNum_ = getArchiveFileCount(data);
     for (int i = 0; i < textureNum_; i++) {
-        textures_[i] = unkfunc_0207f8dc(data, i);
+        textures_[i] = getArchiveFile(data, i);
     }
     OS_Wait();
     unkfunc_02058680(&s_vertex, &s_texCoord, textures_[0]);
@@ -176,7 +176,7 @@ ARM void BillboardCharacter::draw()
     unkfunc_020498e8(s_scale);
     setCameraDirection(&camera_->getDirection());
     if (flag_ & FLAG_ANIM_PALLET) {
-        unkfunc_02086034((TextureObject*)texture_, &unk_fc.vx);
+        applyTexturePaletteRgbRate((TextureObject*)texture_, &paletteRgbRate_.vx);
     }
     execute();
     Billboard::draw();
@@ -446,7 +446,7 @@ ARM bool BillboardCharacter::isAllAnimation()
 
 ARM void BillboardCharacter::unkfunc_020499f0(const dss::Fix32Vector3* rate)
 {
-    unk_fc = *rate;
+    paletteRgbRate_ = *rate;
 }
 
 ARM void BillboardCharacter::unkfunc_02049a00(int flag)
@@ -486,7 +486,7 @@ ARM void CharacterShadow::unkfunc_02049ba4()
     s_shadowData.setup("data/common.tex", 0, 0);
     s_shadowTexture = s_shadowData.getAddr();
     ((TextureObject*)s_shadowTexture)->unkfunc_02086798(1);
-    dss::UnkMatrix43 matrix;
+    dss::Matrix43 matrix;
     dss::Fix32Vector3 direction;
     dss::Fix32Vector3 work;
     direction.set(1.0f, 0.0f, 0.0f);
@@ -557,7 +557,7 @@ ARM void CharacterShadow::draw()
         position_.vy.value -= 0x100;
         return;
     }
-    s_shadowPolygons[0].setRotationIdx(unk_28);
+    s_shadowPolygons[0].setRotationIdx(rotationIdx_);
     s_shadowPolygons[0].setPosition(position_);
     s_shadowPolygons[0].unkfunc_02083b1c();
 }

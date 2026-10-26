@@ -1,9 +1,9 @@
 #include <nitro/native_g3.h>
 #include "main/object/DSSAObject.hpp"
 #include "main/dss/RenderObject.hpp"
-#include "main/dss/UnkDisplay.hpp"
-#include "main/dss/UnkCharacterPalette.hpp"
-#include "main/dss/UnkSprite2D.hpp"
+#include "main/dss/Display.hpp"
+#include "main/dss/CharacterPalette.hpp"
+#include "main/dss/Sprite2D.hpp"
 #include "nitro/g3.hpp"
 #include "nitro/fx/fx_trig.h"
 #include "main/status/HaveBattleStatus.hpp"
@@ -267,7 +267,7 @@ ARM void DSSAObject::draw()
             ((TextureObject*)dssaData_.texture_)->unkfunc_02086abc();
             ((TextureObject*)dssaData_.texture_)->unkfunc_02086b3c();
             if (palette_) {
-                ((UnkCharacterPalette*)palette_)->unkfunc_02086dac();
+                ((CharacterPalette*)palette_)->unkfunc_02086dac();
             }
         }
         if (trans_ != 0) {
@@ -289,7 +289,7 @@ ARM void DSSAObject::execute()
     if (flag_ & 1) {
         return;
     }
-    if (!(unkfunc_02081254() & 1)) {
+    if (!(getDisplayFrame() & 1)) {
         return;
     }
     frame_++;
@@ -409,7 +409,7 @@ ARM void DSSAObject::setupRoot()
     DSSAParts* root = dssaData_.getParts(0);
     int x = root->getPosX() / 4096;
     int y = root->getPosY() / 4096;
-    unkfunc_020843d4();
+    loadBillboardMatrix();
     if (calcType_) {
         G3_Scale(defaultScale_.value, defaultScale_.value, FX32_ONE);
     } else {
@@ -495,12 +495,12 @@ ARM void DSSAObject::drawParts(DSSAParts* parts)
     G3_End();
 }
 
-ARM void UnkDSSAObject::setupDraw()
+ARM void DSSAScreenObject::setupDraw()
 {
     func_0206ae08(&position_);
     func_0206adcc();
     func_0206dcf0();
-    unkfunc_020847e8();
+    setupOrtho2D();
     if (dssaData_.texture_) {
         ((TextureObject*)dssaData_.texture_)->unkfunc_02086abc();
         ((TextureObject*)dssaData_.texture_)->unkfunc_02086abc();
@@ -510,7 +510,7 @@ ARM void UnkDSSAObject::setupDraw()
     baseScale_.vz = 1L;
 }
 
-ARM void UnkDSSAObject::setupRoot()
+ARM void DSSAScreenObject::setupRoot()
 {
     DSSAParts* root = dssaData_.getParts(0);
     int x = root->getPosX() / 4096;
@@ -521,7 +521,7 @@ ARM void UnkDSSAObject::setupRoot()
     G3_Color(0x7fff);
 }
 
-ARM void UnkDSSAObject::setupTRS(DSSAParts* parts)
+ARM void DSSAScreenObject::setupTRS(DSSAParts* parts)
 {
     int index = parts->getPartsIndex();
     int z = priority_ << 12;
@@ -536,7 +536,7 @@ ARM void UnkDSSAObject::setupTRS(DSSAParts* parts)
     G3_Scale(sizeX_ * (baseScale_.vx.value >> 12), sizeY_ * (baseScale_.vy.value >> 12), FX32_ONE);
 }
 
-ARM void UnkDSSAObject::drawParts(DSSAParts* parts)
+ARM void DSSAScreenObject::drawParts(DSSAParts* parts)
 {
     if (parts->getAlpha()) {
         return;

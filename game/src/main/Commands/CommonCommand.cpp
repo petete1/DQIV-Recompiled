@@ -28,12 +28,15 @@
 #include "main/cmn/CommonChapterTitle.hpp"
 #include "main/Commands/CommonScriptCommand.hpp"
 #include "main/menu/TownMenu_MESSAGE.hpp"
+#ifdef DQIV_NATIVE
+#include "main/achievement/AchievementTriggers.hpp"
+#endif
 #include "main/menu/MaterielMenuWindowManager.hpp"
 #include "main/script/ScriptBaseCommand.hpp"
 #include "ov000/town/TownSystem.hpp"
 #include "ov000/town/TownWindowSystem.hpp"
 #include "main/sound/Sound.hpp"
-#include "main/cmn/UnkImmigrantTown.hpp"
+#include "main/cmn/ImmigrantTown.hpp"
 
 THUMB int cmd_get_flag(int* param)
 {
@@ -156,20 +159,20 @@ THUMB void __cmd_fade_in2::initialize(char* scriptParam)
 {
     PARAM_FADEIN* param = (PARAM_FADEIN*)scriptParam;
     int frame = param->frame;
-    switch (data_020f21f8.state_) {
+    switch (g_SpriteFade.state_) {
         case GlobalFade::FADE_NONE:
-            data_020f21f8.state_ = GlobalFade::FADE_OUT_BLACK;
+            g_SpriteFade.state_ = GlobalFade::FADE_OUT_BLACK;
             break;
         case GlobalFade::FADE_IN_BLACK:
-            data_020f21f8.state_ = GlobalFade::FADE_OUT_WHITE;
+            g_SpriteFade.state_ = GlobalFade::FADE_OUT_WHITE;
             break;
         default:
-            data_020f21f8.state_ = GlobalFade::FADE_OUT_BLACK;
+            g_SpriteFade.state_ = GlobalFade::FADE_OUT_BLACK;
             break;
     }
-    data_020f21f8.count_ = 0;
-    data_020f21f8.frames_ = frame;
-    data_0210bc18.unkfunc_02058294(&data_020f21f8);
+    g_SpriteFade.count_ = 0;
+    g_SpriteFade.frames_ = frame;
+    g_GlobalGamePartManager.unkfunc_02058294(&g_SpriteFade);
     count_ = 0;
     countFrame_ = param->frame;
 }
@@ -194,20 +197,20 @@ THUMB void __cmd_fade_out2::initialize(char* scriptParam)
     PARAM_FADEOUT* param = (PARAM_FADEOUT*)scriptParam;
     if (param->type == 0) {
         int frame = param->frame;
-        data_020f21f8.state_ = GlobalFade::FADE_NONE;
-        data_020f21f8.count_ = 0;
-        data_020f21f8.frames_ = frame;
-        data_020f21f8.sprite_[0].setColor(0, 0, 0);
-        data_020f21f8.sprite_[1].setColor(0, 0, 0);
-        data_0210bc18.unkfunc_02058294(&data_020f21f8);
+        g_SpriteFade.state_ = GlobalFade::FADE_NONE;
+        g_SpriteFade.count_ = 0;
+        g_SpriteFade.frames_ = frame;
+        g_SpriteFade.sprite_[0].setColor(0, 0, 0);
+        g_SpriteFade.sprite_[1].setColor(0, 0, 0);
+        g_GlobalGamePartManager.unkfunc_02058294(&g_SpriteFade);
     } else {
         int frame = param->frame;
-        data_020f21f8.state_ = GlobalFade::FADE_IN_BLACK;
-        data_020f21f8.count_ = 0;
-        data_020f21f8.frames_ = frame;
-        data_020f21f8.sprite_[0].setColor(0x1f, 0x1f, 0x1f);
-        data_020f21f8.sprite_[1].setColor(0x1f, 0x1f, 0x1f);
-        data_0210bc18.unkfunc_02058294(&data_020f21f8);
+        g_SpriteFade.state_ = GlobalFade::FADE_IN_BLACK;
+        g_SpriteFade.count_ = 0;
+        g_SpriteFade.frames_ = frame;
+        g_SpriteFade.sprite_[0].setColor(0x1f, 0x1f, 0x1f);
+        g_SpriteFade.sprite_[1].setColor(0x1f, 0x1f, 0x1f);
+        g_GlobalGamePartManager.unkfunc_02058294(&g_SpriteFade);
     }
     count_ = 0;
     countFrame_ = param->frame;
@@ -234,8 +237,8 @@ THUMB void __cmd_message1_self_closing::initialize(char* scriptParam)
     count_ = 0;
     countFrame_ = param->frame;
     cmn::g_talkSound.setMessageSound(1, -1);
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(param->message);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(param->message);
     if (!g_HengeNoTsue.isMonster()) {
         cmn::PartyTalk::getSingleton()->setPreMessageNo(param->message);
     }
@@ -250,8 +253,8 @@ THUMB void __cmd_message1_self_closing::execute()
 THUMB int __cmd_message1_self_closing::isEnd()
 {
     if (count_ >= countFrame_) {
-        data_020ed1bc.stat_ = menu::MenuBase::MENUBASE_STAT_OK;
-        data_020ed1bc.close();
+        g_TownMenuMessage.stat_ = menu::MenuBase::MENUBASE_STAT_OK;
+        g_TownMenuMessage.close();
         cmn::GameManager::getSingleton()->playerManager_->setLock(0);
         return true;
     }
@@ -267,7 +270,7 @@ THUMB void __cmd_speak_to_player_self_closing::initialize(char* scriptParam)
     countFrame_ = param->frame;
     int ctrl = getPlacementCtrlId();
     if (getObjectCount() > ctrl) {
-        if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+        if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
             cmn::g_talkSound.setVoice(TownCharacterManager::getSingleton()->getCharaIndex(ctrl));
         }
     } else {
@@ -276,8 +279,8 @@ THUMB void __cmd_speak_to_player_self_closing::initialize(char* scriptParam)
     }
     TownCharacterManager::getSingleton()->setPlayerDirection(ctrl);
     cmn::g_talkSound.setMessageSound(1, ctrl);
-    data_020ed1bc.openMessageForTALK();
-    data_020ed1bc.addMessage(param->message);
+    g_TownMenuMessage.openMessageForTALK();
+    g_TownMenuMessage.addMessage(param->message);
     if (!g_HengeNoTsue.isMonster()) {
         cmn::PartyTalk::getSingleton()->setPreMessageNo(param->message);
     }
@@ -291,10 +294,10 @@ THUMB void __cmd_speak_to_player_self_closing::execute()
 
 THUMB int __cmd_speak_to_player_self_closing::isEnd()
 {
-    menu::MenuBase::MENUBASE_STAT stat = data_020ed1bc.stat_;
+    menu::MenuBase::MENUBASE_STAT stat = g_TownMenuMessage.stat_;
     if (stat == menu::MenuBase::MENUBASE_STAT_OK || stat == menu::MenuBase::MENUBASE_STAT_CANCEL || count_ >= countFrame_) {
-        data_020ed1bc.stat_ = menu::MenuBase::MENUBASE_STAT_OK;
-        data_020ed1bc.close();
+        g_TownMenuMessage.stat_ = menu::MenuBase::MENUBASE_STAT_OK;
+        g_TownMenuMessage.close();
         cmn::GameManager::getSingleton()->playerManager_->setLock(0);
         return true;
     }
@@ -308,7 +311,7 @@ THUMB void __cmd_menu_save::initialize(char* scriptParam)
     PARAM_MENU_SAVE* param = (PARAM_MENU_SAVE*)scriptParam;
     waitFlag_ = 0;
     int ctrl = getPlacementCtrlId();
-    if (data_0210bb94.unkfunc_02058114(0xc) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) == 1) {
         TownWindowSystem::getSingleton()->changeShopMenuPhase(MaterielMenu_WINDOW_MANAGER::MENU_SAVE);
     } else {
         MaterielMenu_WINDOW_MANAGER::getSingleton()->openMaterielWindow(MaterielMenu_WINDOW_MANAGER::MENU_SAVE);
@@ -328,7 +331,7 @@ THUMB void __cmd_menu_save::initialize(char* scriptParam)
 
 THUMB int __cmd_menu_save::isEnd()
 {
-    if (data_0210bb94.unkfunc_02058114(0xc) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) == 1) {
         if (!TownWindowSystem::getSingleton()->cmdWindow_.isShopMenu() && !waitFlag_) {
             waitFlag_ = 1;
             return false;
@@ -361,7 +364,7 @@ THUMB int cmd_encount(int* param)
         encount::Encount::getSingleton()->forceEventBrew(param[1]);
     }
     ScriptSystem::getSingleton()->executeEnable_ = 0;
-    if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         FieldPlayerManager::getSingleton()->setLockByEventEncount(1);
     } else {
         TownPlayerManager::getSingleton()->setLockByEventEncount(1);
@@ -377,7 +380,7 @@ THUMB int cmd_encount_set_flag(int* param)
         btl::BattleScriptManager::getSingleton()->setEncountMap(param[1]);
         encount::Encount::getSingleton()->forceEventBrew(param[1]);
     }
-    if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         FieldPlayerManager::getSingleton()->setLockByEventEncount(1);
     } else {
         TownPlayerManager::getSingleton()->setLockByEventEncount(1);
@@ -401,7 +404,7 @@ THUMB int cmd_encount_first_strike(int* param)
         btl::BattleScriptManager::getSingleton()->setEncountMap(param[1]);
         encount::Encount::getSingleton()->forceEventBrew(param[1]);
     }
-    if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         FieldPlayerManager::getSingleton()->setLockByEventEncount(1);
     } else {
         TownPlayerManager::getSingleton()->setLockByEventEncount(1);
@@ -479,6 +482,9 @@ THUMB int cmd_set_chapter(int* param)
     const char* church[6] = { "hak1f1", "mbk1f1", "mfk1f1", "mhk1f1", "cff1", "hck1f1" };
     const char* map[5] = { "caf1", "cbf2", "mfm1f1", "mhg1n1", "mlm1f1" };
     status::g_Story.setChapter(param[0]);
+#ifdef DQIV_NATIVE
+    achievement::onChapter(param[0]);
+#endif
     dss::Fix32Vector3 pos;
     dss::Fix32Vector3 unused;
     switch (param[0]) {
@@ -636,9 +642,9 @@ THUMB int cmd_music_pause(int* param)
 
 THUMB int cmd_play_music_now_map(int* param)
 {
-    if (data_0210bb94.unkfunc_02058114(0xc) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) == 1) {
         SoundManager::townPlay();
-    } else if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    } else if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         SoundManager::fieldPlay();
     }
     return 1;
@@ -689,7 +695,7 @@ THUMB int cmd_map_link_field_direct(int* param)
     pos.vy.value = param[2];
     pos.vz = 0L;
     cmn::g_extraMapLink.setExtraExitField(param[0], pos);
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         TownCharacterBase::allEventLock_ = 0;
         BillboardCharacter::setAllCharaAnim(1);
         TownCharacterManager::getSingleton()->restoreCharacterAnim();
@@ -708,7 +714,7 @@ THUMB int cmd_floor_change(int* param)
     dss::Fix32Vector3 pos = cmn::CommonCalculate::setVecByParam(param[4], param[5], param[6]);
     cmn::g_extraMapLink.setExtraLinkTown((const char*)param, pos, cmn::CommonCalculate::getIdxByParam((unsigned char)param[7]));
     ScriptSystem::getSingleton()->executeEnable_ = 0;
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         TownCharacterBase::allEventLock_ = 0;
         BillboardCharacter::setAllCharaAnim(1);
         TownCharacterManager::getSingleton()->restoreCharacterAnim();
@@ -726,7 +732,7 @@ THUMB int cmd_floor_exit(int* param)
 {
     cmn::g_extraMapLink.setExtraExitTown((const char*)param, param[4]);
     ScriptSystem::getSingleton()->executeEnable_ = 0;
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         TownCharacterBase::allEventLock_ = 0;
         BillboardCharacter::setAllCharaAnim(1);
         TownCharacterManager::getSingleton()->restoreCharacterAnim();
@@ -743,10 +749,10 @@ THUMB int cmd_floor_exit(int* param)
 THUMB int cmd_set_map_link_on_off(int* param)
 {
     cmn::LINK_TYPE type = param[1] == 0 ? cmn::NOT_LINK_THIS_TOWN : cmn::LINK_DEFAULT;
-    if (data_0210bb94.unkfunc_02058114(0xe) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) != 0) {
         cmn::g_extraMapLink.setLinkData(param[0], -1, type, 0, 0);
     }
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         cmn::g_extraMapLink.setLinkData(param[0], -1, type, g_Global.getMapName(), 0);
     }
     return 1;
@@ -787,12 +793,12 @@ THUMB int cmd_not_play_normal_sound(int* param)
 
 THUMB int cmd_check_member_type(int* param)
 {
-    return UnkImmigrantTown::getSingleton()->unkfunc_02037d6c(param[0]);
+    return ImmigrantTown::getSingleton()->hasResidentType(param[0]);
 }
 
 THUMB int cmd_check_member_num(int* param)
 {
-    unsigned int count = UnkImmigrantTown::getSingleton()->count_;
+    unsigned int count = ImmigrantTown::getSingleton()->count_;
     if (count < (unsigned int)param[1] && count >= (unsigned int)param[0]) {
         return 1;
     }
@@ -845,7 +851,7 @@ THUMB int cmd_player_lock(int* param)
 {
     if (param[0] != 0) {
         g_scp_fade_flag++;
-        if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+        if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
             TownPlayerManager::getSingleton()->setLock(1);
             TownPlayerManager::getSingleton()->charaColl_ = 0;
         } else {
@@ -855,7 +861,7 @@ THUMB int cmd_player_lock(int* param)
         cmn::PartyTalk::getSingleton()->resetPartyTalk();
     } else {
         g_scp_fade_flag--;
-        if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+        if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
             TownPlayerManager::getSingleton()->setLock(0);
             if (!cmn::PlayerManager::isLock()) {
                 TownPlayerManager::getSingleton()->charaColl_ = 1;
@@ -969,7 +975,7 @@ THUMB int cmd_is_barrier_disruption(int* param)
 THUMB int cmd_set_party_join(int* param)
 {
     status::g_Party.add(param[0]);
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         TownPlayerManager::getSingleton()->resetParty();
     } else {
         FieldPlayerManager::getSingleton()->resetParty();
@@ -980,7 +986,7 @@ THUMB int cmd_set_party_join(int* param)
 THUMB int cmd_set_party_quit(int* param)
 {
     status::g_Party.del(param[0]);
-    if (data_0210bb94.unkfunc_02058114(0xc) != 0) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xc) != 0) {
         TownPlayerManager::getSingleton()->resetParty();
     } else {
         FieldPlayerManager::getSingleton()->resetParty();
@@ -1005,7 +1011,7 @@ THUMB int cmd_battle_end_flag_set(int* param)
         btl::BattleScriptManager::getSingleton()->setEncountMap(param[1]);
         encount::Encount::getSingleton()->forceEventBrew(param[1]);
     }
-    if (data_0210bb94.unkfunc_02058114(0xe) == 1) {
+    if (g_GlobalDQ4.unkfunc_02058114(0xe) == 1) {
         FieldPlayerManager::getSingleton()->setLockByEventEncount(1);
     } else {
         TownPlayerManager::getSingleton()->setLockByEventEncount(1);
@@ -1338,7 +1344,7 @@ THUMB int cmd_is_party_top(int* param)
     if (param[0] != 0 && unkfunc_020254b8(i, param[0]) == 0) {
         return 0;
     }
-    if (param[1] != 0 && unkfunc_02025514(i, param[1]) == 0) {
+    if (param[1] != 0 && isMemberSexMatch(i, param[1]) == 0) {
         return 0;
     }
     return 1;
@@ -1406,10 +1412,10 @@ THUMB int cmd_is_party_all(int* param)
     }
     int result = 0;
     for (int j = 0; j < matchCount; j++) {
-        if (param[0] != 0 && unkfunc_02025514(match[j], param[0])) {
+        if (param[0] != 0 && isMemberSexMatch(match[j], param[0])) {
             result = 1;
         }
-        if (param[1] != 0 && unkfunc_0202555c(match[j], param[1])) {
+        if (param[1] != 0 && isMemberAliveMatch(match[j], param[1])) {
             result = 1;
         }
     }
@@ -1429,7 +1435,7 @@ THUMB int cmd_is_not_party_all(int* param)
 
 THUMB int cmd_is_party_head_count(int* param)
 {
-    unsigned int count = unkfunc_0202528c(param);
+    unsigned int count = getPartyHeadCount(param);
     if (param[3] == 0) {
         if (count == (unsigned int)param[4]) {
             return 1;
@@ -1453,7 +1459,7 @@ THUMB int cmd_is_not_party_head_count(int* param)
 }
 
 //gonna check ingame soon to name it didn't find it in the mobile vers yet  
-THUMB short unkfunc_0202528c(int* param)
+THUMB short getPartyHeadCount(int* param)
 {
     status::g_Party.setNormalMode();
     short normalCount = status::g_Party.getCount();
@@ -1491,33 +1497,33 @@ THUMB short unkfunc_0202528c(int* param)
         short total = playerAlive + (other + npcAlive);
         short totalOut = playerOutAlive + (other + npcOutAlive);
         if (param[1] == 0) {
-            return unkfunc_020254a4(normalCount, total, param[2]);
+            return selectHeadCount(normalCount, total, param[2]);
         }
         if (param[1] == 1) {
-            return unkfunc_020254a4(normalOut, totalOut, param[2]);
+            return selectHeadCount(normalOut, totalOut, param[2]);
         }
-        return unkfunc_020254a4(normalCount - normalOut, total - totalOut, param[2]);
+        return selectHeadCount(normalCount - normalOut, total - totalOut, param[2]);
     }
     if (param[0] == 1) {
         if (param[1] == 0) {
-            return unkfunc_020254a4(playerCount, playerAlive, param[2]);
+            return selectHeadCount(playerCount, playerAlive, param[2]);
         }
         if (param[1] == 1) {
-            return unkfunc_020254a4(playerOut, playerOutAlive, param[2]);
+            return selectHeadCount(playerOut, playerOutAlive, param[2]);
         }
-        return unkfunc_020254a4(playerCount - playerOut, playerAlive - playerOutAlive, param[2]);
+        return selectHeadCount(playerCount - playerOut, playerAlive - playerOutAlive, param[2]);
     }
     if (param[1] == 0) {
-        return unkfunc_020254a4(npcCount, npcAlive, param[2]);
+        return selectHeadCount(npcCount, npcAlive, param[2]);
     }
     if (param[1] == 1) {
-        return unkfunc_020254a4(npcOut, npcOutAlive, param[2]);
+        return selectHeadCount(npcOut, npcOutAlive, param[2]);
     }
-    return unkfunc_020254a4(npcCount - npcOut, npcAlive - npcOutAlive, param[2]);
+    return selectHeadCount(npcCount - npcOut, npcAlive - npcOutAlive, param[2]);
 }
 
 //gonna check ingame soon to name it didn't find it in the mobile vers yet  
-THUMB short unkfunc_020254a4(short count, short alive, int mode)
+THUMB short selectHeadCount(short count, short alive, int mode)
 {
     if (mode == 1) {
         return alive;
@@ -1554,7 +1560,7 @@ THUMB int unkfunc_020254b8(int index, int type)
 }
 
 //gonna check ingame soon to name it didn't find it in the mobile vers yet  
-THUMB int unkfunc_02025514(int index, int type)
+THUMB int isMemberSexMatch(int index, int type)
 {
     status::g_Party.setMemberShiftMode();
     status::g_Party.getPlayerStatus(index);
@@ -1575,7 +1581,7 @@ THUMB int unkfunc_02025514(int index, int type)
 
 
 //gonna check ingame soon to name it didn't find it in the mobile vers yet  
-THUMB int unkfunc_0202555c(int index, int type)
+THUMB int isMemberAliveMatch(int index, int type)
 {
     status::g_Party.setMemberShiftMode();
     status::PlayerStatus* player = status::g_Party.getPlayerStatus(index);

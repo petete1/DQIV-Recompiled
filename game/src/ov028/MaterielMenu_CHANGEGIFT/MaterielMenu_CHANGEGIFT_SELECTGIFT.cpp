@@ -1,15 +1,15 @@
 #include "ov028/MaterielMenu_CHANGEGIFT/MaterielMenu_CHANGEGIFT.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216fb14.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::menuSetup()
 {
     status::g_Party.setPlayerMode();
-    unkfunc_02080e64(-4, 0);
+    setCaptureOffset(-4, 0);
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD, menu::MenuItem::CURSORTYPE_ACTIVE);
     menuItem2_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_CANCEL, menu::MenuItem::CURSORTYPE_NONE);
     navigator_.setupBase();
@@ -37,26 +37,26 @@ THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::menuExecute()
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::menuDraw()
 {
-    if (data_020ed1bc.isOpen()) {
-        unkfunc_0216fce8();
+    if (g_TownMenuMessage.isOpen()) {
+        drawChangeGiftScreen();
         return;
     }
-    unkfunc_0216fb24(fukuroItemCount_, 1);
+    drawShopBuyScreen(fukuroItemCount_, 1);
     menuItem_.drawActive();
 }
 
 THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::menuUpdate()
 {
-    if (data_020ed1bc.isOpen()) {
-        if ((unsigned int)(data_020ed1bc.stat_ - 1) <= 1) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if ((unsigned int)(g_TownMenuMessage.stat_ - 1) <= 1) {
+            g_TownMenuMessage.close();
             if (message_) {
                 cancelChange();
             }
             if (selectChara_) {
                 close();
                 gMaterielMenu_CHANGEGIFT_SELECTCHARA.open();
-                unkfunc_02080e78();
+                resetCaptureOffset();
             }
         }
         return;
@@ -82,14 +82,14 @@ THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::checkAmount()
 {
     int itemID = MaterielMenu_SHOP_MANAGER::getSingleton()->getItem(activeItem_);
     int itemPrice = MaterielMenu_SHOP_MANAGER::getSingleton()->getItemPrice(activeItem_);
-    data_020ed1bc.openMessageForTALK();
+    g_TownMenuMessage.openMessageForTALK();
     TextAPI::setMACRO0(0xa, 0x40000000, itemID);
     if (status::g_Party.casinoCoin_ < itemPrice) {
-        data_020ed1bc.addMessage(0xc8aff);
+        g_TownMenuMessage.addMessage(0xc8aff);
         message_ = 1;
         return;
     }
-    data_020ed1bc.addMessage(0xc8b02, 0xc8b03);
+    g_TownMenuMessage.addMessage(0xc8b02, 0xc8b03);
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_NONE);
     selectChara_ = 1;
 }
@@ -100,10 +100,10 @@ THUMB void MaterielMenu_CHANGEGIFT_SELECTGIFT::cancelChange()
     close();
     gMaterielMenu_CHANGEGIFT_ROOT.open();
     gMaterielMenu_CHANGEGIFT_ROOT.mode_ = 3;
-    data_020ed1bc.openMessageForTALK();
+    g_TownMenuMessage.openMessageForTALK();
     TextAPI::setMACRO0(0xb, 0x50000000, status::g_Party.getPlayerIndex(leadpc));
     TextAPI::setMACRO0(0x2a, 0xf0000000, status::g_Party.casinoCoin_);
-    data_020ed1bc.addMessage(0xc8afa);
-    data_020ed1bc.setYesNo();
-    unkfunc_02080e78();
+    g_TownMenuMessage.addMessage(0xc8afa);
+    g_TownMenuMessage.setYesNo();
+    resetCaptureOffset();
 }

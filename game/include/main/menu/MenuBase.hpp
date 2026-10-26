@@ -89,8 +89,8 @@ struct MenuItem {
     int active_;                    /* 0x38 */
     int unk_3C;                     /* 0x3C */
     int unk_40;                     /* 0x40 */
-    int unk_44;                     /* 0x44 base x */
-    int unk_48;                     /* 0x48 base y */
+    int baseX_;                     /* 0x44 base x */
+    int baseY_;                     /* 0x48 base y */
     int lastresult_;                /* 0x4C */
     int result_;                    /* 0x50 */
     int reason_;                    /* 0x54 */
@@ -110,10 +110,10 @@ struct MenuItem {
     int check20_PAD_CancelButton();
     int check30_PAD_Noactive();
     int check40_PAD_OkButton();
-    int unkfunc_02051d40();
-    int unkfunc_02051dcc();
-    int unkfunc_02051e5c();
-    int unkfunc_02051ed0();
+    int check50_PAD_UP();
+    int check60_PAD_DOWN();
+    int check70_PAD_LEFT();
+    int check80_PAD_RIGHT();
     int check50_NEW_PAD_UP();
     int check60_NEW_PAD_DOWN();
     int check70_NEW_PAD_LEFT();
@@ -124,7 +124,7 @@ struct MenuItem {
 }  // namespace menu
 
 // DS menu parts draw list entry (list terminated by type_ 0xff)
-struct UnkMenuParts {
+struct MenuPartsEntry {
     unsigned char type_;    /* 0x0 */  // 0xff: end of list
     unsigned char subType_; /* 0x1 */
     short attr_;            /* 0x2 */  // palette << 12 | color << 8 | icon slot
@@ -134,10 +134,10 @@ struct UnkMenuParts {
     short w_;               /* 0xA */  // 0: 256
     short h_;               /* 0xC */  // 0: 256
 
-    int unkfunc_02051708(int* param);           // value of the part
-    int unkfunc_0205171c();                     // palette
-    int unkfunc_02051728();                     // text color
-    int unkfunc_02051734();                     // icon slot
+    int getValue(int* param);           // value of the part
+    int getPalette();                     // palette
+    int getTextColor();                     // text color
+    int getIconSlot();                     // icon slot
 };
 
 struct MENUITEM_DATA {
@@ -149,9 +149,9 @@ struct MENUITEM_DATA {
     short h;        /* 0x8 */
 };
 
-void unkfunc_020518f8(MENUITEM_DATA* data, int x, int y);     // sets data->x/y
+void setMenuItemPosition(MENUITEM_DATA* data, int x, int y);     // sets data->x/y
 
 extern "C" {
-    extern int data_020be244[];      /* draw flags passed as the last argument of unkfunc_02050ee0 */
+    extern int g_menuTextColors[];      /* draw flags passed as the last argument of drawMenuParts */
 }
 

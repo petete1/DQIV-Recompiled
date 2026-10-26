@@ -4,11 +4,12 @@
 #include "main/status/Status.hpp"
 #include "main/status/GameStatus.hpp"
 #include "main/status/StoryStatus.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_02177bac.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDrawExtra.hpp"
 #ifdef DQIV_NATIVE
-#include "main/menu/UnkMenuPartsDraw.hpp"
+#include "main/menu/MenuPartsDraw.hpp"
 #include "main/text/TextAPI.hpp"
 #include "Settings.hpp"
+#include "Achievements.hpp"
 #include "main/dss/Pad.hpp"
 #include <nitro/pad.h>
 #include <stdio.h>
@@ -39,6 +40,7 @@ THUMB void MaterielMenu_LOAD::menuSetup()
     sexualityItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_ACTIVE);
 #ifdef DQIV_NATIVE
     settingsItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_ACTIVE);
+    achievementsItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_ACTIVE);
 #endif
     status_ = LOAD_MODESELECT;
     country_ = 0;
@@ -49,7 +51,7 @@ THUMB void MaterielMenu_LOAD::menuSetup()
     killResult_ = 0;
     makeResult_ = 0;
     resume_ = 0;
-    if (profile::SaveLoad::unkfunc_0202b684(3) == 1) {
+    if (profile::SaveLoad::checkbank(3) == 1) {
         resume_ = 1;
     }
     frame_ = 0;
@@ -58,9 +60,10 @@ THUMB void MaterielMenu_LOAD::menuSetup()
 THUMB void MaterielMenu_LOAD::menuExecute()
 {
 #ifdef DQIV_NATIVE
-    // The original entries, then the settings.
-    MenuTemplate_materiel::MATERIEL_DIARY_MENU(&rootItem_, rootCount() + 1);
+    // The original entries, then the settings, the achievements and quitting.
+    MenuTemplate_materiel::MATERIEL_DIARY_MENU(&rootItem_, rootCount() + 3);
     settings_.execute(settingsItem_);
+    achievements_.execute(achievementsItem_);
     MenuTemplate_materiel::MATERIEL_DIARY_LOAD(&dataItem_);
     MenuTemplate_materiel::MATERIEL_SEXUALITY(&sexualityItem_);
     return;
@@ -78,12 +81,12 @@ inline void MaterielMenu_LOAD::sexualityDraw()
 {
     int message;
     int sexualityMessage[2] = { 0xa0000005, 0xa0000006 };
-    unkfunc_021781c4(country_, data_020f1878, data_020f17c0, data_020f17bc, 2, 1);
-    unkfunc_02177c00(0x30, 0x10, 0xa0, 0x28, -1);
+    drawNameEditField(country_, g_nameEditLabels, g_nameEditLength, g_nameEditMaxLength, 2, 1);
+    drawFrameStyleB(0x30, 0x10, 0xa0, 0x28, -1);
     message = 0x800001a1;
-    unkfunc_02177fe0(&message, 0x30, 0x38, 0xa0, 0x50);
-    unkfunc_02177c9c(sexualityMessage, 2, 0x70, 0x5a);
-    unkfunc_02177c00(0x30, 0x38, 0xa0, 0x48, 0x50);
+    drawCenteredMessage(&message, 0x30, 0x38, 0xa0, 0x50);
+    drawMessageColumn(sexualityMessage, 2, 0x70, 0x5a);
+    drawFrameStyleB(0x30, 0x38, 0xa0, 0x48, 0x50);
     sexualityItem_.drawActive();
 }
 
@@ -93,31 +96,39 @@ THUMB void MaterielMenu_LOAD::menuDraw()
     int rootResumeMessage[4] = { 0x80000196, 0x8000019f, 0x80000197, 0x80000198 };
     if (status_ == LOAD_MODESELECT) {
 #ifdef DQIV_NATIVE
-        // One more line for the settings.
+        // Three more lines: the settings, the achievements and quitting.
         static char s_settingsEntry[48];
+        static char s_achievementsEntry[48];
+        static char s_quitEntry[48];
+        copyText(s_quitEntry, sizeof(s_quitEntry), pc::quitLabel(pc::gameSettings().language));
         copyText(s_settingsEntry, sizeof(s_settingsEntry), pc::settingsTitle(pc::gameSettings().language));
+        copyText(s_achievementsEntry, sizeof(s_achievementsEntry), pc::achievementsTitle(pc::gameSettings().language));
         if (resume_ == 1) {
-            unkfunc_02177ce0(rootResumeMessage, ROOT_RESUME_COUNT, 0x18, 0x10);
+            drawMessageColumnSmall(rootResumeMessage, ROOT_RESUME_COUNT, 0x18, 0x10);
         } else {
-            unkfunc_02177ce0(rootMessage, ROOT_COUNT, 0x18, 0x10);
+            drawMessageColumnSmall(rootMessage, ROOT_COUNT, 0x18, 0x10);
         }
         int param = (int)s_settingsEntry;
-        UnkMenuParts entry[] = {
+        MenuPartsEntry entry[] = {
             { 0x0d, 0x08, (short)0xf000, 0, 0x18, 0x10, 0x90, 0xe },
             { 0xff, 0x00, 0, 0, 0, 0, 0, 0 },
         };
-        unkfunc_02050ee0(entry, &param, 0, rootCount() * 14, 1);
-        unkfunc_02177bac(8, 8, 0xa0, resume_ == 1 ? 0x48 + 16 : 0x38 + 16, -1);
+        drawMenuParts(entry, &param, 0, rootCount() * 14, 1);
+        param = (int)s_achievementsEntry;
+        drawMenuParts(entry, &param, 0, (rootCount() + 1) * 14, 1);
+        param = (int)s_quitEntry;
+        drawMenuParts(entry, &param, 0, (rootCount() + 2) * 14, 1);
+        drawFrameStyleA(8, 8, 0xa0, resume_ == 1 ? 0x48 + 44 : 0x38 + 44, -1);
         rootItem_.drawActive();
         return;
 #endif
         if (resume_ == 1) {
-            unkfunc_02177ce0(rootResumeMessage, ROOT_RESUME_COUNT, 0x18, 0x10);
-            unkfunc_02177bac(8, 8, 0xa0, 0x48, -1);
+            drawMessageColumnSmall(rootResumeMessage, ROOT_RESUME_COUNT, 0x18, 0x10);
+            drawFrameStyleA(8, 8, 0xa0, 0x48, -1);
             rootItem_.drawActive();
         } else {
-            unkfunc_02177ce0(rootMessage, ROOT_COUNT, 0x18, 0x10);
-            unkfunc_02177bac(8, 8, 0xa0, 0x38, -1);
+            drawMessageColumnSmall(rootMessage, ROOT_COUNT, 0x18, 0x10);
+            drawFrameStyleA(8, 8, 0xa0, 0x38, -1);
             rootItem_.drawActive();
         }
     }
@@ -130,15 +141,15 @@ THUMB void MaterielMenu_LOAD::menuDraw()
         } else if (menuMode_ == 2) {
             message = rootMessage[2];
         }
-        unkfunc_02177fe0(&message, 8, 0x38, 0xf0, 0x50);
+        drawCenteredMessage(&message, 8, 0x38, 0xf0, 0x50);
         for (int i = 0; i < 3; i++) {
             if (diary_[i].savetype_ == 4) {
-                unkfunc_0217800c(i, diary_[i].name_, -1, -1, -1, diary_[i].time_, 0x5a, flag);
+                drawJournalSlot(i, diary_[i].name_, -1, -1, -1, diary_[i].time_, 0x5a, flag);
             } else {
-                unkfunc_0217800c(i, diary_[i].name_, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, 0x5a, flag);
+                drawJournalSlot(i, diary_[i].name_, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, 0x5a, flag);
             }
         }
-        unkfunc_02177c00(8, 0x38, 0xf0, 0x78, 0x50);
+        drawFrameStyleB(8, 0x38, 0xf0, 0x78, 0x50);
         dataItem_.drawActive();
     }
     if (status_ == LOAD_SEXUALITY) {
@@ -146,7 +157,10 @@ THUMB void MaterielMenu_LOAD::menuDraw()
     }
 #ifdef DQIV_NATIVE
     if (status_ == LOAD_SETTINGS) {
-        settings_.draw(settingsItem_, 0, 0x100, unkfunc_02177bac);
+        settings_.draw(settingsItem_, 0, 0x100, drawFrameStyleA);
+    }
+    if (status_ == LOAD_ACHIEVEMENTS) {
+        achievements_.draw(achievementsItem_, 0, 0x100, drawFrameStyleA);
     }
 #endif
 }
@@ -170,9 +184,9 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
             activeDiaryNo_ = 0;
             redraw_ = 1;
         } else {
-            data_020ed1bc.openMessageForMENU();
-            data_020ed1bc.addMessageNOWAIT(0xcb60b);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.openMessageForMENU();
+            g_TownMenuMessage.addMessageNOWAIT(0xcb60b);
+            g_TownMenuMessage.addMessageWAITKEY();
             changeStatus(LOAD_BLANK);
         }
         break;
@@ -191,6 +205,12 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         // The language may have changed.
         country_ = status::g_Game.language;
         break;
+    case LOAD_ACHIEVEMENTS:
+        if (achievements_.update(achievementsItem_, redraw_)) {
+            changeStatus(LOAD_MODESELECT);
+            redraw_ = 1;
+        }
+        break;
 #endif
     case LOAD_WRITECHECK: {
         int result = profile::SaveLoad::isCardOK();
@@ -200,24 +220,24 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         if (result) {
             changeStatus(LOAD_END);
         } else {
-            data_020ed1bc.close();
-            data_020ed1bc.openMessageForMENU();
-            data_020ed1bc.addMessageNOWAIT(0xcb5fa);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.close();
+            g_TownMenuMessage.openMessageForMENU();
+            g_TownMenuMessage.addMessageNOWAIT(0xcb5fa);
+            g_TownMenuMessage.addMessageWAITKEY();
             changeStatus(LOAD_BLANK);
         }
         break;
     }
     case LOAD_DELETECHECK:
-        if (data_020ed1bc.isOpen() && data_020ed1bc.isMessageWAITPROG()) {
+        if (g_TownMenuMessage.isOpen() && g_TownMenuMessage.isMessageWAITPROG()) {
             if (deleteDiary()) {
-                data_020ed1bc.openMessageForMENU();
-                data_020ed1bc.addMessage(0xcb605);
+                g_TownMenuMessage.openMessageForMENU();
+                g_TownMenuMessage.addMessage(0xcb605);
                 messageCounter_++;
             } else {
-                data_020ed1bc.openMessageForMENU();
-                data_020ed1bc.addMessageNOWAIT(0xcb608);
-                data_020ed1bc.addMessageWAITKEY();
+                g_TownMenuMessage.openMessageForMENU();
+                g_TownMenuMessage.addMessageNOWAIT(0xcb608);
+                g_TownMenuMessage.addMessageWAITKEY();
                 changeStatus(LOAD_BLANK);
             }
         }
@@ -226,15 +246,15 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         if (profile::SaveLoad::loadbank(activeDiaryNo_)) {
             changeStatus(LOAD_END);
         } else {
-            data_020ed1bc.openMessageForMENU();
-            data_020ed1bc.addMessageNOWAIT(0xcb60b);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.openMessageForMENU();
+            g_TownMenuMessage.addMessageNOWAIT(0xcb60b);
+            g_TownMenuMessage.addMessageWAITKEY();
             changeStatus(LOAD_BLANK);
         }
         break;
     case LOAD_BLANK:
-        if (data_020ed1bc.isOpen()) {
-            data_020ed1bc.isMessageWAITPROG();
+        if (g_TownMenuMessage.isOpen()) {
+            g_TownMenuMessage.isMessageWAITPROG();
         }
         break;
     case LOAD_END:
@@ -244,9 +264,9 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         if (profile::SaveLoad::loadbank(3)) {
             changeStatus(LOAD_END);
         } else {
-            data_020ed1bc.openMessageForMENU();
-            data_020ed1bc.addMessageNOWAIT(0xcb60b);
-            data_020ed1bc.addMessageWAITKEY();
+            g_TownMenuMessage.openMessageForMENU();
+            g_TownMenuMessage.addMessageNOWAIT(0xcb60b);
+            g_TownMenuMessage.addMessageWAITKEY();
             changeStatus(LOAD_BLANK);
         }
         break;
@@ -255,40 +275,40 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
 
 THUMB bool MaterielMenu_LOAD::messageUpdate()
 {
-    if (!data_020ed1bc.isOpen()) {
+    if (!g_TownMenuMessage.isOpen()) {
         return false;
     }
-    int stat = data_020ed1bc.stat_;
+    int stat = g_TownMenuMessage.stat_;
     switch (status_) {
     case LOAD_DATASELECT:
         switch (menuMode_) {
         case 0:
             if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 changeStatus(LOAD_NAMEEDIT);
                 redraw_ = 1;
             } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
             }
             break;
         case 1:
             if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 changeStatus(LOAD_NAMEEDIT);
                 redraw_ = 1;
             } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
             }
             break;
         case 2:
             if (stat == menu::MenuBase::MENUBASE_STAT_OK) {
-                data_020ed1bc.close();
-                data_020ed1bc.openMessageForMENU();
-                data_020ed1bc.addMessageNOWAIT(0xcb604);
-                data_020ed1bc.addMessageWAITKEY();
+                g_TownMenuMessage.close();
+                g_TownMenuMessage.openMessageForMENU();
+                g_TownMenuMessage.addMessageNOWAIT(0xcb604);
+                g_TownMenuMessage.addMessageWAITKEY();
                 changeStatus(LOAD_DELETECHECK);
             } else if (stat == menu::MenuBase::MENUBASE_STAT_CANCEL) {
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
             }
             break;
         }
@@ -297,7 +317,7 @@ THUMB bool MaterielMenu_LOAD::messageUpdate()
         if (messageCounter_ > 0) {
             if ((unsigned int)(stat - 1) <= 1) {
                 redraw_ = 1;
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 changeStatus(LOAD_MODESELECT);
             }
         } else {
@@ -309,17 +329,17 @@ THUMB bool MaterielMenu_LOAD::messageUpdate()
         if (messageCounter_ > 0) {
             if ((unsigned int)(stat - 1) <= 1) {
                 redraw_ = 1;
-                data_020ed1bc.close();
+                g_TownMenuMessage.close();
                 changeStatus(LOAD_MODESELECT);
             }
-        } else if (data_020ed1bc.isMessageWAITPROG()) {
-            data_020ed1bc.close();
+        } else if (g_TownMenuMessage.isMessageWAITPROG()) {
+            g_TownMenuMessage.close();
             return false;
         }
         break;
     case LOAD_BLANK:
         if ((unsigned int)(stat - 1) <= 1) {
-            data_020ed1bc.close();
+            g_TownMenuMessage.close();
         }
         return false;
     case LOAD_END:
@@ -342,6 +362,17 @@ THUMB void MaterielMenu_LOAD::rootUpdate()
             settingsItem_.active_ = 0;
             settings_.open(false);
             changeStatus(LOAD_SETTINGS);
+            redraw_ = 1;
+            break;
+        }
+        if (rootItem_.active_ == rootCount() + 2) {
+            pc::requestQuit();
+            break;
+        }
+        if (rootItem_.active_ == rootCount() + 1) {
+            achievementsItem_.active_ = 0;
+            achievements_.open();
+            changeStatus(LOAD_ACHIEVEMENTS);
             redraw_ = 1;
             break;
         }
@@ -383,7 +414,7 @@ THUMB void MaterielMenu_LOAD::rootUpdate()
         break;
     case 5:
 #ifdef DQIV_NATIVE
-        rootItem_.active_ = rootCount();
+        rootItem_.active_ = rootCount() + 2;
         break;
 #endif
         if (resume_ != 0) {
@@ -410,34 +441,34 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
         switch (menuMode_) {
         case 0:
             if (diary_[active].name_ == 0) {
-                data_020ed1bc.openMessageForMENU();
-                data_020ed1bc.addMessage(0xcb5eb);
-                data_020ed1bc.setYesNo();
+                g_TownMenuMessage.openMessageForMENU();
+                g_TownMenuMessage.addMessage(0xcb5eb);
+                g_TownMenuMessage.setYesNo();
             } else {
                 changeStatus(LOAD_LOADCHECK);
             }
             break;
         case 1:
             if (diary_[active].name_ != 0) {
-                data_020ed1bc.openMessageForMENU();
-                data_020ed1bc.addMessage(0xcb5ef);
-                data_020ed1bc.setYesNo();
+                g_TownMenuMessage.openMessageForMENU();
+                g_TownMenuMessage.addMessage(0xcb5ef);
+                g_TownMenuMessage.setYesNo();
             } else {
                 changeStatus(LOAD_NAMEEDIT);
             }
             break;
         case 2:
             if (diary_[active].name_ != 0) {
-                data_020ed1bc.openMessageForMENU();
+                g_TownMenuMessage.openMessageForMENU();
                 profile::SaveLoad::setCatalogMacro(&catalogview_[activeDiaryNo_]);
                 if (diary_[activeDiaryNo_].savetype_ == 4) {
-                    data_020ed1bc.addMessage(0xcb610);
+                    g_TownMenuMessage.addMessage(0xcb610);
                 } else if (diary_[activeDiaryNo_].chapter_ >= 5) {
-                    data_020ed1bc.addMessage(0xcb601);
+                    g_TownMenuMessage.addMessage(0xcb601);
                 } else {
-                    data_020ed1bc.addMessage(0xcb5fe);
+                    g_TownMenuMessage.addMessage(0xcb5fe);
                 }
-                data_020ed1bc.setYesNo(1);
+                g_TownMenuMessage.setYesNo(1);
             }
             break;
         }
@@ -472,9 +503,9 @@ THUMB void MaterielMenu_LOAD::sexualityUpdate()
         sexualityItem_.result_ = 0;
         sexualityItem_.lastresult_ = 0;
         exitCode_ = activeDiaryNo_;
-        data_020ed1bc.openMessageForMENU();
-        data_020ed1bc.addMessageNOWAIT(0xcb5f7);
-        data_020ed1bc.addMessageWAITKEY();
+        g_TownMenuMessage.openMessageForMENU();
+        g_TownMenuMessage.addMessageNOWAIT(0xcb5f7);
+        g_TownMenuMessage.addMessageWAITKEY();
         changeStatus(LOAD_WRITECHECK);
         redraw_ = 1;
         break;
@@ -566,9 +597,9 @@ THUMB void MaterielMenu_LOAD::changeStatus(LOAD_STATUS status)
 
 THUMB void MaterielMenu_LOAD::closeMessage()
 {
-    int stat = data_020ed1bc.stat_;
+    int stat = g_TownMenuMessage.stat_;
     redraw_ = 1;
     if ((unsigned int)(stat - 1) <= 1) {
-        data_020ed1bc.close();
+        g_TownMenuMessage.close();
     }
 }

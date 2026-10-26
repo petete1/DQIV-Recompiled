@@ -8,7 +8,7 @@
 #include "globaldefs.h"
 #include "main/sound/Sound.hpp"
 #include "main/menu/UiMsg.hpp"
-#include "main/menu/UnkMenuDisplays.hpp"
+#include "main/menu/MenuDisplays.hpp"
 
 static MENUITEM_DATA yesNoItemData[] = {
     {1, 2, 0xd0, 0x08, 0x28, 0x10},
@@ -21,11 +21,11 @@ THUMB void CommonMenu_YESNO::menuSetup()
     menuItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD_CANCEL, menu::MenuItem::CURSORTYPE_NONE);
     menuItem_.active_ = 0;
     menuItem_.enableLoopEdge_ = 1;
-    UnkMenuYesNoDisplay* const window = &data_020f530c.yesNo_;
-    window->unkfunc_0204f264(1);
-    window->unkfunc_02052a28(0xa0000064, 0xa0000065);
-    window->unkfunc_0204f270(0xc0, 0xc0);
-    unkfunc_02056184(0);
+    MenuYesNoDisplay* const window = &g_MenuDisplays.yesNo_;
+    window->setEnable(1);
+    window->setTexts(0xa0000064, 0xa0000065);
+    window->setPosition(0xc0, 0xc0);
+    ui_MsgSetYesNoCursor(0);
     Sound::sePlay(0x130);
     superCancel_ = 1;
     wait_ = 0;
@@ -38,7 +38,7 @@ THUMB void CommonMenu_YESNO::menuExecute()
 
 THUMB void CommonMenu_YESNO::menuDraw()
 {
-    unkfunc_02056174();
+    ui_MsgDrawYesNo();
     menuItem_.drawActive();
 }
 
@@ -51,7 +51,7 @@ THUMB void CommonMenu_YESNO::menuUpdate()
     menuItem_.execInput();
     switch (menuItem_.result_) {
         case 1:
-            unkfunc_02056184(menuItem_.active_);
+            ui_MsgSetYesNoCursor(menuItem_.active_);
             break;
         case 2:
             if (menuItem_.active_ == 0) {
@@ -77,11 +77,11 @@ THUMB void CommonMenu_YESNO::menuUpdate()
             break;
         case 5:
             menuItem_.active_ = 1;
-            unkfunc_02056184(1);
+            ui_MsgSetYesNoCursor(1);
             break;
         case 6:
             menuItem_.active_ = 0;
-            unkfunc_02056184(0);
+            ui_MsgSetYesNoCursor(0);
             break;
         case 7:
         case 8:
@@ -92,12 +92,12 @@ THUMB void CommonMenu_YESNO::menuUpdate()
 THUMB void CommonMenu_YESNO::setYesNo(int cursor)
 {
     menuItem_.active_ = cursor;
-    unkfunc_02056184(cursor);
+    ui_MsgSetYesNoCursor(cursor);
 }
 
 THUMB void CommonMenu_YESNO::setPosition(int x, int y)
 {
-    data_020f530c.yesNo_.unkfunc_0204f270(x, y + 0xc0);
+    g_MenuDisplays.yesNo_.setPosition(x, y + 0xc0);
 }
 
 THUMB void CommonMenu_YESNO::setSuperCancel(int flag)

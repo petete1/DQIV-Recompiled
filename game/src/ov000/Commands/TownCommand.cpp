@@ -2,7 +2,7 @@
 
 #include "ov000/Commands/TownCommand.hpp"
 #include "main/dss/RenderObject.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Display.hpp"
 #include "ov000/town/TownWindowSystem.hpp"
 #include "ov000/town/TownPlayerManager.hpp"
 #include "main/status/StageStatus.hpp"
@@ -23,7 +23,7 @@
 #include "ov000/town/TownCharacterManager.hpp"
 #include "ov000/town/TownFurnitureControl.hpp"
 #include "ov000/town/riseup/TownRiseup.hpp"
-#include "ov016/UnkMaterielMenuDraw/UnkMaterielMenuDraw_0216ce4c.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDraw.hpp"
 #include "main/status/StoryStatus.hpp"
 #include "main/status/ShopList.hpp"
 #include "main/status/GameFlag.hpp"
@@ -42,8 +42,8 @@
 #include "main/sound/Sound.hpp"
 #include "ov000/town/TownEndrollManager.hpp"
 #include "main/dss/DssUtils.hpp"
-#include "main/cmn/UnkEnvoyManager.hpp"
-#include "main/cmn/UnkImmigrantTown.hpp"
+#include "main/cmn/EnvoyManager.hpp"
+#include "main/cmn/ImmigrantTown.hpp"
 
 void searchItem(int index, int* found, int* items);
 
@@ -438,7 +438,7 @@ THUMB int cmd_chara_set_priority_sure_appointment(int* param)
         }
     }
     if (g_Global.isAreaChange() == 1) {
-        UnkImmigrantTown::getSingleton()->unkfunc_02037e20(param[0], param[1], param[2], values);
+        ImmigrantTown::getSingleton()->placePriorityResident(param[0], param[1], param[2], values);
     }
     return 1;
 }
@@ -446,7 +446,7 @@ THUMB int cmd_chara_set_priority_sure_appointment(int* param)
 THUMB int cmd_chara_set_normal_sure_appointment(int* param)
 {
     if (g_Global.isAreaChange() == 1) {
-        UnkImmigrantTown::getSingleton()->unkfunc_02037db0(param[0], param[1]);
+        ImmigrantTown::getSingleton()->placeNextResident(param[0], param[1]);
     }
     return 1;
 }
@@ -455,7 +455,7 @@ THUMB int cmd_chara_set_normal_sure(int* param)
 {
     int index = getPlacementCtrlId();
     int id = getPlacementIndex(index);
-    int result = UnkImmigrantTown::getSingleton()->unkfunc_02037ef4(id, param[0]);
+    int result = ImmigrantTown::getSingleton()->getResidentPoseAt(id, param[0]);
     if (result != 0xff) {
         TownCharacterManager::getSingleton()->setSureId(index, param[0]);
         TownCharacterManager::getSingleton()->character_[index]->changePose(result);
@@ -472,26 +472,26 @@ THUMB int cmd_chara_talk_to_player_sure(int* param)
         ui_MsgSndSet(cmn::g_talkSound.getCharacterVoice(index));
     }
     if (param[1] == 1) {
-        data_020f0078.mode_ = 1;
+        g_EnvoyManager.mode_ = 1;
     } else {
         int id = getPlacementIndex(index);
         int value = TownCharacterManager::getSingleton()->character_[index]->getSurechigaiMapNo();
-        data_020f0078.unkfunc_0203a34c(UnkImmigrantTown::getSingleton()->unkfunc_02037f40(id, value));
+        g_EnvoyManager.selectEnvoy(ImmigrantTown::getSingleton()->getResidentIndexAt(id, value));
     }
     if (param[0] == 1) {
         TownCharacterManager::getSingleton()->setPlayerDirection(index);
     }
 
-    unsigned char* name = data_020f0078.unkfunc_0203a65c();
-    unsigned char* comment = data_020f0078.unkfunc_0203a938();
-    int sex = data_020f0078.unkfunc_0203a714();
-    int aetas = data_020f0078.unkfunc_0203a750();
-    int skill = data_020f0078.unkfunc_0203a78c();
-    unsigned char* townName = data_020f0078.unkfunc_0203a820();
+    unsigned char* name = g_EnvoyManager.getName();
+    unsigned char* comment = g_EnvoyManager.getComment();
+    int sex = g_EnvoyManager.getSex();
+    int aetas = g_EnvoyManager.getAge();
+    int skill = g_EnvoyManager.getSkill();
+    unsigned char* townName = g_EnvoyManager.getTownName();
     char text0[0x40];
     char text1[0x40];
     char text2[0x40];
-    unkfunc_0216fa48(text0, text1, text2, (char*)comment);
+    splitCommentLines(text0, text1, text2, (char*)comment);
     TextAPI::setUserString(0, (char*)name);
     TextAPI::setUserString(1, (char*)text0);
     TextAPI::setUserString(2, (char*)text1);
@@ -621,8 +621,8 @@ THUMB int cmd_character_action_pursue(int* param)
         index = getPlacementCtrlId();
         move.speed_.value = param[0];
         move.speed_ *= defaultSpeed;
-        move.unk_38 = 0;
-        move.unk_34 = 0;
+        move.counter_ = 0;
+        move.frame_ = 0;
         TownCharacterBase** chara = TownCharacterManager::getSingleton()->character_;
         chara[index]->moveType_ = MOVE_TYPE_PURSUE;
         TownCharacterBase* c = chara[index];
@@ -631,8 +631,8 @@ THUMB int cmd_character_action_pursue(int* param)
         c->moveData_.vector[2] = move.pos_[2];
         c->moveData_.vector[3] = move.pos_[3];
         c->moveData_.speed = move.speed_;
-        c->moveData_.frame = move.unk_34;
-        c->moveData_.counter = move.unk_38;
+        c->moveData_.frame = move.frame_;
+        c->moveData_.counter = move.counter_;
     }
     return 1;
 }
@@ -641,8 +641,8 @@ THUMB int cmd_character_move_roam(int* param)
 {
     int index = getPlacementCtrlId();
     TownCharaMoveParam move;
-    move.unk_38 = dssrand::rand(0x50);
-    move.unk_34 = 0;
+    move.counter_ = dssrand::rand(0x50);
+    move.frame_ = 0;
     move.pos_[0].vx.value = param[0];
     move.pos_[0].vy.value = param[1];
     move.pos_[0].vz.value = param[2];
@@ -659,8 +659,8 @@ THUMB int cmd_character_move_roam(int* param)
     c->moveData_.vector[2] = move.pos_[2];
     c->moveData_.vector[3] = move.pos_[3];
     c->moveData_.speed = move.speed_;
-    c->moveData_.frame = move.unk_34;
-    c->moveData_.counter = move.unk_38;
+    c->moveData_.frame = move.frame_;
+    c->moveData_.counter = move.counter_;
     return 1;
 }
 
@@ -1395,9 +1395,9 @@ THUMB void __cmd_map_flash::initialize(char* scriptParam)
     PARAM_MAP_FLASH* param = (PARAM_MAP_FLASH*)scriptParam;
     count_ = 0;
     countFrame_ = param->frame;
-    data_0210bd4c.unkfunc_0205c948(0, param->se);
+    g_SoundPlayer.unkfunc_0205c948(0, param->se);
     int flash_frame = countFrame_ / 2;
-    data_020f21f8.flashWhite(flash_frame, (unsigned char)param->r, (unsigned char)param->g, (unsigned char)param->b);
+    g_SpriteFade.flashWhite(flash_frame, (unsigned char)param->r, (unsigned char)param->g, (unsigned char)param->b);
 }
 
 THUMB void __cmd_map_flash::execute()
@@ -1405,9 +1405,9 @@ THUMB void __cmd_map_flash::execute()
     count_++;
     int flash_frame = countFrame_ / 2;
     if (count_ == flash_frame) {
-        data_020f21f8.state_ = (GlobalFade::FADE_STATE)6;
-        data_020f21f8.count_ = 0;
-        data_020f21f8.frames_ = flash_frame;
+        g_SpriteFade.state_ = (GlobalFade::FADE_STATE)6;
+        g_SpriteFade.count_ = 0;
+        g_SpriteFade.frames_ = flash_frame;
     }
 }
 
@@ -1531,7 +1531,7 @@ __cmd_map_blend_init g_cmd_map_blend_init;
 
 THUMB int cmd_debug_print(int* param)
 {
-    data_02116ce0.unkfunc_0207e88c(10, 10, "%d", param[0]);
+    g_DebugConsole.unkfunc_0207e88c(10, 10, "%d", param[0]);
     return 1;
 }
 
@@ -2062,7 +2062,7 @@ THUMB void __cmd_map_set_back_color::execute()
     for (int i = 0; i < 24; i++) {
         color[i] = ((one - ratio) * current->color[i] + ratio * next->color[i]).value / 0x1000;
     }
-    unkfunc_02084cec(&color[12], &color[15], &color[18], &color[21], &color[0], &color[3], &color[6], &color[9]);
+    setBackgroundGradient(&color[12], &color[15], &color[18], &color[21], &color[0], &color[3], &color[6], &color[9]);
 }
 
 THUMB int __cmd_map_set_back_color::isEnd()
@@ -2103,7 +2103,7 @@ THUMB void __cmd_map_restore_back_color::execute()
     for (int i = 0; i < 24; i++) {
         color[i] = ((one - ratio) * next->color[i] + ratio * current->color[i]).value / 0x1000;
     }
-    unkfunc_02084cec(&color[12], &color[15], &color[18], &color[21], &color[0], &color[3], &color[6], &color[9]);
+    setBackgroundGradient(&color[12], &color[15], &color[18], &color[21], &color[0], &color[3], &color[6], &color[9]);
 }
 
 THUMB int __cmd_map_restore_back_color::isEnd()
@@ -2157,7 +2157,7 @@ THUMB int cmd_map_change_timezone(int* param)
 
 THUMB int cmd_map_effect_sepia()
 {
-    unkfunc_02085d88(unkfunc_020835d8());
+    applyModelPaletteSepia(getLastModelTexture());
     TownStageManager::getSingleton()->stage_.m_fld.SetSepia();
     return 1;
 }
@@ -3241,7 +3241,7 @@ __cmd_set_camera_target_chara_frame g_cmd_set_camera_target_chara_frame;
 THUMB void __cmd_set_camera_angle_abs::initialize(char* scriptParam)
 {
     PARAM_SET_CAMERA_ANGLE_ABS* data = (PARAM_SET_CAMERA_ANGLE_ABS*)scriptParam;
-    dss::Vector3short& nowAngle = TownCamera::getSingleton()->camera_.unk_004.getAngle();
+    dss::Vector3short& nowAngle = TownCamera::getSingleton()->camera_.m_camera0.getAngle();
     short x = nowAngle.vx;
     short z = nowAngle.vz;
     dss::Vector3<short> angle;
@@ -3371,10 +3371,10 @@ __cmd_surechigai_save g_cmd_surechigai_save;
 
 THUMB int cmd_set_my_taishi(int* param)
 {
-    data_020f0078.mode_ = 1;
+    g_EnvoyManager.mode_ = 1;
     int index = getPlacementCtrlId();
-    int type = data_020f0078.unkfunc_0203a5ec();
-    int value = UnkImmigrantTown::getSingleton()->unkfunc_02037f84(type);
+    int type = g_EnvoyManager.getType();
+    int value = ImmigrantTown::getSingleton()->getTypePose(type);
     TownCharacterManager::getSingleton()->character_[index]->changePose(value);
     return 1;
 }
@@ -3512,15 +3512,15 @@ THUMB int cmd_set_default_map_name(int* param)
     for (int i = 0; i < 42; i++) {
         name[i] = 0;
     }
-    unkfunc_0208a114(name, 42, param[0]);
-    data_020f0078.mode_ = 1;
-    data_020f0078.unkfunc_0203a7a8(name);
+    getDefaultTownName(name, 42, param[0]);
+    g_EnvoyManager.mode_ = 1;
+    g_EnvoyManager.setTownName(name);
     return 0;
 }
 
 THUMB int cmd_check_taishi_max(int* param)
 {
-    if (data_020f0078.unkfunc_0203a388() == 0x18) {
+    if (g_EnvoyManager.getEnvoyCount() == 0x18) {
         return 1;
     }
     return 0;
@@ -3881,7 +3881,7 @@ __cmd_party_move_to_first2 g_cmd_party_move_to_first2;
 
 THUMB int cmd_set_unused_extra_chara(int* param)
 {
-    UnkImmigrantTown::getSingleton()->unkfunc_02037f98();
+    ImmigrantTown::getSingleton()->placeQueuedResidents();
     return 1;
 }
 
@@ -3923,9 +3923,9 @@ __cmd_character_rgb_anim2 g_cmd_character_rgb_anim2;
 
 THUMB int cmd_map_black(int* param)
 {
-    NNSG3dResTex* obj = unkfunc_020835d8();
+    NNSG3dResTex* obj = getLastModelTexture();
     dss::Fix32Vector3 pos(0, 0, 0);
-    unkfunc_020857c8(obj, pos);
+    applyModelPaletteRgbRate(obj, pos);
     return 1;
 }
 

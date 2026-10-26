@@ -9,8 +9,8 @@
 #include "main/dss/Position.hpp"
 #include "main/dss/Billboard.hpp"
 #include "main/dss/PolygonObject.hpp"
-#include "main/dss/UnkSprite2D.hpp"
-#include "main/dss/UnkDisplay.hpp"
+#include "main/dss/Sprite2D.hpp"
+#include "main/dss/Display.hpp"
 #include "main/object/DSSAObject.hpp"
 #include "nitro/g3.hpp"
 #include "nitro/fx/fx_trig.h"
@@ -24,7 +24,7 @@ ARM inline void Position::setScale(dss::Fix32 scale)
 
 ARM inline void Position::setRotationIdx(const dss::Vector3<unsigned short>& rotation)
 {
-    unk_28 = rotation;
+    rotationIdx_ = rotation;
 }
 
 ARM inline void Position::setRotation(const dss::Fix32Vector3& rotation)
@@ -69,14 +69,14 @@ extern const VecFx32 renderTemplate0 = { 10 << FX32_SHIFT, FX32_ONE, 10 << FX32_
 #pragma explicit_zero_data on
 int renderLiteral_B7z = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d398(renderLiteral_B2x, renderLiteral_B2y, renderLiteral_B2z);
+dss::Vector3<int> s_bgGradientBottomUpLeft(renderLiteral_B2x, renderLiteral_B2y, renderLiteral_B2z);
 #pragma explicit_zero_data on
 int renderLiteral_B2x = 0;
 #pragma explicit_zero_data off
 #pragma explicit_zero_data on
 int renderLiteral_B5x = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d3a4(renderLiteral_B3x, renderLiteral_B3y, renderLiteral_B3z);
+dss::Vector3<int> s_bgGradientBottomUpRight(renderLiteral_B3x, renderLiteral_B3y, renderLiteral_B3z);
 #pragma explicit_zero_data on
 int renderLiteral_B9y = 0;
 #pragma explicit_zero_data off
@@ -96,13 +96,13 @@ int renderLiteral_B8z = 0;
 #pragma explicit_zero_data on
 int renderLiteral_B3x = 0;
 #pragma explicit_zero_data off
-unsigned int data_020c4328[15] = { 0x171012, 1, 2, FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0 };
+unsigned int g_billboardMtxFifoCmd[15] = { 0x171012, 1, 2, FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0, FX32_ONE, 0, 0, 0 };
 #pragma explicit_zero_data on
 int renderLiteral_B4y = 0;
 #pragma explicit_zero_data off
 extern const VecFx32 renderTemplate4 = { 0, 0, 10 << FX32_SHIFT };
-int data_0211d368;
-dss::Vector3<int> data_0211d3bc(renderLiteral_B4x, renderLiteral_B4y, renderLiteral_B4z);
+int s_bgGradientEnabled;
+dss::Vector3<int> s_bgGradientBottomDownLeft(renderLiteral_B4x, renderLiteral_B4y, renderLiteral_B4z);
 #pragma explicit_zero_data on
 int renderLiteral_B4z = 0;
 #pragma explicit_zero_data off
@@ -112,23 +112,23 @@ int renderLiteral_B6y = 0;
 #pragma explicit_zero_data on
 int renderLiteral_B1y = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d3c8(renderLiteral_B5x, renderLiteral_B5y, renderLiteral_B5z);
+dss::Vector3<int> s_bgGradientBottomDownRight(renderLiteral_B5x, renderLiteral_B5y, renderLiteral_B5z);
 #pragma explicit_zero_data on
 int renderLiteral_B5y = 0;
 #pragma explicit_zero_data off
 #pragma explicit_zero_data on
 int renderLiteral_B5z = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d3d4(renderLiteral_B6x, renderLiteral_B6y, renderLiteral_B6z);
+dss::Vector3<int> s_bgGradientTopUpLeft(renderLiteral_B6x, renderLiteral_B6y, renderLiteral_B6z);
 #pragma explicit_zero_data on
 int renderLiteral_B6x = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d374(renderLiteral_B7x, renderLiteral_B7y, renderLiteral_B7z);
+dss::Vector3<int> s_bgGradientTopUpRight(renderLiteral_B7x, renderLiteral_B7y, renderLiteral_B7z);
 #pragma explicit_zero_data on
 int renderLiteral_B1x = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d38c(renderLiteral_B8x, renderLiteral_B8y, renderLiteral_B8z);
-int data_0211d370;
+dss::Vector3<int> s_bgGradientTopDownLeft(renderLiteral_B8x, renderLiteral_B8y, renderLiteral_B8z);
+int s_subScreenShadeEnabled;
 #pragma explicit_zero_data on
 int renderLiteral_B9z = 0;
 #pragma explicit_zero_data off
@@ -163,7 +163,7 @@ extern const VecFx32 renderTemplate2 = { 0, 0, 10 << FX32_SHIFT };
 #pragma explicit_zero_data on
 int renderLiteral_B3y = 0;
 #pragma explicit_zero_data off
-dss::Vector3<int> data_0211d3b0(renderLiteral_B9x, renderLiteral_B9y, renderLiteral_B9z);
+dss::Vector3<int> s_bgGradientTopDownRight(renderLiteral_B9x, renderLiteral_B9y, renderLiteral_B9z);
 
 ARM Position::Position()
 {
@@ -261,7 +261,7 @@ ARM void PolygonObject::unkfunc_02083848()
     func_0206dcf0();
     G3_PushMtx();
     G3_Translate(position_.vx.value, position_.vy.value, position_.vz.value);
-    func_02065c60(FX_SinIdx(unk_28.vy), FX_CosIdx(unk_28.vy));
+    func_02065c60(FX_SinIdx(rotationIdx_.vy), FX_CosIdx(rotationIdx_.vy));
     G3_Scale(scale_.vx.value, scale_.vy.value, scale_.vz.value);
     G3_MaterialColorDiffAmb(0x7fff, 0x4210, 1);
     G3_MaterialColorSpecEmi(0x4210, 0, 0);
@@ -269,7 +269,7 @@ ARM void PolygonObject::unkfunc_02083848()
         ((TextureObject*)texture_)->unkfunc_02086abc();
         ((TextureObject*)texture_)->unkfunc_02086b3c();
     } else {
-        unkfunc_02086b28();
+        disableTexture();
     }
     unkfunc_02083680();
     G3_Begin(1);
@@ -282,7 +282,7 @@ ARM void PolygonObject::unkfunc_02083848()
     G3_PopMtx(1);
 }
 
-ARM void UnkShadowPolygon::draw()
+ARM void ShadowPolygon::draw()
 {
     if (!enable_) {
         return;
@@ -291,9 +291,9 @@ ARM void UnkShadowPolygon::draw()
     func_0206dcf0();
     G3_PushMtx();
     G3_Translate(position_.vx.value, position_.vy.value, position_.vz.value);
-    func_02065c60(FX_SinIdx(unk_28.vy), FX_CosIdx(unk_28.vy));
+    func_02065c60(FX_SinIdx(rotationIdx_.vy), FX_CosIdx(rotationIdx_.vy));
     G3_Scale(scale_.vx.value, scale_.vy.value, scale_.vz.value);
-    unkfunc_02086b28();
+    disableTexture();
     if (data_0211d36c == 0) {
         G3_MaterialColorDiffAmb(0, 0, 0);
         G3_MaterialColorSpecEmi(0, 0, 0);
@@ -304,7 +304,7 @@ ARM void UnkShadowPolygon::draw()
         unkfunc_020836c0();
     }
     G3_Begin(1);
-    G3_Color(unk_80.vx | (unk_80.vy << 5) | (unk_80.vz << 10));
+    G3_Color(color_.vx | (color_.vy << 5) | (color_.vz << 10));
     for (int i = 0; i < 4; i++) {
         G3_Vtx(vertex_.v[i].vx.value, vertex_.v[i].vy.value, vertex_.v[i].vz.value);
     }
@@ -312,7 +312,7 @@ ARM void UnkShadowPolygon::draw()
     G3_PopMtx(1);
 }
 
-ARM void UnkShadowPolygon::unkfunc_02083b1c()
+ARM void ShadowPolygon::unkfunc_02083b1c()
 {
     if (!enable_) {
         return;
@@ -321,17 +321,17 @@ ARM void UnkShadowPolygon::unkfunc_02083b1c()
     func_0206dcf0();
     G3_PushMtx();
     G3_Translate(position_.vx.value, position_.vy.value, position_.vz.value);
-    func_02065c60(FX_SinIdx(unk_28.vy), FX_CosIdx(unk_28.vy));
+    func_02065c60(FX_SinIdx(rotationIdx_.vy), FX_CosIdx(rotationIdx_.vy));
     G3_Scale(scale_.vx.value, scale_.vy.value, scale_.vz.value);
-    unkfunc_02086b28();
+    disableTexture();
     G3_MaterialColorDiffAmb(0, 0, 0);
     G3_MaterialColorSpecEmi(0, 0, 0);
     unkfunc_020836a8();
     G3_Begin(1);
-    G3_Color(unk_80.vx | (unk_80.vy << 5) | (unk_80.vz << 10));
+    G3_Color(color_.vx | (color_.vy << 5) | (color_.vz << 10));
     for (int j = 0; j < 8; j++) {
         for (int i = 0; i < 4; i++) {
-            G3_Vtx(unk_84[j].v[i].vx.value, unk_84[j].v[i].vy.value, unk_84[j].v[i].vz.value);
+            G3_Vtx(volumeVertex_[j].v[i].vx.value, volumeVertex_[j].v[i].vy.value, volumeVertex_[j].v[i].vz.value);
         }
     }
     G3_End();
@@ -339,19 +339,19 @@ ARM void UnkShadowPolygon::unkfunc_02083b1c()
     G3_MaterialColorSpecEmi(0, 0, 0);
     unkfunc_020836c0();
     G3_Begin(1);
-    G3_Color(unk_80.vx | (unk_80.vy << 5) | (unk_80.vz << 10));
+    G3_Color(color_.vx | (color_.vy << 5) | (color_.vz << 10));
     for (int j = 0; j < 8; j++) {
         for (int i = 0; i < 4; i++) {
-            G3_Vtx(unk_84[j].v[i].vx.value, unk_84[j].v[i].vy.value, unk_84[j].v[i].vz.value);
+            G3_Vtx(volumeVertex_[j].v[i].vx.value, volumeVertex_[j].v[i].vy.value, volumeVertex_[j].v[i].vz.value);
         }
     }
     G3_End();
     G3_PopMtx(1);
 }
 
-ARM void UnkShadowPolygon::unkfunc_02083d00(int index, const PolygonVertex* vertex)
+ARM void ShadowPolygon::unkfunc_02083d00(int index, const PolygonVertex* vertex)
 {
-    unk_84[index] = *vertex;
+    volumeVertex_[index] = *vertex;
 }
 
 ARM Billboard::Billboard()
@@ -382,15 +382,15 @@ ARM BillboardTexCoord* Billboard::unkfunc_020841a8()
 
 ARM void Billboard::unkfunc_020841b0(const dss::Vector2<dss::Fix32>* offset)
 {
-    unk_a8 = *offset;
+    texCoordOffset_ = *offset;
 }
 
 ARM void Billboard::unkfunc_020841d4()
 {
     drawVertex_ = vertex_;
     for (int i = 0; i < 4; i++) {
-        drawTexCoord_.v[i].vx = texCoord_.v[i].vx + unk_a8.vx;
-        drawTexCoord_.v[i].vy = texCoord_.v[i].vy + unk_a8.vy;
+        drawTexCoord_.v[i].vx = texCoord_.v[i].vx + texCoordOffset_.vx;
+        drawTexCoord_.v[i].vy = texCoord_.v[i].vy + texCoordOffset_.vy;
     }
 }
 
@@ -403,13 +403,13 @@ ARM void Billboard::draw()
 {
     G3_PushMtx();
     G3_Translate(position_.vx.value, position_.vy.value, position_.vz.value);
-    unkfunc_020843d4();
+    loadBillboardMatrix();
     G3_Scale(scale_.vx.value, scale_.vx.value, scale_.vx.value);
     if (texture_) {
         ((TextureObject*)texture_)->unkfunc_02086abc();
         ((TextureObject*)texture_)->unkfunc_02086b3c();
     } else {
-        unkfunc_02086b28();
+        disableTexture();
     }
     unkfunc_02083680();
     unkfunc_020841d4();
@@ -423,9 +423,9 @@ ARM void Billboard::draw()
     G3_PopMtx(1);
 }
 
-ARM void unkfunc_020843d4()
+ARM void loadBillboardMatrix()
 {
-    unsigned int* trans = &data_020c4328[12];
+    unsigned int* trans = &g_billboardMtxFifoCmd[12];
     MtxFx44 clip;
     func_0206dcf0();
     G3_WRITE(0x0, 0x151110);
@@ -435,79 +435,79 @@ ARM void unkfunc_020843d4()
     trans[0] = clip.m[3][0];
     trans[1] = clip.m[3][1];
     trans[2] = clip.m[3][2];
-    G3_SEND(data_020c4328, sizeof(data_020c4328));
+    G3_SEND(g_billboardMtxFifoCmd, sizeof(g_billboardMtxFifoCmd));
 }
 
-ARM UnkSprite2D::UnkSprite2D()
+ARM Sprite2D::Sprite2D()
 {
-    unk_1c = 0;
-    unk_1e = 0;
-    unk_20 = 0;
-    unk_22 = 0;
-    unk_24 = 0;
-    unk_26 = 0;
-    unk_28 = 0;
-    unk_30 = 0;
-    unk_32 = 0;
-    unk_34 = 0x7fff;
+    width_ = 0;
+    height_ = 0;
+    u0_ = 0;
+    v0_ = 0;
+    u1_ = 0;
+    v1_ = 0;
+    depth_ = 0;
+    rotation_ = 0;
+    color0Opaque_ = 0;
+    color_ = 0x7fff;
 }
 
-ARM void UnkSprite2D::unkfunc_02084534(int x, int y)
+ARM void Sprite2D::unkfunc_02084534(int x, int y)
 {
-    unk_14.vx.value = x << FX32_SHIFT;
-    unk_14.vy.value = y << FX32_SHIFT;
+    position_.vx.value = x << FX32_SHIFT;
+    position_.vy.value = y << FX32_SHIFT;
 }
 
-ARM void UnkSprite2D::unkfunc_02084548(dss::Fix32 x, dss::Fix32 y)
+ARM void Sprite2D::unkfunc_02084548(dss::Fix32 x, dss::Fix32 y)
 {
-    unk_14.vx = x;
-    unk_14.vy = y;
+    position_.vx = x;
+    position_.vy = y;
 }
 
-ARM void UnkSprite2D::unkfunc_0208456c(int w, int h)
+ARM void Sprite2D::unkfunc_0208456c(int w, int h)
 {
-    unk_1c = w;
-    unk_1e = h;
+    width_ = w;
+    height_ = h;
 }
 
-ARM void UnkSprite2D::unkfunc_02084578(int u0, int v0, int u1, int v1)
+ARM void Sprite2D::unkfunc_02084578(int u0, int v0, int u1, int v1)
 {
-    unk_20 = u0;
-    unk_22 = v0;
-    unk_24 = u1;
-    unk_26 = v1;
+    u0_ = u0;
+    v0_ = v0;
+    u1_ = u1;
+    v1_ = v1;
 }
 
-ARM void UnkSprite2D::draw()
+ARM void Sprite2D::draw()
 {
     if (!enable_ || !alpha_) {
         return;
     }
 #ifdef DQIV_NATIVE
     if (pc::spritesOnBothScreens()) {
-        if (!(unk_2c & 3)) {
+        if (!(screens_ & 3)) {
             return;
         }
     } else
 #endif
-    if (unkfunc_02081254() & 1) {
-        if (!(unk_2c & 1)) {
+    if (getDisplayFrame() & 1) {
+        if (!(screens_ & 1)) {
             return;
         }
-    } else if (!(unk_2c & 2)) {
+    } else if (!(screens_ & 2)) {
         return;
     }
 #ifdef DQIV_NATIVE
     // Wide field: sprites of the top screen only (the map information) belong
     // to its inset, not to the field drawn over the whole canvas.
     const unsigned previousLayer = pc::drawLayer();
-    if (pc::wideFieldFrame() && (unk_2c & 3) == 2) {
+    if (pc::wideFieldFrame() && (screens_ & 3) == 2) {
         pc::setDrawLayer(1);
     }
 #endif
     G3_PushMtx();
     if (texture_) {
-        if (unk_32 == 0) {
+        if (color0Opaque_ == 0) {
             ((TextureObject*)texture_)->unkfunc_02086abc();
             ((TextureObject*)texture_)->unkfunc_02086b3c();
         } else {
@@ -515,7 +515,7 @@ ARM void UnkSprite2D::draw()
             ((TextureObject*)texture_)->unkfunc_02086b3c();
         }
     } else {
-        unkfunc_02086b28();
+        disableTexture();
     }
 #ifdef DQIV_NATIVE
     G3_PolygonAttr(0, 0, 0xc0, polygonID_, alpha_, pc::spriteDecal() ? 0xc000 : 0x8000);
@@ -523,16 +523,16 @@ ARM void UnkSprite2D::draw()
     G3_PolygonAttr(0, 0, 0xc0, polygonID_, alpha_, 0x8000);
 #endif
     G3_Identity();
-    G3_Color(unk_34);
-    G3_Translate(unk_14.vx.value, unk_14.vy.value, (unk_28 - 0x400) << FX32_SHIFT);
-    G3_Translate(unk_1c * FX32_ONE / 2, unk_1e * FX32_ONE / 2, 0);
-    func_02065c9c(FX_SinIdx(unk_30), FX_CosIdx(unk_30));
-    G3_Translate(unk_1c * -FX32_ONE / 2, unk_1e * -FX32_ONE / 2, 0);
-    G3_Scale(unk_1c << FX32_SHIFT, unk_1e << FX32_SHIFT, FX32_ONE);
-    fx32 u0 = unk_20 << FX32_SHIFT;
-    fx32 u1 = unk_24 << FX32_SHIFT;
-    fx32 v0 = unk_22 << FX32_SHIFT;
-    fx32 v1 = unk_26 << FX32_SHIFT;
+    G3_Color(color_);
+    G3_Translate(position_.vx.value, position_.vy.value, (depth_ - 0x400) << FX32_SHIFT);
+    G3_Translate(width_ * FX32_ONE / 2, height_ * FX32_ONE / 2, 0);
+    func_02065c9c(FX_SinIdx(rotation_), FX_CosIdx(rotation_));
+    G3_Translate(width_ * -FX32_ONE / 2, height_ * -FX32_ONE / 2, 0);
+    G3_Scale(width_ << FX32_SHIFT, height_ << FX32_SHIFT, FX32_ONE);
+    fx32 u0 = u0_ << FX32_SHIFT;
+    fx32 u1 = u1_ << FX32_SHIFT;
+    fx32 v0 = v0_ << FX32_SHIFT;
+    fx32 v1 = v1_ << FX32_SHIFT;
     G3_Begin(1);
     G3_TexCoord(u0, v1);
     G3_Vtx(0, FX32_ONE, 0);
@@ -559,7 +559,7 @@ ARM void unkfunc_unused_29()
     G3_SEND(data_020c4364, sizeof(data_020c4364));
 }
 
-ARM void unkfunc_020847e8()
+ARM void setupOrtho2D()
 {
     func_0206dcf0();
     G3_Viewport(0, 0, 255, 191);
@@ -572,7 +572,7 @@ ARM void unkfunc_020847e8()
     func_02065a98(&camPos, &camUp, &target, 1, NULL);
 }
 
-ARM void unkfunc_020848a8()
+ARM void setupOrtho2DFine()
 {
     G3_Viewport(0, 0, 255, 191);
     func_020657d4(0, 192 << FX32_SHIFT, 0, 256 << FX32_SHIFT, -1024 << FX32_SHIFT, 1024 << FX32_SHIFT, 0x40, 1, NULL);
@@ -584,7 +584,7 @@ ARM void unkfunc_020848a8()
     func_02065a98(&camPos, &camUp, &target, 1, NULL);
 }
 
-ARM void unkfunc_02084964()
+ARM void setupOrtho2DBackground()
 {
     G3_Viewport(0, 0, 255, 191);
     func_020657d4(0, 192 << FX32_SHIFT, 0, 256 << FX32_SHIFT, -1024 << FX32_SHIFT, 1024 << FX32_SHIFT, 1024 << FX32_SHIFT, 1, NULL);
@@ -596,9 +596,9 @@ ARM void unkfunc_02084964()
     func_02065a98(&camPos, &camUp, &target, 1, NULL);
 }
 
-ARM void unkfunc_02084a1c()
+ARM void drawBackgroundGradient()
 {
-    if (data_0211d368 == 0) {
+    if (s_bgGradientEnabled == 0) {
         return;
     }
     G3_PushMtx();
@@ -607,33 +607,33 @@ ARM void unkfunc_02084a1c()
     G3_Color(data_0211d380.vx | (data_0211d380.vy << 5) | (data_0211d380.vz << 10));
     G3_Translate(0, 0, 1024 << FX32_SHIFT);
     G3_Scale(256 << FX32_SHIFT, 192 << FX32_SHIFT, FX32_ONE);
-    if (unkfunc_02081254() & 1) {
+    if (getDisplayFrame() & 1) {
         G3_Begin(1);
-        G3_Color(data_0211d3bc.vx | (data_0211d3bc.vy << 5) | (data_0211d3bc.vz << 10));
+        G3_Color(s_bgGradientBottomDownLeft.vx | (s_bgGradientBottomDownLeft.vy << 5) | (s_bgGradientBottomDownLeft.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(0, FX32_ONE, 0);
-        G3_Color(data_0211d3c8.vx | (data_0211d3c8.vy << 5) | (data_0211d3c8.vz << 10));
+        G3_Color(s_bgGradientBottomDownRight.vx | (s_bgGradientBottomDownRight.vy << 5) | (s_bgGradientBottomDownRight.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(FX32_ONE, FX32_ONE, 0);
-        G3_Color(data_0211d3a4.vx | (data_0211d3a4.vy << 5) | (data_0211d3a4.vz << 10));
+        G3_Color(s_bgGradientBottomUpRight.vx | (s_bgGradientBottomUpRight.vy << 5) | (s_bgGradientBottomUpRight.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(FX32_ONE, 0, 0);
-        G3_Color(data_0211d398.vx | (data_0211d398.vy << 5) | (data_0211d398.vz << 10));
+        G3_Color(s_bgGradientBottomUpLeft.vx | (s_bgGradientBottomUpLeft.vy << 5) | (s_bgGradientBottomUpLeft.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(0, 0, 0);
         G3_End();
     } else {
         G3_Begin(1);
-        G3_Color(data_0211d38c.vx | (data_0211d38c.vy << 5) | (data_0211d38c.vz << 10));
+        G3_Color(s_bgGradientTopDownLeft.vx | (s_bgGradientTopDownLeft.vy << 5) | (s_bgGradientTopDownLeft.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(0, FX32_ONE, 0);
-        G3_Color(data_0211d3b0.vx | (data_0211d3b0.vy << 5) | (data_0211d3b0.vz << 10));
+        G3_Color(s_bgGradientTopDownRight.vx | (s_bgGradientTopDownRight.vy << 5) | (s_bgGradientTopDownRight.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(FX32_ONE, FX32_ONE, 0);
-        G3_Color(data_0211d374.vx | (data_0211d374.vy << 5) | (data_0211d374.vz << 10));
+        G3_Color(s_bgGradientTopUpRight.vx | (s_bgGradientTopUpRight.vy << 5) | (s_bgGradientTopUpRight.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(FX32_ONE, 0, 0);
-        G3_Color(data_0211d3d4.vx | (data_0211d3d4.vy << 5) | (data_0211d3d4.vz << 10));
+        G3_Color(s_bgGradientTopUpLeft.vx | (s_bgGradientTopUpLeft.vy << 5) | (s_bgGradientTopUpLeft.vz << 10));
         G3_TexCoord(0, 0);
         G3_Vtx(0, 0, 0);
         G3_End();
@@ -641,79 +641,79 @@ ARM void unkfunc_02084a1c()
     G3_PopMtx(1);
 }
 
-ARM void unkfunc_02084c78(int r, int g, int b)
+ARM void setBackgroundColor(int r, int g, int b)
 {
-    data_0211d398.vx = r;
-    data_0211d398.vy = g;
-    data_0211d398.vz = b;
-    data_0211d3a4.vx = r;
-    data_0211d3a4.vy = g;
-    data_0211d3a4.vz = b;
-    data_0211d3bc.vx = r;
-    data_0211d3bc.vy = g;
-    data_0211d3bc.vz = b;
-    data_0211d3c8.vx = r;
-    data_0211d3c8.vy = g;
-    data_0211d3c8.vz = b;
-    data_0211d3d4.vx = r;
-    data_0211d3d4.vy = g;
-    data_0211d3d4.vz = b;
-    data_0211d374.vx = r;
-    data_0211d374.vy = g;
-    data_0211d374.vz = b;
-    data_0211d38c.vx = r;
-    data_0211d38c.vy = g;
-    data_0211d38c.vz = b;
-    data_0211d3b0.vx = r;
-    data_0211d3b0.vy = g;
-    data_0211d3b0.vz = b;
-    data_0211d368 = 1;
+    s_bgGradientBottomUpLeft.vx = r;
+    s_bgGradientBottomUpLeft.vy = g;
+    s_bgGradientBottomUpLeft.vz = b;
+    s_bgGradientBottomUpRight.vx = r;
+    s_bgGradientBottomUpRight.vy = g;
+    s_bgGradientBottomUpRight.vz = b;
+    s_bgGradientBottomDownLeft.vx = r;
+    s_bgGradientBottomDownLeft.vy = g;
+    s_bgGradientBottomDownLeft.vz = b;
+    s_bgGradientBottomDownRight.vx = r;
+    s_bgGradientBottomDownRight.vy = g;
+    s_bgGradientBottomDownRight.vz = b;
+    s_bgGradientTopUpLeft.vx = r;
+    s_bgGradientTopUpLeft.vy = g;
+    s_bgGradientTopUpLeft.vz = b;
+    s_bgGradientTopUpRight.vx = r;
+    s_bgGradientTopUpRight.vy = g;
+    s_bgGradientTopUpRight.vz = b;
+    s_bgGradientTopDownLeft.vx = r;
+    s_bgGradientTopDownLeft.vy = g;
+    s_bgGradientTopDownLeft.vz = b;
+    s_bgGradientTopDownRight.vx = r;
+    s_bgGradientTopDownRight.vy = g;
+    s_bgGradientTopDownRight.vz = b;
+    s_bgGradientEnabled = 1;
 }
 
-ARM void unkfunc_02084cec(unsigned char* bottomUpLeft, unsigned char* bottomUpRight, unsigned char* bottomDownLeft, unsigned char* bottomDownRight,
+ARM void setBackgroundGradient(unsigned char* bottomUpLeft, unsigned char* bottomUpRight, unsigned char* bottomDownLeft, unsigned char* bottomDownRight,
                           unsigned char* topUpLeft, unsigned char* topUpRight, unsigned char* topDownLeft, unsigned char* topDownRight)
 {
-    data_0211d3d4.vx = topUpLeft[0];
-    data_0211d3d4.vy = topUpLeft[1];
-    data_0211d3d4.vz = topUpLeft[2];
-    data_0211d374.vx = topUpRight[0];
-    data_0211d374.vy = topUpRight[1];
-    data_0211d374.vz = topUpRight[2];
-    data_0211d38c.vx = topDownLeft[0];
-    data_0211d38c.vy = topDownLeft[1];
-    data_0211d38c.vz = topDownLeft[2];
-    data_0211d3b0.vx = topDownRight[0];
-    data_0211d3b0.vy = topDownRight[1];
-    data_0211d3b0.vz = topDownRight[2];
-    data_0211d398.vx = bottomUpLeft[0];
-    data_0211d398.vy = bottomUpLeft[1];
-    data_0211d398.vz = bottomUpLeft[2];
-    data_0211d3a4.vx = bottomUpRight[0];
-    data_0211d3a4.vy = bottomUpRight[1];
-    data_0211d3a4.vz = bottomUpRight[2];
-    data_0211d3bc.vx = bottomDownLeft[0];
-    data_0211d3bc.vy = bottomDownLeft[1];
-    data_0211d3bc.vz = bottomDownLeft[2];
-    data_0211d3c8.vx = bottomDownRight[0];
-    data_0211d3c8.vy = bottomDownRight[1];
-    data_0211d3c8.vz = bottomDownRight[2];
-    data_0211d368 = 1;
+    s_bgGradientTopUpLeft.vx = topUpLeft[0];
+    s_bgGradientTopUpLeft.vy = topUpLeft[1];
+    s_bgGradientTopUpLeft.vz = topUpLeft[2];
+    s_bgGradientTopUpRight.vx = topUpRight[0];
+    s_bgGradientTopUpRight.vy = topUpRight[1];
+    s_bgGradientTopUpRight.vz = topUpRight[2];
+    s_bgGradientTopDownLeft.vx = topDownLeft[0];
+    s_bgGradientTopDownLeft.vy = topDownLeft[1];
+    s_bgGradientTopDownLeft.vz = topDownLeft[2];
+    s_bgGradientTopDownRight.vx = topDownRight[0];
+    s_bgGradientTopDownRight.vy = topDownRight[1];
+    s_bgGradientTopDownRight.vz = topDownRight[2];
+    s_bgGradientBottomUpLeft.vx = bottomUpLeft[0];
+    s_bgGradientBottomUpLeft.vy = bottomUpLeft[1];
+    s_bgGradientBottomUpLeft.vz = bottomUpLeft[2];
+    s_bgGradientBottomUpRight.vx = bottomUpRight[0];
+    s_bgGradientBottomUpRight.vy = bottomUpRight[1];
+    s_bgGradientBottomUpRight.vz = bottomUpRight[2];
+    s_bgGradientBottomDownLeft.vx = bottomDownLeft[0];
+    s_bgGradientBottomDownLeft.vy = bottomDownLeft[1];
+    s_bgGradientBottomDownLeft.vz = bottomDownLeft[2];
+    s_bgGradientBottomDownRight.vx = bottomDownRight[0];
+    s_bgGradientBottomDownRight.vy = bottomDownRight[1];
+    s_bgGradientBottomDownRight.vz = bottomDownRight[2];
+    s_bgGradientEnabled = 1;
 }
 
-ARM void unkfunc_02084dd4(int enable)
+ARM void setBackgroundGradientEnable(int enable)
 {
-    data_0211d368 = enable;
+    s_bgGradientEnabled = enable;
 }
 
-ARM void unkfunc_02084de4()
+ARM void drawSubScreenShade()
 {
-    if (data_0211d370 == 0) {
+    if (s_subScreenShadeEnabled == 0) {
         return;
     }
-    if (unkfunc_02081254() & 1) {
+    if (getDisplayFrame() & 1) {
         return;
     }
-    unkfunc_020847e8();
+    setupOrtho2D();
     G3_PushMtx();
     G3_TexImageParam(0, 1, 0, 0, 0, 0, 1, 0);
     G3_PolygonAttr(0, 0, 0xc0, 0, 15, 0);
@@ -723,14 +723,14 @@ ARM void unkfunc_02084de4()
     G3_PopMtx(1);
 }
 
-ARM void UnkSprite2D::setColor(int r, int g, int b)
+ARM void Sprite2D::setColor(int r, int g, int b)
 {
-    unk_34 = r | (g << 5) | (b << 10);
+    color_ = r | (g << 5) | (b << 10);
 }
 
-ARM void UnkSprite2D::setColor(int color)
+ARM void Sprite2D::setColor(int color)
 {
-    unk_34 = color;
+    color_ = color;
 }
 
 

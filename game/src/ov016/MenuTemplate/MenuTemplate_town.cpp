@@ -22,6 +22,9 @@ THUMB void MenuTemplate_town::TOWN_OPERATION(menu::MenuItem* menuitem, int activ
         {1, 2, 0x20, 0x6c, 0x56, 0x10},
         {1, 2, 0x80, 0x6c, 0x56, 0x10},
         {1, 2, 0x20, 0x84, 0x56, 0x10},
+#ifdef DQIV_NATIVE
+        {1, 2, 0x80, 0x84, 0x56, 0x10}, // the achievements
+#endif
         {-1, -1, 0, 0, 0, 0},
     };
     menuitem->setMenuItem(menu_op, 2, 5, max);
@@ -251,7 +254,7 @@ THUMB void MenuTemplate_town::townMenuTacticsSelectChara(menu::MenuItem* menuite
     };
     if (x != -1 && y != -1) {
         for (int i = 0; i < 10; i++) {
-            unkfunc_020518f8(&menu[i], x, y);
+            setMenuItemPosition(&menu[i], x, y);
         }
     }
     menuitem->setMenuItem(menu, 5, 2, max);
@@ -276,7 +279,7 @@ THUMB void MenuTemplate_town::townMenuTacticsSelectHalfChara(menu::MenuItem* men
     };
     if (x != -1 && y != -1) {
         for (int i = 0; i < 10; i++) {
-            unkfunc_020518f8(&menu[i], x, y);
+            setMenuItemPosition(&menu[i], x, y);
         }
     }
     menuitem->setMenuItem(menu, 5, 1, max);
@@ -379,7 +382,7 @@ THUMB void MenuTemplate_town::townMenuPageRightArrow(menu::MenuItem* menuitem, i
         {1, 2, 0xe6, 0x86, 0x14, 0x14},
         {-1, -1, 0, 0, 0, 0},
     };
-    unkfunc_020518f8(menu, x, y);
+    setMenuItemPosition(menu, x, y);
     menuitem->setMenuItem(menu, 1, 1, 1);
 }
 

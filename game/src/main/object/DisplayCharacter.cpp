@@ -121,7 +121,7 @@ ARM int DisplayCharacter::box_testx1()
     }
     dss::Fix32Vector3 position = *getPosition();
     position.vx.value -= 0x800;
-    unkfunc_020484ec((VecFx32*)&position, (VecFx32*)&boxTestRotate_, (VecFx32*)&boxTestScale_, (VecFx32*)&boxTestParam_, &boxTestRate_);
+    fldBoxTest((VecFx32*)&position, (VecFx32*)&boxTestRotate_, (VecFx32*)&boxTestScale_, (VecFx32*)&boxTestParam_, &boxTestRate_);
     int result;
     while (func_02065544(&result)) {
     }
@@ -193,13 +193,13 @@ ARM void DisplayCharacter::drawQuad(dss::Fix32Vector3& position, BillboardVertex
 {
     G3_PushMtx();
     G3_Translate(position.vx.value, position.vy.value, position.vz.value);
-    unkfunc_020843d4();
+    loadBillboardMatrix();
     G3_Scale(scale_.vx.value, scale_.vx.value, scale_.vx.value);
     if (RenderObject::texture_) {
         ((TextureObject*)RenderObject::texture_)->unkfunc_02086abc();
         ((TextureObject*)RenderObject::texture_)->unkfunc_02086b3c();
     } else {
-        unkfunc_02086b28();
+        disableTexture();
     }
     unkfunc_02083680();
     unkfunc_020841d4();

@@ -4,7 +4,7 @@
 #include "nnsys/fnd.hpp"
 
 // touch panel state
-struct UnkTouchPanel {
+struct TouchPanelState {
     char unk_00[0x18];                          // 0x00
     int touch_;                                 // 0x18
     int x_;                                     // 0x1C
@@ -13,11 +13,11 @@ struct UnkTouchPanel {
     int unk_28;                                 // 0x28
     int unk_2c;                                 // 0x2C
 
-    UnkTouchPanel();
+    TouchPanelState();
 };
 
 // main heap: system, sub and application expanded heaps
-struct UnkHeap {
+struct DssHeap {
     void* heap0_;                               // 0x00
     void* heap1_;                               // 0x04 system heap
     void* heap2_;                               // 0x08 application heap
@@ -30,35 +30,35 @@ struct UnkHeap {
     unsigned int free0_;                        // 0x48
     unsigned int free1_;                        // 0x4C
     unsigned int free2_;                        // 0x50
-    unsigned int unk_54;                        // 0x54 program size
+    unsigned int programSize_;                        // 0x54 program size
 };
 
-extern UnkTouchPanel data_0211a5d4;
-extern void* data_0211a604[2];                  // compressed data, uncompressed data
-extern UnkHeap data_0211a60c;
+extern TouchPanelState g_TouchPanel;
+extern void* g_compressedDataPtrs[2];                  // compressed data, uncompressed data
+extern DssHeap g_appHeap;
 
-void unkfunc_0207f4c4(void* src);               // set the compressed data
-void unkfunc_0207f4d4(void* dst);               // uncompress
-unsigned int unkfunc_0207f52c(void* src);       // uncompressed size
-int unkfunc_0207f548(void* data);               // is compressed
-void* unkfunc_0207f590(void* data);             // uncompress (allocates)
-void unkfunc_0207f5c8(UnkHeap* heap, unsigned int size0, unsigned int size1, unsigned int size2, int flag);    // init
-void unkfunc_0207f728(UnkHeap* heap, void* p);  // free (system heap)
-void* unkfunc_0207f77c(UnkHeap* heap, int size, int align);     // alloc
-void unkfunc_0207f7e0(UnkHeap* heap, void* p);  // free
-void* unkfunc_0207f834(UnkHeap* heap, int size, int align);     // alloc
-void unkfunc_0207f840(UnkHeap* heap, void* p);  // free
-unsigned int unkfunc_0207f84c(UnkHeap* heap);   // free size of the heap 0
-unsigned int unkfunc_0207f85c(UnkHeap* heap);   // free size of the system heap
-unsigned int unkfunc_0207f86c(UnkHeap* heap);   // free size of the application heap
-unsigned int unkfunc_0207f87c(UnkHeap* heap);   // free size of the application heap
-void** unkfunc_0207f88c(UnkHeap* heap);         // heap 0
-void** unkfunc_0207f890(UnkHeap* heap);         // system heap
-void unkfunc_0207f898(UnkHeap* heap);           // mark the allocated blocks
-void unkfunc_0207f8ac(void* p);                 // free (system heap)
-int unkfunc_0207f8c4(void* archive);            // file count of an archive
-int unkfunc_0207f8cc(void* archive, int index); // file size in an archive
-void* unkfunc_0207f8dc(void* archive, int index);   // file of an archive
+void setCompressedData(void* src);               // set the compressed data
+void uncompressData(void* dst);               // uncompress
+unsigned int getUncompressedSize(void* src);       // uncompressed size
+int isCompressed(void* data);               // is compressed
+void* uncompressAlloc(void* data);             // uncompress (allocates)
+void initHeap(DssHeap* heap, unsigned int size0, unsigned int size1, unsigned int size2, int flag);    // init
+void freeSystemHeap(DssHeap* heap, void* p);  // free (system heap)
+void* allocAppHeap(DssHeap* heap, int size, int align);     // alloc
+void freeAppHeap(DssHeap* heap, void* p);  // free
+void* dssAlloc(DssHeap* heap, int size, int align);     // alloc
+void dssFree(DssHeap* heap, void* p);  // free
+unsigned int getHeap0FreeSize(DssHeap* heap);   // free size of the heap 0
+unsigned int getSystemHeapFreeSize(DssHeap* heap);   // free size of the system heap
+unsigned int getAppHeapFreeSize(DssHeap* heap);   // free size of the application heap
+unsigned int getAppHeapTotalFreeSize(DssHeap* heap);   // free size of the application heap
+void** getHeap0(DssHeap* heap);         // heap 0
+void** getSystemHeap(DssHeap* heap);         // system heap
+void markHeapBlocks(DssHeap* heap);           // mark the allocated blocks
+void freeSystemMemory(void* p);                 // free (system heap)
+int getArchiveFileCount(void* archive);            // file count of an archive
+int getArchiveFileSize(void* archive, int index); // file size in an archive
+void* getArchiveFile(void* archive, int index);   // file of an archive
 
 extern "C" {
     void func_02067b88(const void* src, void* dst);         // MI_UncompressLZ8

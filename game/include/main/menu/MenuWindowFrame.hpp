@@ -1,0 +1,33 @@
+#pragma once
+#include <globaldefs.h>
+#include "main/menu/MenuDisplay.hpp"
+
+// Window frame drawn as sprites on the sub screen, with its name tab, blinking key cursor and arrow
+// (g_MenuDisplays.windowFrame1_, windowFrame2_)
+struct MenuWindowFrame : MenuDisplay {
+    int cursor_;                                // 0x30  key cursor shown
+    int arrow_;                                 // 0x34  arrow shown
+    int unk_38;                                 // 0x38
+    int arrowX_;                                // 0x3C
+    int arrowY_;                                // 0x40
+    int nameWidth_;                             // 0x44  name tab width, <= 16: no tab
+    int blink_;                                 // 0x48
+    int frameType_;                             // 0x4C  1: translucent
+
+    MenuWindowFrame();
+    virtual void setup(int id);
+    virtual void update(OamBuffer* main, OamBuffer* sub);
+    virtual void execute(OamBuffer* main, OamBuffer* sub);
+    virtual void draw(OamBuffer* main, OamBuffer* sub);
+    void setNameWidth(int width);
+    void setCursor(int cursor);
+    void setArrow(int x, int y, int arrow);
+    void setFrameType(int type);
+    void drawBorder(OamBuffer* oam, int x, int y, int w, int h);
+    void drawBorderWithTab(OamBuffer* oam, int x, int y, int w, int h, int tabW, int tabH);
+    void drawTopEdge(OamBuffer* oam, int x, int y, int length);    // top edge
+    void drawBottomEdge(OamBuffer* oam, int x, int y, int length);    // bottom edge
+    void drawLeftEdge(OamBuffer* oam, int x, int y, int length);    // left edge
+    void drawRightEdge(OamBuffer* oam, int x, int y, int length);    // right edge
+    void drawSprite(OamBuffer* oam, int x, int y, int chr, int size);
+};

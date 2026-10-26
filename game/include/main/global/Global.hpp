@@ -1,7 +1,7 @@
 #pragma once
 #include "main/dss/DssUtils.hpp"
 #include "main/dss/DssCore.hpp"
-#include "main/dss/UnkSprite2D.hpp"
+#include "main/dss/Sprite2D.hpp"
 #include "main/global/GlobalGamePart.hpp"
 #include "main/global/GlobalDQ4.hpp"
 
@@ -77,7 +77,7 @@ struct Global {
     int getFieldType();
 };
 
-struct GlobalChangePart : UnkGlobalPart {
+struct GlobalChangePart : GlobalPartBase {
     int nextPart_;                             
 
     virtual void update();
@@ -85,7 +85,7 @@ struct GlobalChangePart : UnkGlobalPart {
     void setNextPart(int part);
 };
 
-struct GlobalWaitPart : UnkGlobalPart {
+struct GlobalWaitPart : GlobalPartBase {
     int count_;                                 
     int frames_;                                
 
@@ -95,7 +95,7 @@ struct GlobalWaitPart : UnkGlobalPart {
     int isRunning();
 };
 
-struct GlobalFade : UnkGlobalPart {
+struct GlobalFade : GlobalPartBase {
     enum FADE_STATE {
         FADE_NONE      = 0,
         FADE_OUT_BLACK = 1,
@@ -125,31 +125,31 @@ struct GlobalFade : UnkGlobalPart {
 
 // Screen fade with one full screen sprite per screen, run by the global parts like GlobalFade
 /* vtable 0x020c1b88 */
-struct UnkSpriteFade : UnkGlobalPart {
+struct GlobalSpriteFade : GlobalPartBase {
     GlobalFade::FADE_STATE state_;              // 0x04
     int alpha_;                                 // 0x08
     int count_;                                 // 0x0C
     int frames_;                                // 0x10
-    UnkSprite2D sprite_[2];                     // 0x14 main, sub
+    Sprite2D sprite_[2];                     // 0x14 main, sub
 
-    UnkSpriteFade()
+    GlobalSpriteFade()
     {
         sprite_[0].unkfunc_02084534(0, 0);
         sprite_[0].unkfunc_0208456c(256, 192);
         sprite_[0].texture_ = NULL;
-        sprite_[0].unk_2c = 1;
+        sprite_[0].screens_ = 1;
         sprite_[0].setColor(0, 0, 0);
         sprite_[0].setPolygonID(63);
         sprite_[0].setAlpha(0);
-        sprite_[0].unk_28 = 0;
+        sprite_[0].depth_ = 0;
         sprite_[1].unkfunc_02084534(0, 0);
         sprite_[1].unkfunc_0208456c(256, 192);
         sprite_[1].texture_ = NULL;
-        sprite_[1].unk_2c = 2;
+        sprite_[1].screens_ = 2;
         sprite_[1].setColor(0, 0, 0);
         sprite_[1].setAlpha(0);
         sprite_[1].setPolygonID(63);
-        sprite_[1].unk_28 = 0;
+        sprite_[1].depth_ = 0;
     }
     virtual void update();
     virtual void draw();
@@ -161,20 +161,20 @@ extern Global g_Global; // 0x020c768c
 extern GlobalChangePart g_GlobalChangePart;
 extern GlobalWaitPart g_GlobalWaitPart;
 extern GlobalFade g_GlobalFade;
-extern UnkSpriteFade data_020f21f8;
+extern GlobalSpriteFade g_SpriteFade;
 
 extern const char mlb1a[8]; // "mlb1a data_0208c9ec"
 extern const char za1f1[8]; //za1f1 data_0208c9f4
 extern char s_mapEv01[];                            // "ev01"
 
 
-inline void UnkSpriteFade::flashWhite(int frames, int r, int g, int b)
+inline void GlobalSpriteFade::flashWhite(int frames, int r, int g, int b)
 {
     state_ = GlobalFade::FADE_IN_WHITE;
     count_ = 0;
     frames_ = frames;
     sprite_[0].setColor(r, g, b);
     sprite_[1].setColor(r, g, b);
-    data_0210bc18.unkfunc_02058294(this);
+    g_GlobalGamePartManager.unkfunc_02058294(this);
 }
 

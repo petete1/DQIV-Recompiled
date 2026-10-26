@@ -1,14 +1,14 @@
 #include "main/global/GlobalDQ4.hpp"
 #include "main/data/DataObject.hpp"
-#include "main/dss/UnkArrayWarning.hpp"
+#include "main/dss/ArrayErrorLog.hpp"
 #ifdef DQIV_NATIVE
 #include <stdexcept>
 #include "nitro/os.hpp"
 #include "Input.hpp"
 #endif
 
-GlobalDQ4 data_0210bb94;
-static UnkGameTaskHook s_hook;
+GlobalDQ4 g_GlobalDQ4;
+static GlobalDQ4TaskHook s_hook;
 
 ARM GlobalDQ4::GlobalDQ4()
 {
@@ -34,21 +34,21 @@ ARM void GlobalDQ4::unkfunc_02058014(int partId)
     while (nativeStep()) OS_Wait();
 #else
     part_id_ = partId;
-    unkfunc_0207f898(&data_0211a60c);
+    markHeapBlocks(&g_appHeap);
     while (1) {
         int id = part_id_;
         if (id > 24) {
-            unkfunc_0208960c(id, 24);
+            reportArrayError(id, 24);
         }
         if (id < 0) {
-            unkfunc_0208960c(id, 24);
+            reportArrayError(id, 24);
         }
         currentTask_ = task_[id];
         unkfunc_02058148(currentTask_);
         do {
             unkfunc_02058188(currentTask_);
-            if (s_hook.unk_08 != 0) {
-                s_hook.unk_08();
+            if (s_hook.frameFunc_ != 0) {
+                s_hook.frameFunc_();
             }
         } while (nextPartId_ == -1);
         unkfunc_0205815c(currentTask_);
@@ -59,16 +59,16 @@ ARM void GlobalDQ4::unkfunc_02058014(int partId)
 #endif
 }
 
-ARM void GlobalDQ4::unkfunc_020580bc(int partId, UnkGameTask* task)
+ARM void GlobalDQ4::unkfunc_020580bc(int partId, GlobalDQ4Task* task)
 {
 #ifdef DQIV_NATIVE
     if (partId < 0 || partId >= 24 || !task) throw std::runtime_error("Invalid native game task registration");
 #else
     if (partId > 24) {
-        unkfunc_0208960c(partId, 24);
+        reportArrayError(partId, 24);
     }
     if (partId < 0) {
-        unkfunc_0208960c(partId, 24);
+        reportArrayError(partId, 24);
     }
 #endif
     task_[partId] = task;
@@ -99,51 +99,51 @@ ARM int GlobalDQ4::unkfunc_02058114(int partId)
 
 ARM void GlobalDQ4::unkfunc_02058128(void (*func)())
 {
-    s_hook.unk_08 = func;
+    s_hook.frameFunc_ = func;
 }
 
 ARM void GlobalDQ4::unkfunc_02058138(void (*func)())
 {
-    s_hook.unk_04 = func;
+    s_hook.taskEndFunc_ = func;
 }
 
-ARM void GlobalDQ4::unkfunc_02058148(UnkGameTask* task)
+ARM void GlobalDQ4::unkfunc_02058148(GlobalDQ4Task* task)
 {
     task->vf00();
 }
 
-ARM void GlobalDQ4::unkfunc_0205815c(UnkGameTask* task)
+ARM void GlobalDQ4::unkfunc_0205815c(GlobalDQ4Task* task)
 {
     task->vf04();
-    if (s_hook.unk_04 != 0) {
-        s_hook.unk_04();
+    if (s_hook.taskEndFunc_ != 0) {
+        s_hook.taskEndFunc_();
     }
 }
 
-ARM void GlobalDQ4::unkfunc_02058188(UnkGameTask* task)
+ARM void GlobalDQ4::unkfunc_02058188(GlobalDQ4Task* task)
 {
     task->vf08();
     task->vf0c();
     task->vf10();
 }
 
-ARM void UnkGameTaskHook::vf00()
+ARM void GlobalDQ4TaskHook::vf00()
 {
 }
 
-ARM void UnkGameTaskHook::vf04()
+ARM void GlobalDQ4TaskHook::vf04()
 {
 }
 
-ARM void UnkGameTaskHook::vf08()
+ARM void GlobalDQ4TaskHook::vf08()
 {
 }
 
-ARM void UnkGameTaskHook::vf10()
+ARM void GlobalDQ4TaskHook::vf10()
 {
 }
 
-ARM void UnkGameTaskHook::vf0c()
+ARM void GlobalDQ4TaskHook::vf0c()
 {
 }
 
@@ -163,7 +163,7 @@ bool GlobalDQ4::nativeStep() {
     // Display registers, OAM and VRAM uploads are finalized by vf10 after its
     // VBlank wait. Present here, before a scene transition frees its resources.
     pc::completeNativeFrame();
-    if (s_hook.unk_08) s_hook.unk_08();
+    if (s_hook.frameFunc_) s_hook.frameFunc_();
     if (nextPartId_ != -1) {
         const auto next = nextPartId_;
         if (next < 0 || next >= 24 || !task_[next]) throw std::runtime_error("Game scene not ported or registered");

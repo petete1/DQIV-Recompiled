@@ -9,7 +9,7 @@
 #include "main/status/UseItem.hpp"
 #include "main/text/TextAPI.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
-#include "ov016/UnkTownMenuDraw/UnkTownMenuDraw_0217d560.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
 
 THUMB void TownMenu_OPERATION_EQUIP::menuSetup()
@@ -61,14 +61,14 @@ THUMB void TownMenu_OPERATION_EQUIP::menuDraw()
     status::g_Party.setPlayerMode();
     if (itemType_ >= 0) {
         if (itemListActive_ != 0) {
-            unkfunc_0217df54(itemType_, activeChara_, itemPageStart_, itemIdList_, itemCount_, itemPosList_[itemPageStart_ * 6 + itemItem_.getActive()]);
+            drawEquipScreen(itemType_, activeChara_, itemPageStart_, itemIdList_, itemCount_, itemPosList_[itemPageStart_ * 6 + itemItem_.getActive()]);
         } else {
-            unkfunc_0217df54(itemType_, activeChara_, itemPageStart_, itemIdList_, itemCount_, -1);
+            drawEquipScreen(itemType_, activeChara_, itemPageStart_, itemIdList_, itemCount_, -1);
         }
     } else {
-        unkfunc_0217df54(itemType_, activeChara_, itemPageStart_, itemPosList_, itemCount_, -1);
+        drawEquipScreen(itemType_, activeChara_, itemPageStart_, itemPosList_, itemCount_, -1);
     }
-    if (!data_020ed1bc.isOpen()) {
+    if (!g_TownMenuMessage.isOpen()) {
         charaItem_.drawActive();
         cancelItem_.drawActive();
         if (itemType_ >= 0) {
@@ -84,19 +84,19 @@ THUMB void TownMenu_OPERATION_EQUIP::menuUpdate()
     if (!MenuSoundManager::getSingleton()->isPlaySound() && playSound_ == 1) {
         if (curseType_ == 1) {
             int index = itemPageStart_ * 6 + itemItem_.getActive();
-            data_020ed1bc.openMessageForMENU();
+            g_TownMenuMessage.openMessageForMENU();
             TextAPI::setMACRO0(10, 0x40000000, itemIdList_[index]);
-            data_020ed1bc.addMessage(0xc3d8b);
+            g_TownMenuMessage.addMessage(0xc3d8b);
         } else if (curseType_ == 2) {
-            data_020ed1bc.openMessageForMENU();
+            g_TownMenuMessage.openMessageForMENU();
             TextAPI::setMACRO0(7, 0x40000000, itemIdList_[0]);
-            data_020ed1bc.addMessage(0xc3d8d);
+            g_TownMenuMessage.addMessage(0xc3d8d);
         }
         playSound_ = 0;
     }
-    if (data_020ed1bc.isOpen()) {
-        if (data_020ed1bc.stat_ == MENUBASE_STAT_OK || data_020ed1bc.stat_ == MENUBASE_STAT_CANCEL) {
-            data_020ed1bc.close();
+    if (g_TownMenuMessage.isOpen()) {
+        if (g_TownMenuMessage.stat_ == MENUBASE_STAT_OK || g_TownMenuMessage.stat_ == MENUBASE_STAT_CANCEL) {
+            g_TownMenuMessage.close();
             if (msgEnd2NextEquipment_) {
                 setItemTypeList();
                 itemListActive_ = 1;
@@ -175,7 +175,7 @@ THUMB void TownMenu_OPERATION_EQUIP::menuUpdate()
         int active = 4;
         if (result == 2) {
             if (itemType_ >= ITEM_WEAPON && itemType_ <= ITEM_ACCESSORY) {
-                unkfunc_0216c6ac();
+                removeEquipment();
             }
             if (itemType_ > ITEM_ACCESSORY) {
                 close();
@@ -303,22 +303,22 @@ THUMB void TownMenu_OPERATION_EQUIP::setEquip()
         setItemTypeList();
         itemType_++;
     } else {
-        data_020ed1bc.openMessageForMENU();
+        g_TownMenuMessage.openMessageForMENU();
         TextAPI::setMACRO0(1, 0x50000000, info.haveStatus_.playerIndex_);
         TextAPI::setMACRO0(10, 0x40000000, itemIdList_[index]);
-        data_020ed1bc.addMessage(0xc3d49);
+        g_TownMenuMessage.addMessage(0xc3d49);
         msgEnd2NextEquipment_ = 0;
     }
 }
 
-THUMB int TownMenu_OPERATION_EQUIP::unkfunc_0216c6ac()
+THUMB int TownMenu_OPERATION_EQUIP::removeEquipment()
 {
     status::HaveStatusInfo& info = status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_;
     if (itemCount_ != 0) {
         if (info.haveEquipment_.isSpell((ItemType)itemType_)) {
-            data_020ed1bc.openMessageForMENU();
+            g_TownMenuMessage.openMessageForMENU();
             TextAPI::setMACRO0(7, 0x40000000, itemIdList_[0]);
-            data_020ed1bc.addMessage(0xc3d8d);
+            g_TownMenuMessage.addMessage(0xc3d8d);
             return 0;
         }
         info.resetEquipment2((ItemType)itemType_);

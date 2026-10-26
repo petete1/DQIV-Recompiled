@@ -14,8 +14,8 @@
 #include "main/cmn/HengeNoTsueManager.hpp"
 #include "main/cmn/PartyTalk.hpp"
 #include "main/sound/Sound.hpp"
-#include "main/cmn/UnkEnvoyManager.hpp"
-#include "main/cmn/UnkImmigrantTown.hpp"
+#include "main/cmn/EnvoyManager.hpp"
+#include "main/cmn/ImmigrantTown.hpp"
 
 THUMB int profile::Profile::deliverDATA(int)
 {
@@ -160,7 +160,7 @@ THUMB void profile::Profile::deliverDATA_PARTY()
     status::g_Game.setUniqueID(pPARTY->UNIQUEID);
 
     for (int i = 0; i < 50; i++)
-        data_020f0078.unkfunc_0203ab20(i, pPARTY->SELECTTAISHI_FLAG[i]);
+        g_EnvoyManager.setTypeSelectable(i, pPARTY->SELECTTAISHI_FLAG[i]);
 }
 
 THUMB void profile::Profile::deliverDATA_CHAPTER()
@@ -211,38 +211,38 @@ THUMB void profile::Profile::deliverDATA_MONSTER()
 THUMB void profile::Profile::deliverDATA_ENVOY()
 {
     for (int i = 0; i < 0x18; i++) {
-        data_020f0078.unkfunc_0203a34c(i);
+        g_EnvoyManager.selectEnvoy(i);
         if (this->pENVOY->TYPE != 0xFF) {
-            data_020f0078.unkfunc_0203a574(1);
-            data_020f0078.unkfunc_0203a58c(this->pENVOY->UNIQUE);
-            data_020f0078.unkfunc_0203a5bc(this->pENVOY->TYPE);
-            data_020f0078.unkfunc_0203a6f4(this->pENVOY->SEX);
-            data_020f0078.unkfunc_0203a730(this->pENVOY->AGE);
-            data_020f0078.unkfunc_0203a76c(this->pENVOY->SKILL);
-            dss::memcpy(data_020f0078.unkfunc_0203a65c(), this->pENVOY->NAME, 0x1A);
-            dss::memcpy(data_020f0078.unkfunc_0203a6d8(), this->pENVOY->HERONAME, 0x1A);
-            dss::memcpy(data_020f0078.unkfunc_0203a820(), this->pENVOY->TOWNNAME, 0x2A);
-            dss::memcpy(data_020f0078.unkfunc_0203a938(), this->pENVOY->COMMENT, 0x5C);
+            g_EnvoyManager.setEnable(1);
+            g_EnvoyManager.setUnique(this->pENVOY->UNIQUE);
+            g_EnvoyManager.setType(this->pENVOY->TYPE);
+            g_EnvoyManager.setSex(this->pENVOY->SEX);
+            g_EnvoyManager.setAge(this->pENVOY->AGE);
+            g_EnvoyManager.setSkill(this->pENVOY->SKILL);
+            dss::memcpy(g_EnvoyManager.getName(), this->pENVOY->NAME, 0x1A);
+            dss::memcpy(g_EnvoyManager.getHeroName(), this->pENVOY->HERONAME, 0x1A);
+            dss::memcpy(g_EnvoyManager.getTownName(), this->pENVOY->TOWNNAME, 0x2A);
+            dss::memcpy(g_EnvoyManager.getComment(), this->pENVOY->COMMENT, 0x5C);
         } else {
-            data_020f0078.unkfunc_0203a574(0);
+            g_EnvoyManager.setEnable(0);
         }
         this->pENVOY++;
     }
-    UnkImmigrantTown::getSingleton()->unkfunc_02037ca4();
-    data_020f0078.mode_ = 1;
+    ImmigrantTown::getSingleton()->rebuildResidents();
+    g_EnvoyManager.mode_ = 1;
     if (this->pENVOY->TYPE != 0xFF) {
-        data_020f0078.unkfunc_0203a574(1);
-        data_020f0078.unkfunc_0203a58c(this->pENVOY->UNIQUE);
-        data_020f0078.unkfunc_0203a5bc(this->pENVOY->TYPE);
-        data_020f0078.unkfunc_0203a6f4(this->pENVOY->SEX);
-        data_020f0078.unkfunc_0203a730(this->pENVOY->AGE);
-        data_020f0078.unkfunc_0203a76c(this->pENVOY->SKILL);
-        dss::memcpy(data_020f0078.unkfunc_0203a65c(), this->pENVOY->NAME, 0x1A);
-        dss::memcpy(data_020f0078.unkfunc_0203a6d8(), this->pENVOY->HERONAME, 0x1A);
-        dss::memcpy(data_020f0078.unkfunc_0203a820(), this->pENVOY->TOWNNAME, 0x2A);
-        dss::memcpy(data_020f0078.unkfunc_0203a938(), this->pENVOY->COMMENT, 0x5C);
+        g_EnvoyManager.setEnable(1);
+        g_EnvoyManager.setUnique(this->pENVOY->UNIQUE);
+        g_EnvoyManager.setType(this->pENVOY->TYPE);
+        g_EnvoyManager.setSex(this->pENVOY->SEX);
+        g_EnvoyManager.setAge(this->pENVOY->AGE);
+        g_EnvoyManager.setSkill(this->pENVOY->SKILL);
+        dss::memcpy(g_EnvoyManager.getName(), this->pENVOY->NAME, 0x1A);
+        dss::memcpy(g_EnvoyManager.getHeroName(), this->pENVOY->HERONAME, 0x1A);
+        dss::memcpy(g_EnvoyManager.getTownName(), this->pENVOY->TOWNNAME, 0x2A);
+        dss::memcpy(g_EnvoyManager.getComment(), this->pENVOY->COMMENT, 0x5C);
     } else {
-        data_020f0078.unkfunc_0203a574(0);
+        g_EnvoyManager.setEnable(0);
     }
 }
 

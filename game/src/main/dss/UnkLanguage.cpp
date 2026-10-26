@@ -2,14 +2,14 @@
 #include "main/dss/DssUtils.hpp"
 #include "main/text/TextAPI.hpp"
 
-int data_020c4a04 = 3;
+int g_gameRegion = 3;
 
-ARM int unkfunc_0208a104()
+ARM int getGameRegion()
 {
-    return data_020c4a04;
+    return g_gameRegion;
 }
 
-ARM void unkfunc_0208a114(char* dst, int size, int id)
+ARM void getDefaultTownName(char* dst, int size, int id)
 {
     char buf[0x200];
     switch (id) {
