@@ -331,7 +331,12 @@ void main() {
         three=texture(uThree1,vec2(i.x,1.0-i.y));
         rowFirst=384;rowLast=575;insetCell=true;
         vec2 insetPosition=i*vec2(256.0,192.0)+vec2(0.0,384.0)-0.5;
-        color=mix(color,hdOver(sharp(insetPosition,uScale*uInset.z/256.0),insetPosition),uInsetAlpha);
+        // Where its 3D is see-through over the bare backdrop (the world map's
+        // burnt edges), the field shows instead.
+        ivec2 near=ivec2(clamp(floor(insetPosition+0.5),vec2(0.0,384.0),vec2(255.0,575.0)));
+        float shown=1.0;
+        if(int(texelFetch(uRecipe0,near,0).a*255.0+0.5)==1&&(int(texelFetch(uRecipe1,near,0).a*255.0+0.5)&8)!=0) shown=three.a;
+        color=mix(color,hdOver(sharp(insetPosition,uScale*uInset.z/256.0),insetPosition),uInsetAlpha*shown);
     }
     oColor=vec4(color,1.0);
 })";

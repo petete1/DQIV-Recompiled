@@ -270,7 +270,9 @@ void Display::engine(NitroVideo& video,bool sub,std::span<const std::uint32_t> t
                 const auto underColor=under==5?backdrop:layers_[under][p].color;
                 const bool target2=effects&&(blendControl&(0x100<<under)),target1=effects&&(blendControl&(1u<<worldLayer));
                 recipe[0]=1u<<24;
-                recipe[1]=(underColor&0xffffff)|(target2?1u<<24:0)|(target1&&effect>=2?2u<<24:0);
+                // Flag 8: only the backdrop is below the 3D layer (the field's
+                // inset shows the world there instead).
+                recipe[1]=(underColor&0xffffff)|(target2?1u<<24:0)|(target1&&effect>=2?2u<<24:0)|(under==5?8u<<24:0);
                 recipe[2]|=target1&&effect>=2?evyCode<<8:0;
             } else if(aboveCount==1&&effects) {
                 // A single 2D pixel above: it may blend with the 3D layer.

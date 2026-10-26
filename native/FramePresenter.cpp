@@ -140,7 +140,11 @@ void FramePresenter::frame(NitroVideo& video,const GxGeometry& geometry,const Gx
             int w=0,h=0;pixels(layout_.inset,w,h);
             const GpuBatch insetBatch{triangles,{},true,true,1};
             ProfileScope timing("render3D-inset");
-            window_.gpu().render3D({&insetBatch,1},state,textures_,options,w,h,{},1);
+            // A black 3D background is left see-through: the field shows
+            // around the map (its burnt edges, GlobalMap.cpp).
+            auto insetState=state;
+            if((insetState.clearColor&0x7fff)==0)insetState.clearColor&=~(31u<<16);
+            window_.gpu().render3D({&insetBatch,1},insetState,textures_,options,w,h,{},1);
             seen3d_=true;
         }
         if(!seen3d_)layout_.inset={0,0,0,0};

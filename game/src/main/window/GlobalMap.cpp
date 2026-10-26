@@ -4,6 +4,51 @@
 #include "main/status/GameFlag.hpp"
 #include "main/status/StageStatus.hpp"
 #include "nitro/os.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/TextureObject.hpp"
+#include <vector>
+
+namespace {
+// PC version: the world map's burnt black border (palette colour 1, the black
+// pixels joined to the picture's edges) becomes colour 0, which the sprite
+// leaves transparent: the world shows around the parchment. Black inside the
+// map stays. `file`: the loaded texture file, before its VRAM transfer.
+void clearMapBorder(void* file)
+{
+    const TextureObject* header = (const TextureObject*)file;
+    if (header->texFormat_ != 4) {
+        return; // 256 colours, one byte per pixel
+    }
+    const int width = 8 << header->sizeS_, height = int(header->texSize_) / width;
+    unsigned char* pixels = (unsigned char*)file + header->texData_;
+    std::vector<int> pending;
+    for (int x = 0; x < width; x++) {
+        pending.push_back(x);
+        pending.push_back((height - 1) * width + x);
+    }
+    for (int y = 0; y < height; y++) {
+        pending.push_back(y * width);
+        pending.push_back(y * width + width - 1);
+    }
+    while (!pending.empty()) {
+        const int at = pending.back();
+        pending.pop_back();
+        if (pixels[at] != 1) {
+            continue;
+        }
+        pixels[at] = 0;
+        const int x = at % width, y = at / width;
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (x + dx >= 0 && x + dx < width && y + dy >= 0 && y + dy < height) {
+                    pending.push_back((y + dy) * width + x + dx);
+                }
+            }
+        }
+    }
+}
+}
+#endif
 
 ARM window::GlobalMap::GlobalMap()
 {
@@ -32,7 +77,13 @@ ARM void window::GlobalMap::setup()
 {
     char path[0x80];
     dss::sprintf_s(path, sizeof(path), "data/field/2d/dsdq4wmap01.tex");
+#ifdef DQIV_NATIVE
+    mapSprite_.data_.setup(path, 0, 0);
+    clearMapBorder(mapSprite_.data_.getAddr());
+    mapSprite_.setupTexture();
+#else
     mapSprite_.loadFile(path, 0);
+#endif
     mapSprite_.setSubScreen();
     mapSprite_.setPolygonID(0x3e);
     mapSprite_.setDepth(0);

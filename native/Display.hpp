@@ -11,7 +11,8 @@ public:
     // plane 0: rgb = 2D colour above the 3D layer, or the final colour; a = kind
     //          (0 final, 1 3D over plane 1, 2 colour blended over 3D with eva/evb).
     // plane 1: rgb = colour below the 3D layer; a = flags (1 3D alpha blends
-    //          with it, 2 BLDY applies to the 3D, 8 only the backdrop shows).
+    //          with it, 2 BLDY applies to the 3D, 8 only the backdrop shows,
+    //          or is below the 3D layer).
     // plane 2: r = eva*8, g = evb*8, b = BLDY mode<<5|evy, a = master mode<<5|amount.
     // plane 3: a high-resolution picture drawn over the pixel (HdPictures tag
     //          with the pixel's place in it), or 0. Planes 0-2 then leave out
