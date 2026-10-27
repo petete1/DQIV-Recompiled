@@ -288,6 +288,19 @@ void Display::engine(NitroVideo& video,bool sub,std::span<const std::uint32_t> t
                     recipe[2]=(masterCode<<24)|(b<<11)|(a<<19);
                 } else recipe[0]=(target1&&effect>=2?brightness(pixel.color,effect-1,evy):pixel.color)&0xffffff;
             }
+        } else if(backdropWorld&&first!=5&&second==5&&(mask&32)) {
+            // A 2D pixel blending with the backdrop (the top screen's windows on
+            // the world map): the world shows through the backdrop, so the
+            // pixel blends with the world, as over a captured copy of it.
+            const auto& pixel=layers_[first][p];
+            const bool target2=(blendControl&0x2000)!=0,target1=(blendControl&(1u<<first))!=0;
+            unsigned a=0,b=0;
+            if(target2&&pixel.semi) {a=pixel.alpha?pixel.alpha:eva;b=pixel.alpha?16-pixel.alpha:evb;}
+            else if(target1&&effect==1&&target2) {a=eva;b=evb;}
+            if(a||b) {
+                recipe[0]=(pixel.color&0xffffff)|(2u<<24);recipe[1]=backdrop&0xffffff;
+                recipe[2]=(masterCode<<24)|(b<<11)|(a<<19);
+            }
         } else if(backdropWorld&&first==5) {
             // The world shows through the backdrop, with the backdrop's brightness effect.
             recipe[0]=1u<<24;recipe[1]=backdrop&0xffffff;
