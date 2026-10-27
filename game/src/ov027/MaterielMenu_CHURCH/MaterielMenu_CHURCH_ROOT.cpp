@@ -2,6 +2,8 @@
 #include "ov027/MaterielMenu_CHURCH/MaterielMenu_CHURCH.hpp"
 #ifdef DQIV_NATIVE
 #include "Settings.hpp"
+#include "main/dss/Pad.hpp"
+#include <nitro/pad.h>
 #endif
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
@@ -112,8 +114,10 @@ THUMB bool MaterielMenu_CHURCH_ROOT::rootUpdate()
         break;
     case 7:
 #ifdef DQIV_NATIVE
-        // "Please turn the power OFF": the PC version closes once it is read.
-        if (stat == 1 || stat == 2) {
+        // "Please turn the power OFF": the PC version closes on A, B or Start
+        // once it is shown (the message waits for a key that never ends it).
+        if (stat == 1 || stat == 2 || (g_TownMenuMessage.isMessageWAITPROG() &&
+                (dss::g_Pad.edge() & (PAD_BUTTON_A | PAD_BUTTON_B | PAD_BUTTON_START)))) {
             pc::requestQuit();
         }
 #endif
