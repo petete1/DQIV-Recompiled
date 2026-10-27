@@ -5,7 +5,9 @@
 #include <stdexcept>
 #if UINTPTR_MAX>0xffffffffu
 #include <malloc.h>
+#include <sys/personality.h>
 #include <ucontext.h>
+#include <unistd.h>
 #endif
 
 namespace pc {
@@ -32,6 +34,16 @@ void requireLowAddress(const void* pointer,std::size_t size) {
     if(address>=lowMemoryLimit||size>lowMemoryLimit-address)
         throw std::runtime_error("Game memory above 2 GiB: its addresses do not fit in 32 bits");
 }
+void keepHeapNearExecutable(char** argv) {
+    const int persona=personality(0xffffffff);
+    if(persona==-1||(persona&ADDR_NO_RANDOMIZE))return;
+    if(personality(persona|ADDR_NO_RANDOMIZE)==-1)return;
+    // By its own path, so that the process keeps its name.
+    char path[4096];
+    const auto length=readlink("/proc/self/exe",path,sizeof(path)-1);
+    if(length>0) {path[length]=0;execv(path,argv);}
+    personality(persona); // the restart failed: go on as started
+}
 int runOnLowStack(int (*function)()) {
     constexpr std::size_t size=16u<<20;
     const std::unique_ptr<unsigned char[]> stack(new unsigned char[size]);
@@ -49,6 +61,7 @@ int runOnLowStack(int (*function)()) {
 }
 #else
 void requireLowAddress(const void*,std::size_t) {}
+void keepHeapNearExecutable(char**) {}
 int runOnLowStack(int (*function)()) {return function();}
 #endif
 }

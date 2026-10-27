@@ -67,11 +67,21 @@ void fiberStart(unsigned low,unsigned high) {
 }
 void* createFiber(void (*entry)(void*),void* argument) {
     const std::size_t page=std::size_t(sysconf(_SC_PAGESIZE)),size=1024*1024+page;
-    int flags=MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_STACK;
+    const int flags=MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_STACK;
 #ifdef __x86_64__
-    flags|=MAP_32BIT; // the game keeps stack addresses in 32-bit integers
-#endif
+    // The game keeps stack addresses in 32-bit integers: the stacks go below
+    // 2 GiB, from 1.75 GiB up, leaving the room below to the heap.
+    constexpr std::uintptr_t first=0x70000000;
+    static std::uintptr_t next=first;
+    if(next+size>lowMemoryLimit)next=first; // freed stacks leave room there again
+    void* mapping=mmap(reinterpret_cast<void*>(next),size,PROT_READ|PROT_WRITE,flags,-1,0);
+    if(mapping!=MAP_FAILED&&reinterpret_cast<std::uintptr_t>(mapping)!=next) {
+        munmap(mapping,size);
+        mapping=mmap(nullptr,size,PROT_READ|PROT_WRITE,flags|MAP_32BIT,-1,0);
+    } else if(mapping!=MAP_FAILED) next+=size;
+#else
     void* mapping=mmap(nullptr,size,PROT_READ|PROT_WRITE,flags,-1,0);
+#endif
     if(mapping==MAP_FAILED)return nullptr;
     requireLowAddress(mapping,size);
     mprotect(mapping,page,PROT_NONE);

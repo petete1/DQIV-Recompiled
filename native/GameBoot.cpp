@@ -267,5 +267,8 @@ int runGame() {
     }
 }
 
-// 64-bit: on a stack below 2 GiB (LowMemory.hpp).
-int main() {return pc::runOnLowStack(runGame);}
+// 64-bit: with the heap and the stack below 2 GiB (LowMemory.hpp).
+int main(int,char** argv) {
+    pc::keepHeapNearExecutable(argv);
+    return pc::runOnLowStack(runGame);
+}
