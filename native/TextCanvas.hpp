@@ -21,6 +21,8 @@ public:
     // Text in UTF-8, `size` pixels tall, aligned 0 left, 1 centre, 2 right inside [x, x+boxWidth)
     // (cut with an ellipsis when longer).
     void text(int x,int y,std::string_view utf8,int size,std::uint32_t argb,bool bold=false,int align=0,int boxWidth=0);
+    // Width in pixels of a text drawn by text().
+    int measure(std::string_view utf8,int size,bool bold=false);
     // Blends a straight-ARGB picture (top-down) over the rectangle, scaled to fit it.
     void image(int x,int y,int width,int height,const std::uint32_t* argb,int sourceWidth,int sourceHeight);
 private:

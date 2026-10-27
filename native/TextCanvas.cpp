@@ -96,6 +96,23 @@ std::u32string codepoints(std::string_view utf8) {
     }
     return result;
 }
+struct Glyph {const Font* font;int index;float scale;};
+// Each character in the first font that has it, `size` pixels per em as GDI's.
+float layout(const std::u32string& string,int size,const std::vector<std::unique_ptr<Font>>& chain,std::vector<Glyph>& glyphs) {
+    float width=0;
+    for(std::size_t i=0;i<string.size();++i) {
+        Glyph glyph{chain.front().get(),0,0};
+        for(const auto& font:chain)
+            if(const int index=stbtt_FindGlyphIndex(&font->info,int(string[i]))) {glyph={font.get(),index,0};break;}
+        if(!glyph.index)glyph.index=stbtt_FindGlyphIndex(&glyph.font->info,int(string[i]));
+        glyph.scale=stbtt_ScaleForMappingEmToPixels(&glyph.font->info,float(size));
+        if(!glyphs.empty()&&glyphs.back().font==glyph.font)
+            width+=glyph.scale*float(stbtt_GetGlyphKernAdvance(&glyph.font->info,glyphs.back().index,glyph.index));
+        int advance=0,bearing=0;stbtt_GetGlyphHMetrics(&glyph.font->info,glyph.index,&advance,&bearing);
+        width+=glyph.scale*float(advance);glyphs.push_back(glyph);
+    }
+    return width;
+}
 #endif
 std::uint32_t blend(std::uint32_t below,std::uint32_t argb,unsigned coverage) {
     // Straight colour over a premultiplied pixel, with coverage 0..255.
@@ -153,22 +170,10 @@ void TextCanvas::text(int x,int y,std::string_view utf8,int size,std::uint32_t a
     struct Rect {int left,top,right,bottom;} rect{x,y,boxWidth>0?x+boxWidth:width_,std::min(height_,y+size*2)};
     for(int row=std::max(0,rect.top);row<std::min(height_,rect.bottom);++row)
         std::fill_n(mask_+std::size_t(row)*width_+std::max(0,rect.left),std::max(0,std::min(width_,rect.right)-std::max(0,rect.left)),0u);
-    // Each character in the first font that has it, `size` pixels per em as GDI's.
     const auto& chain=fonts(bold);
     if(chain.empty())return;
-    struct Glyph {const Font* font;int index;float scale;};
-    std::vector<Glyph> glyphs;float width=0;
-    for(std::size_t i=0;i<string.size();++i) {
-        Glyph glyph{chain.front().get(),0,0};
-        for(const auto& font:chain)
-            if(const int index=stbtt_FindGlyphIndex(&font->info,int(string[i]))) {glyph={font.get(),index,0};break;}
-        if(!glyph.index)glyph.index=stbtt_FindGlyphIndex(&glyph.font->info,int(string[i]));
-        glyph.scale=stbtt_ScaleForMappingEmToPixels(&glyph.font->info,float(size));
-        if(!glyphs.empty()&&glyphs.back().font==glyph.font)
-            width+=glyph.scale*float(stbtt_GetGlyphKernAdvance(&glyph.font->info,glyphs.back().index,glyph.index));
-        int advance=0,bearing=0;stbtt_GetGlyphHMetrics(&glyph.font->info,glyph.index,&advance,&bearing);
-        width+=glyph.scale*float(advance);glyphs.push_back(glyph);
-    }
+    std::vector<Glyph> glyphs;
+    const float width=layout(string,size,chain,glyphs);
     const auto& primary=*chain.front();
     int ascent=0,descent=0,gap=0;stbtt_GetFontVMetrics(&primary.info,&ascent,&descent,&gap);
     const float baseline=float(rect.top)+float(ascent)*stbtt_ScaleForMappingEmToPixels(&primary.info,float(size));
@@ -216,6 +221,24 @@ void TextCanvas::text(int x,int y,std::string_view utf8,int size,std::uint32_t a
             const unsigned coverage=std::max({m&255,(m>>8)&255,(m>>16)&255});
             if(coverage){auto& p=pixels_[std::size_t(row)*width_+column];p=blend(p,argb,coverage);}
         }
+}
+int TextCanvas::measure(std::string_view utf8,int size,bool bold) {
+#ifndef _WIN32
+    const auto& chain=fonts(bold);
+    if(chain.empty()||utf8.empty())return 0;
+    std::vector<Glyph> glyphs;
+    return int(std::ceil(layout(codepoints(utf8),size,chain,glyphs)));
+#else
+    const auto string=wide(utf8);
+    if(string.empty())return 0;
+    HDC dc=static_cast<HDC>(dc_);
+    HFONT font=CreateFontW(-size,0,0,0,bold?FW_BOLD:FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,
+        CLIP_DEFAULT_PRECIS,ANTIALIASED_QUALITY,DEFAULT_PITCH,L"Segoe UI");
+    HGDIOBJ previous=SelectObject(dc,font);
+    SIZE extent{};GetTextExtentPoint32W(dc,string.c_str(),int(string.size()),&extent);
+    SelectObject(dc,previous);DeleteObject(font);
+    return int(extent.cx);
+#endif
 }
 void TextCanvas::image(int x,int y,int width,int height,const std::uint32_t* argb,int sourceWidth,int sourceHeight) {
     if(width<=0||height<=0||sourceWidth<=0||sourceHeight<=0)return;

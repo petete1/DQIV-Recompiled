@@ -135,6 +135,12 @@ const char* japanese(const char* en) {
         {"Party chat","なかまと はなす"},
         {"X (menu)","X (メニュー)"},
         {"Yes","はい"},
+        {"Dragon Quest IV ran into an error and has to close.","エラーが おきたため ドラゴンクエストIVを しゅうりょうします。"},
+        {"Details: ","くわしくは: "},
+        {"The details are in journal.txt, next to the save.","くわしくは セーブの となりの journal.txt に あります。"},
+        {"Game data not found. Put your European Dragon Quest IV ROM (.nds) in this folder (and, for the HD sound, the .obb of the Android version):",
+            "ゲームの データが みつかりません。ヨーロッパばん ドラゴンクエストIVの ROM (.nds) を このフォルダに いれてください (HDサウンドには Androidばんの .obb も):"},
+        {"Extract the .nds ROM from its .zip into this folder:",".zipから ROMの .ndsを とりだして このフォルダに いれてください:"},
     };
     const auto found=texts.find(en);
     return found!=texts.end()?found->second:en;
@@ -184,6 +190,27 @@ const char* controlName(int action,int language) {
 }
 const char* rebindPrompt(int language) {return pick(language,"Press...","Appuyez...","Drü""cken...","Premi...","Pulsa...");}
 const char* pageHint(int language) {return pick(language,"L/R: page","L/R : page","L/R: Seite","L/R: pagina","L/R: página");}
+const char* errorText(ErrorText text,int language) {
+    switch(text) {
+    case ErrorText::closing:return pick(language,"Dragon Quest IV ran into an error and has to close.",
+        "Dragon Quest IV a rencontré une erreur et doit se fermer.","Dragon Quest IV ist auf einen Fehler gestoßen und muss beendet werden.",
+        "Dragon Quest IV ha riscontrato un errore e deve chiudersi.","Dragon Quest IV ha encontrado un error y debe cerrarse.");
+    case ErrorText::details:return pick(language,"Details: ","Détails : ","Details: ","Dettagli: ","Detalles: ");
+    case ErrorText::crashDetails:return pick(language,"The details are in journal.txt, next to the save.",
+        "Le détail est dans journal.txt, à côté de la sauvegarde.","Die Einzelheiten stehen in journal.txt, neben dem Spielstand.",
+        "I dettagli sono in journal.txt, accanto al salvataggio.","Los detalles están en journal.txt, junto a la partida guardada.");
+    case ErrorText::missingData:return pick(language,
+        "Game data not found. Put your European Dragon Quest IV ROM (.nds) in this folder (and, for the HD sound, the .obb of the Android version):",
+        "Données du jeu introuvables. Placez votre ROM européenne de Dragon Quest IV (.nds) dans ce dossier (et, pour le son HD, le .obb de la version Android) :",
+        "Spieldaten nicht gefunden. Lege dein europäisches Dragon-Quest-IV-ROM (.nds) in diesen Ordner (und für den HD-Ton die .obb-Datei der Android-Version):",
+        "Dati del gioco non trovati. Metti la tua ROM europea di Dragon Quest IV (.nds) in questa cartella (e, per l'audio HD, il file .obb della versione Android):",
+        "No se encuentran los datos del juego. Pon tu ROM europea de Dragon Quest IV (.nds) en esta carpeta (y, para el sonido HD, el .obb de la versión Android):");
+    case ErrorText::zippedRom:return pick(language,"Extract the .nds ROM from its .zip into this folder:",
+        "Extrayez la ROM .nds de son .zip dans ce dossier :","Entpacke das .nds-ROM aus seiner .zip-Datei in diesen Ordner:",
+        "Estrai la ROM .nds dal suo .zip in questa cartella:","Extrae la ROM .nds de su .zip en esta carpeta:");
+    }
+    return "";
+}
 const char* resetLabel(int language) {return pick(language,"Default controls","Touches par dé""faut","Standardbelegung","Comandi predefiniti","Controles por defecto");}
 namespace {int waitingPage=-1,waitingAction=-1;}
 void startRebind(int page,int action) {waitingPage=page;waitingAction=action;}

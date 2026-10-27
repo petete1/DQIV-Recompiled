@@ -180,7 +180,7 @@ target_link_libraries(dqiv_nitro_system PUBLIC dqiv_core)
 # journal beside the save.
 add_executable(DragonQuestIV WIN32 native/GameBoot.cpp native/GameWindow.cpp native/GpuRenderer.cpp native/GlLoader.cpp
     native/TextCanvas.cpp native/InputBindings.cpp native/FramePresenter.cpp native/NitroSymbols.cpp native/DssRuntime.cpp
-    native/CrashHandler.cpp)
+    native/CrashHandler.cpp native/ErrorWindow.cpp)
 if(WIN32)
     target_sources(DragonQuestIV PRIVATE native/DragonQuestIV.rc)
     target_link_libraries(DragonQuestIV PRIVATE dqiv_game dqiv_nitro_system dqiv_sound dqiv_audio)

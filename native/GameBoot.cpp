@@ -23,6 +23,7 @@
 #include "NitroWireless.hpp"
 #include "Input.hpp"
 #include "Settings.hpp"
+#include "ErrorWindow.hpp"
 #include "LowMemory.hpp"
 #ifdef _WIN32
 #include <share.h>
@@ -32,7 +33,6 @@ __declspec(dllexport) unsigned long NvOptimusEnablement=1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance=1;
 }
 #else
-#include <SDL3/SDL_messagebox.h>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <unistd.h>
@@ -117,13 +117,18 @@ void adoptPreviousSave() {
             std::filesystem::copy_file(previous/name,pc::saveDirectory()/name,std::filesystem::copy_options::skip_existing,ignored);
     }
 }
-void showError(const std::string& text) {
-    const auto message="Dragon Quest IV a rencontre une erreur et doit se fermer.\n\n"+text+"\n\nJournal : "+journalPath();
-#ifdef _WIN32
-    MessageBoxA(nullptr,message.c_str(),"Dragon Quest IV",MB_OK|MB_ICONERROR);
-#else
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Dragon Quest IV",message.c_str(),nullptr);
-#endif
+// An error the player can fix: the journal keeps it in English, the error box
+// shows it in the game language.
+struct PlayerError:std::runtime_error {
+    std::string shown;
+    PlayerError(const std::string& logged,std::string text):std::runtime_error(logged),shown(std::move(text)) {}
+};
+void showError(const std::exception& error) {
+    const int language=pc::gameSettings().language;
+    const auto* player=dynamic_cast<const PlayerError*>(&error);
+    const auto message=std::string(pc::errorText(pc::ErrorText::closing,language))+"\n\n"+(player?player->shown:error.what())+
+        "\n\n"+pc::errorText(pc::ErrorText::details,language)+journalPath();
+    pc::showErrorBox(message);
 }
 // The game's resources: packed inside the executable or, in a build tree, the
 // assets folder (the game's data) and the addons folder (the PC version's
@@ -166,11 +171,15 @@ pc::Assets openResources() {
                 std::cout<<"HD sound: "<<obb.filename().string()<<'\n';
             }
         } else if(!withExtension(".zip").empty())
-            throw std::runtime_error("Extract the .nds ROM from its .zip into "+inbox.string());
+            throw PlayerError("Extract the .nds ROM from its .zip into "+inbox.string(),
+                pc::errorText(pc::ErrorText::zippedRom,pc::gameSettings().language)+("\n"+inbox.string()));
     }
-    if(!assets.contains(sound))
-        throw std::runtime_error("Game data not found: put your European Dragon Quest IV ROM (.nds) in "+
-            (executable.parent_path()/"ROMandOBBfileHere").string()+" (and the Android version's .obb for the HD sound)");
+    if(!assets.contains(sound)) {
+        const auto inbox=executable.parent_path()/"ROMandOBBfileHere";
+        throw PlayerError("Game data not found: put your European Dragon Quest IV ROM (.nds) in "+inbox.string()+
+            " (and the Android version's .obb for the HD sound)",
+            pc::errorText(pc::ErrorText::missingData,pc::gameSettings().language)+("\n"+inbox.string()));
+    }
     return assets;
 }
 }
@@ -294,7 +303,7 @@ int runGame() {
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "Dragon Quest IV stopped: " << error.what() << '\n';
-        std::cerr.flush();showError(error.what());
+        std::cerr.flush();showError(error);
         return 1;
     }
 }

@@ -94,6 +94,15 @@ enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize
 inline constexpr int cameraZoomMin=50,cameraZoomMax=200;
 // Changes the camera zoom by `step` (percent); for the mouse wheel and the right stick.
 void zoomCamera(int step);
+// The error box's texts, in a game language (0..5, as GameSettings::language).
+enum class ErrorText {
+    closing,      // the game has to close
+    details,      // followed by the journal's path
+    crashDetails, // where the details are (a native crash: no path)
+    missingData,  // no ROM: followed by the folder for it
+    zippedRom,    // the ROM is in a .zip: followed by the folder for it
+};
+const char* errorText(ErrorText text,int language);
 // Texts in a game language (1..5, as GameSettings::language).
 const char* settingLabel(int item,int language);
 std::string settingValue(int item,int language);

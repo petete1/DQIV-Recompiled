@@ -4,6 +4,9 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include "Settings.hpp"
+#include "ErrorWindow.hpp"
+#include <string>
 #include <dbghelp.h>
 #include <cstdio>
 #include <cstring>
@@ -95,8 +98,9 @@ int installCrashHandler() {
         std::fprintf(stderr,"Native exception 0x%08lx at %p, address %p\n",failure->ExceptionRecord->ExceptionCode,
             failure->ExceptionRecord->ExceptionAddress,reinterpret_cast<void*>(failure->ExceptionRecord->ExceptionInformation[1]));
         trace(failure->ContextRecord);
-        MessageBoxA(nullptr,"Dragon Quest IV a rencontre une erreur et doit se fermer.\nLe detail est dans journal.txt, a cote de la sauvegarde.",
-            "Dragon Quest IV",MB_OK|MB_ICONERROR);
+        const int language=pc::gameSettings().language;
+        const auto message=std::string(pc::errorText(pc::ErrorText::closing,language))+"\n"+pc::errorText(pc::ErrorText::crashDetails,language);
+        pc::showErrorBox(message);
         TerminateProcess(GetCurrentProcess(),4);return EXCEPTION_CONTINUE_SEARCH;
     });
     std::set_terminate([] {
@@ -114,7 +118,9 @@ extern "C" __declspec(allocate(".CRT$XIB")) int (__cdecl* const pcCrashHandlerIn
 #endif
 
 #ifndef _WIN32
-#include <SDL3/SDL_messagebox.h>
+#include "Settings.hpp"
+#include "ErrorWindow.hpp"
+#include <string>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -176,8 +182,9 @@ bool divideLikeTheDs(greg_t* registers) {
     return true;
 }
 void showFatalError() {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Dragon Quest IV",
-        "Dragon Quest IV a rencontre une erreur et doit se fermer.\nLe detail est dans journal.txt, a cote de la sauvegarde.",nullptr);
+    const int language=pc::gameSettings().language;
+    const auto message=std::string(pc::errorText(pc::ErrorText::closing,language))+"\n"+pc::errorText(pc::ErrorText::crashDetails,language);
+    pc::showErrorBox(message);
 }
 void onFault(int signal,siginfo_t* info,void* context) {
     auto* registers=static_cast<ucontext_t*>(context)->uc_mcontext.gregs;
