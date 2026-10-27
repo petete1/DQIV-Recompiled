@@ -47,7 +47,12 @@ typedef struct {
 
 /* rendering state (pointer in data_0210d18c) */
 typedef struct {
-    u8 unk_00[0xc4];
+    void* unk_00[2];                /* 0x00 as NNSG3dRS (g3d_internal.h), pointer-sized */
+    u32 unk_08;                     /* 0x08 */
+    void* unk_0c[32];               /* 0x0C */
+    u8 unk_8c[0x24];                /* 0x8C */
+    void* unk_b0[3];                /* 0xB0 */
+    u32 unk_bc[2];                  /* 0xBC */
     u32 isScaleCacheOne[8];         /* 0xC4 */
 } UnkG3dRS;
 

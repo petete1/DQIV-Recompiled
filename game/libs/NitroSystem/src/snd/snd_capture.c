@@ -40,7 +40,7 @@ typedef struct UnkSndCaptureMsg {
 } UnkSndCaptureMsg;
 
 typedef struct UnkMessageQueue {
-    /* 0x00 */ u8 unk_00[0x20];
+    /* 0x00 */ void* unk_00[0x20 / 4]; // os_message.c (pointer-sized fields)
 } UnkMessageQueue;
 
 typedef struct UnkSndCaptureUnk {

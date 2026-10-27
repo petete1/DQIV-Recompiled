@@ -1,11 +1,10 @@
 #pragma once
 
 // C++ subset of nitro/fs.h
+// Storage for an FS_File (nitro/fs/file.h), whose pointer fields are 8 bytes
+// in a 64-bit build.
 struct FSFile {
-    char unk_00[0x24];
-    unsigned int startRomOffset;                // 0x24
-    unsigned int endRomOffset;                  // 0x28
-    char unk_2c[0x1c];
+    void* unk_00[0x48 / 4];                     // 0x00
 };
 
 extern "C" {

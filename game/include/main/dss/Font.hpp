@@ -7,8 +7,8 @@ struct G2dCharCanvas {
     int areaWidth_;                             // 0x04
     int areaHeight_;                            // 0x08
     unsigned char dstBpp_;                      // 0x0C
-    const void* vtable_;                        // 0x10
-    unsigned int param_;                        // 0x14
+    unsigned int param_;                        // 0x10
+    const void* vtable_;                        // 0x14
 };
 
 // font information block of a font file

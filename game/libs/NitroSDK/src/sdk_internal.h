@@ -12,8 +12,9 @@ void OS_Terminate(void);
 void func_0207a068(void);
 u32 func_02079c90(void);
 
+/* Storage for an OSMutex (nitro/os/mutex.h): pointer-sized fields. */
 typedef struct UnkMutex {
-    u32 unk_00[6];
+    void* unk_00[6];
 } UnkMutex;
 void OS_InitMutex(UnkMutex* mutex);
 void OS_LockMutex(UnkMutex* mutex);

@@ -9,7 +9,7 @@ typedef struct UnkSndFader {
 } UnkSndFader;
 
 typedef struct UnkSndStrm {
-    /* 0x00 */ u8 unk_00[0x5C];
+    /* 0x00 */ void* unk_00[0x5C / 4]; // snd_stream.c (pointer-sized fields)
 } UnkSndStrm;
 
 typedef struct UnkSndAdpcmState {

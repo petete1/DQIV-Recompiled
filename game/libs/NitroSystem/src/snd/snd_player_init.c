@@ -26,7 +26,8 @@ struct UnkSndHandle;
 typedef struct UnkSndSeqPlayer {
     struct UnkSndHandle* handle;            /* 0x00 */
     UnkSndPlayerGroup* player;              /* 0x04 */
-    u8 unk_08[0x14 - 0x08];                 /* 0x08 */
+    void* unk_08;                           /* 0x08 player heap */
+    UnkFndLink unk_0c;                      /* 0x0C */
     UnkFndLink prioLink;                    /* 0x14 */
     UnkSndFader fader;                      /* 0x1C */
     u8 status;                              /* 0x2C */
@@ -62,7 +63,7 @@ typedef struct {
 typedef struct {
     UnkFndLink link;                        /* 0x00 */
     void* heap;                             /* 0x08 */
-    u32 unk_0c;                             /* 0x0C */
+    void* unk_0c;                           /* 0x0C sequence player */
     int playerNo;                           /* 0x10 */
 } UnkSndPlayerHeap;
 
@@ -110,7 +111,7 @@ BOOL func_020733a8(int playerNo, void* heap, u32 size)
     if (playerHeap == NULL) {
         return FALSE;
     }
-    playerHeap->unk_0c = 0;
+    playerHeap->unk_0c = NULL;
     playerHeap->playerNo = playerNo;
     playerHeap->heap = NULL;
 
