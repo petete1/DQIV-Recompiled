@@ -120,7 +120,7 @@ They come from the Android version's data file (`.obb`), extracted when the game
 
 ### PC settings
 
-The same screen, in the game's style, opens from "Settings" in the adventure log menu and, during a game, from **Misc > Settings** (it replaces the DS's three sliders). L / R switch between the pages (four, and a fifth, Cheats, during a game). Left / right change the selected line.
+The same screen, in the game's style, opens from "Settings" in the adventure log menu and, during a game, from **Misc > Settings** (it replaces the DS's three sliders). L / R switch between the four pages. Left / right change the selected line.
 
 ![The settings in the Misc menu](docs/images/settings.jpg)
 
@@ -138,10 +138,6 @@ The same screen, in the game's style, opens from "Settings" in the adventure log
   - battle display: Large (default: monsters zoomed to fill the battle area), Panorama (zoom set below), or the DS's two original screens;
   - battle zoom (Panorama battles): 100%, 125%, 150% or 175% (default), the monsters seen closer;
   - vertical sync (Windows; on Linux the compositor syncs the picture), 3D quality, smooth textures (No: the original DS pixels, without upscaling or filtering).
-- **Cheats** (during a game only; from [OMGitsMatt45's Debug Addon](https://github.com/OMGitsMatt45/DQIV-Recompiled-Debug-Addon)):
-  - switches: invincible in battle, no random battles, EXP and gold multipliers (x1 to x64); they are kept in `settings.ini`, not in the save, and start off;
-  - actions, chosen with A: maximum gold, bank balance, casino coins or mini medals; heal and revive the whole party; add an item (left / right picks it) in a chosen quantity to the bag; reset the cheats.
-  Gold, items and recovery stay in the adventure once it is saved. `docs/cheats-testing.md` and `tests/cheats` hold its checks.
 - **Keyboard** and **Gamepad**: the key or button for each action (A, B, X, Y, L, R, Start, Select, directions, party chat); the gamepad's triggers (LT / RT) can be bound too. Press A on a line, then the new key or button; Escape cancels. "Default controls" restores the page.
 
 On laptops with two graphics chips, the game asks Windows for the dedicated one (NVIDIA / AMD). On Linux it uses the system's default; to run it on an NVIDIA chip: `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ./dist/DragonQuestIV`.
@@ -153,6 +149,7 @@ The 80 achievements of [RetroAchievements' set](https://retroachievements.org/ga
 ### More
 
 - **Quitting**: "Quit game" in the adventure log menu, or at the bottom of Settings > Game, closes the game (keyboard or gamepad). After "End adventure" at a church, the "turn the power off" screen closes the game on A, B or Start.
+- **Cheats**: **Misc > Cheats** during a game (from [OMGitsMatt45's Debug Addon](https://github.com/OMGitsMatt45/DQIV-Recompiled-Debug-Addon)). Left / right change the switches: invincible in battle, no random battles, EXP and gold multipliers (x1 to x64); they are kept in `settings.ini`, not in the save, and start off. A runs the actions: maximum gold, bank balance, casino coins or mini medals; heal and revive the whole party; add an item (left / right picks it) in a chosen quantity to the bag; reset the cheats. Gold, items and recovery stay in the adventure once it is saved. `docs/cheats-testing.md` and `tests/cheats` hold its checks.
 - **Quick save anywhere**: Misc > Quick save works everywhere, dungeons included, except in the middle of an action (rope, fall, stairs). The game then goes on; on the DS it stopped. Resuming the interrupted adventure from the adventure log menu brings you back to the exact same spot.
 - **Shops**: the buy list has tabs at the top: every item first, then the categories the shop sells (weapons, armour, shields, helmets, accessories, items); L / R switch tabs. Every item has its HD icon next to its name.
 - **Menus over the world**: the scenery stays on the whole 16:9 picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.

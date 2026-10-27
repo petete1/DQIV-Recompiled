@@ -1,8 +1,8 @@
 # Native Cheats page: build and play checks
 
-The overlay adds an in-game page at **Misc > Settings > Cheats**. L/R turns
-pages (Q/W on the default keyboard, LB/RB on a gamepad). Left/right changes a
-toggle, multiplier, selected item or quantity. A/confirm runs a one-shot action.
+The cheats open from **Misc > Cheats** during a game, in a window of their
+own (Settings keeps its four pages). Left/right changes a toggle,
+multiplier, selected item or quantity. A/confirm runs a one-shot action.
 
 ## Build
 
@@ -60,10 +60,10 @@ audio, complete battles, or loading/saving the cartridge image.
 ## In-game checks
 
 1. Start with a fresh settings file. Load an adventure and open Cheats. Both
-   switches show No and both multipliers show x1. The adventure-log Settings
-   screen has the original four pages and no actions for an unloaded game.
-2. Turn through every page in both directions with keyboard and gamepad.
-   Select every cheat row, including Back. Check for overlapping labels,
+   switches show No and both multipliers show x1. Settings, in a game and in
+   the adventure log menu, has its four pages and no Cheats page.
+2. In the Cheats window L/R turns no page. Select every cheat row, including
+   Back, which returns to the Misc list. Check for overlapping labels,
    clipped item names and stale selection arrows in English and Japanese,
    then in the other four languages. Check DS-screen and 16:9 layouts.
 3. Fill gold, bank, coins and medals. Verify 999,999 gold, 99,999,000 bank,

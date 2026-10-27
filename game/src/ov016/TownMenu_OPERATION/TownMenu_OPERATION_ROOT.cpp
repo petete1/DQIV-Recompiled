@@ -4,6 +4,7 @@
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SETTING.hpp"
 #ifdef DQIV_NATIVE
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ACHIEVEMENTS.hpp"
+#include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CHEATS.hpp"
 #endif
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_TACTICS.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SHIFT_PARTY.hpp"
@@ -182,7 +183,11 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         gTownMenu_ROOT.menuItem_.active_ = TownMenu_ROOT::ROOT_OPERATION;
         return;
     }
+#ifdef DQIV_NATIVE
+    navigator_.setup(2, (commandCount_ + 1) / 2, commandCount_); // up to six rows with the PC's commands
+#else
     navigator_.setup(2, 5, commandCount_);
+#endif
     sortNavigator_.setup(2, 1, 2);
     charaNavigator_.setup(5, 2, status::g_Party.getCount() + 1);
     if (mode_ == 1) {
@@ -250,6 +255,10 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         case COMMAND_ACHIEVEMENTS:
             close();
             gTownMenu_OPERATION_ACHIEVEMENTS.open();
+            break;
+        case COMMAND_CHEATS:
+            close();
+            gTownMenu_OPERATION_CHEATS.open();
             break;
 #endif
         case 8:
@@ -374,7 +383,8 @@ THUMB int TownMenu_OPERATION_ROOT::setupCommandList(char* command)
         }
 #ifdef DQIV_NATIVE
         command[9] = COMMAND_ACHIEVEMENTS;
-        return 10;
+        command[10] = COMMAND_CHEATS;
+        return 11;
 #endif
         return 9;
     }
@@ -383,10 +393,11 @@ THUMB int TownMenu_OPERATION_ROOT::setupCommandList(char* command)
         command[i] = normal[i];
     }
 #ifdef DQIV_NATIVE
-    // The PC version's achievements, after the settings.
+    // The PC version's achievements and cheats, after the settings.
     command[8] = COMMAND_ACHIEVEMENTS;
-    command[9] = -1;
-    return 9;
+    command[9] = COMMAND_CHEATS;
+    command[10] = -1;
+    return 10;
 #endif
     command[8] = -1;
     return 8;

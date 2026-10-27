@@ -3,9 +3,10 @@
 #include "main/menu/MenuBase.hpp"
 
 // The PC version's settings in the game's menu style, pages turned by L / R:
-// game, display, keyboard, gamepad, and in-game cheats. In a game, the game
-// page also holds the game's options (battle messages, music and sound volumes). The menu
-// showing it owns the cursor's menu item.
+// game, display, keyboard, gamepad. In a game, the game page also holds the
+// game's options (battle messages, music and sound volumes). The same panel
+// shows the cheats alone (Misc > Cheats). The menu showing it owns the
+// cursor's menu item.
 struct SettingsPanel
 {
     enum Row {
@@ -33,8 +34,11 @@ struct SettingsPanel
     int cheatQuantity_ = 1;
     int lastCheatRow_ = -1;
     int lastCheatResult_ = 0;
+    bool cheatsOnly_ = false;
 
     void open(bool inGame);
+    // The cheats page alone, during a game.
+    void openCheats();
     void execute(menu::MenuItem& item);
     // True when the player leaves the settings.
     bool update(menu::MenuItem& item, int& redraw);

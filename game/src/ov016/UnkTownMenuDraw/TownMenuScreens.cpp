@@ -617,6 +617,12 @@ THUMB void drawTacticsCommandList(int mode, char* command, int count)
             drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, (int)s_achievements);
             continue;
         }
+        if (command[i] == TownMenu_OPERATION_ROOT::COMMAND_CHEATS) {
+            static char s_cheats[48];
+            snprintf(s_cheats, sizeof(s_cheats), "%s", pc::pageTitle(pc::pageCheats, pc::gameSettings().language));
+            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, (int)s_cheats);
+            continue;
+        }
 #endif
         drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, tactics[command[i]]);
     }

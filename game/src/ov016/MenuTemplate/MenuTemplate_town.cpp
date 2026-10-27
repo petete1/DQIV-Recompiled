@@ -24,10 +24,15 @@ THUMB void MenuTemplate_town::TOWN_OPERATION(menu::MenuItem* menuitem, int activ
         {1, 2, 0x20, 0x84, 0x56, 0x10},
 #ifdef DQIV_NATIVE
         {1, 2, 0x80, 0x84, 0x56, 0x10}, // the achievements
+        {1, 2, 0x20, 0x9c, 0x56, 0x10}, // the cheats
 #endif
         {-1, -1, 0, 0, 0, 0},
     };
+#ifdef DQIV_NATIVE
+    menuitem->setMenuItem(menu_op, 2, (max + 1) / 2, max);
+#else
     menuitem->setMenuItem(menu_op, 2, 5, max);
+#endif
     menuitem->active_ = active;
 }
 

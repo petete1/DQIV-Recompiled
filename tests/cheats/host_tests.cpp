@@ -202,9 +202,16 @@ int main(int argc, char** argv) {
         panel.draw(item, 0, 256, frame);
         CHECK(drawnTabs == 4 && highestRow <= 176);
     }
+    // In a game the settings keep their four pages: the cheats are not one.
     panel.open(true);
     input(panel, item, PAD_BUTTON_L);
+    CHECK(panel.page_ == pc::pageGamepad);
+    // Misc > Cheats: the cheats alone, without other pages to turn to.
+    panel.openCheats();
     CHECK(panel.page_ == pc::pageCheats && panel.rowCount_ == 14);
+    input(panel, item, PAD_BUTTON_L);
+    input(panel, item, PAD_BUTTON_R);
+    CHECK(panel.page_ == pc::pageCheats);
     panel.execute(item);
     CHECK(MenuTemplate_materiel::rows == 14);
     item.active_ = rowIndex(panel, pc::settingCheatInvincible);
@@ -240,11 +247,12 @@ int main(int argc, char** argv) {
         for (int active = 0; active < panel.rowCount_; ++active) {
             item.active_ = active;
             panel.draw(item, 0, 256, frame);
-            CHECK(drawnTabs == 5 && highestRow <= 176);
+            CHECK(drawnTabs == 1 && highestRow <= 176);
         }
     }
     item.active_ = rowIndex(panel, SettingsPanel::ROW_BACK);
     CHECK(input(panel, item, 0, 2));
+    panel.open(false);
     CHECK(panel.page_ == pc::pageGame);
     input(panel, item, PAD_BUTTON_R);
     input(panel, item, PAD_BUTTON_R);

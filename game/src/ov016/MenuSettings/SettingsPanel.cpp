@@ -55,14 +55,25 @@ bool cheatAction(int row, pc::CheatAction& action)
 void SettingsPanel::open(bool inGame)
 {
     inGame_ = inGame;
+    cheatsOnly_ = false;
     page_ = pc::pageGame;
+    lastCheatRow_ = -1;
+    buildRows();
+}
+
+void SettingsPanel::openCheats()
+{
+    inGame_ = true;
+    cheatsOnly_ = true;
+    page_ = pc::pageCheats;
     lastCheatRow_ = -1;
     buildRows();
 }
 
 int SettingsPanel::pageCount() const
 {
-    return inGame_ ? pc::pageCount : pc::pageCheats;
+    // The settings' pages, or the cheats alone.
+    return cheatsOnly_ ? 1 : pc::pageCheats;
 }
 
 void SettingsPanel::buildRows()
@@ -192,10 +203,10 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
     }
     // L and R turn the pages.
     int page = page_;
-    if (dss::g_Pad.edge() & PAD_BUTTON_R) {
+    if (!cheatsOnly_ && (dss::g_Pad.edge() & PAD_BUTTON_R)) {
         page = (page + 1) % pageCount();
     }
-    if (dss::g_Pad.edge() & PAD_BUTTON_L) {
+    if (!cheatsOnly_ && (dss::g_Pad.edge() & PAD_BUTTON_L)) {
         page = (page + pageCount() - 1) % pageCount();
     }
     if (page != page_) {
@@ -282,9 +293,9 @@ void SettingsPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, 
     const int language = pc::gameSettings().language;
     const char* pages[pc::pageCount];
     for (int page = 0; page < pageCount(); page++) {
-        pages[page] = pc::pageTitle(page, language);
+        pages[page] = pc::pageTitle(cheatsOnly_ ? pc::pageCheats : page, language);
     }
-    unkfunc_native_tabs(pages, pageCount(), page_, x, w, frame);
+    unkfunc_native_tabs(pages, pageCount(), cheatsOnly_ ? 0 : page_, x, w, frame);
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     for (int i = 0; i < rowCount_; i++) {
         const int row = rows_[i];

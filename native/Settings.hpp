@@ -61,7 +61,7 @@ bool fastForward();
 // The game's frame count (with the power functions).
 extern "C" unsigned pcVBlankCount();
 namespace pc {
-// The final page is available only while playing an adventure.
+// The cheats page is not one of the settings': Misc > Cheats shows it alone.
 enum SettingsPage {pageGame,pageDisplay,pageKeyboard,pageGamepad,pageCheats,pageCount};
 const char* pageTitle(int page,int language);
 const char* controlName(int action,int language);
