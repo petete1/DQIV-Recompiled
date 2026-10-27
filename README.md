@@ -217,6 +217,26 @@ It ends with `Created dist/DragonQuestIV`, or an `ERROR:` line saying what is mi
 
 To play, the computer needs the same 32-bit libraries at run time (not their headers); systems with Steam installed usually have them. C++ and GCC's own libraries are built into the executable.
 
+#### 64-bit build (experimental)
+
+On x86-64 the game can also be built as a 64-bit program, which needs no 32-bit libraries, neither to build nor to play. You need CMake 3.24 or later, Ninja, GCC, `unzip` or `bsdtar` if your ROM is in a `.zip`, fontconfig and a TrueType font, and the ordinary (64-bit) development packages of the libraries SDL3 uses (X11 and Wayland, Mesa/GLVND, PulseAudio/PipeWire and ALSA, udev, D-Bus), which a desktop system usually has. On Arch Linux:
+
+```bash
+sudo pacman -S --needed cmake ninja gcc unzip fontconfig mesa libglvnd \
+    libx11 libxext libxrandr libxcursor libxi libxfixes libxss libxtst \
+    wayland libxkbcommon libdecor libpulse alsa-lib systemd dbus
+```
+
+Then run, from the project folder:
+
+```bash
+./build.sh 64
+```
+
+It writes `dist/DragonQuestIV` like the 32-bit build (it replaces a 32-bit one there), with the `linux64-game` CMake preset; intermediate files go to `build64`. Saves are the same in both builds.
+
+The original game keeps addresses in 32-bit integers and in its files, so the 64-bit program keeps the game's memory below 2 GiB (`native/LowMemory.hpp`): at start it restarts itself once without address randomization, so that its heap begins right after the executable. It has been tested through the opening, towns, the world map, battles and the menus of chapter 1; the later chapters have not been played with it yet.
+
 ### Project contents
 
 | Folder / file | Contents |
@@ -231,4 +251,4 @@ To play, the computer needs the same 32-bit libraries at run time (not their hea
 | `cmake\` | placement of the game's modules (DS overlays); the 32-bit Linux toolchain (`linux-i686.cmake`) and the step that places the modules with GCC (`overlay-object.sh`) |
 | `build.bat` | double-click to run `build.ps1` |
 | `build.ps1` | builds the game and creates `dist\DragonQuestIV.exe` |
-| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` |
+| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` (`./build.sh 64`: the 64-bit build) |
