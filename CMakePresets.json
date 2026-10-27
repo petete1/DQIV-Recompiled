@@ -11,9 +11,15 @@
     "binaryDir": "${sourceDir}/build32",
     "toolchainFile": "${sourceDir}/cmake/linux-i686.cmake",
     "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
+  }, {
+    "name": "linux64-game",
+    "generator": "Ninja",
+    "binaryDir": "${sourceDir}/build64",
+    "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
   }],
   "buildPresets": [
     {"name": "windows-game", "configurePreset": "windows-game", "configuration": "Release"},
-    {"name": "linux-game", "configurePreset": "linux-game"}
+    {"name": "linux-game", "configurePreset": "linux-game"},
+    {"name": "linux64-game", "configurePreset": "linux64-game"}
   ]
 }

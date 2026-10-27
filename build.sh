@@ -5,6 +5,8 @@
 # ROMandOBBfileHere: the European DS ROM (.nds, or a .zip holding it) and the
 # Android version's data file (.obb, optional: HD sound).
 # The game keeps its save, settings and journal in dist/saves.
+# "./build.sh 64" builds a 64-bit program instead (x86-64; experimental), which
+# needs no 32-bit libraries.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -12,13 +14,18 @@ fail() { echo; echo "ERROR: $*" >&2; exit 1; }
 
 command -v cmake >/dev/null || fail 'CMake was not found. Install CMake 3.24 or later (Arch: pacman -S cmake; Debian/Ubuntu: apt install cmake).'
 command -v ninja >/dev/null || fail 'Ninja was not found (Arch: pacman -S ninja; Debian/Ubuntu: apt install ninja-build).'
-# The game is 32-bit: the compiler needs the 32-bit C and C++ libraries.
-echo 'int main(){}' | ${CXX:-c++} -m32 -x c++ - -o /dev/null 2>/dev/null ||
-    fail 'The compiler cannot build 32-bit programs. Install the 32-bit libraries (Arch, with [multilib] enabled: pacman -S lib32-glibc lib32-gcc-libs; Debian/Ubuntu: apt install g++-multilib).'
+if [ "${1:-}" = 64 ]; then
+    preset=linux64-game build=build64
+else
+    preset=linux-game build=build32
+    # The game is 32-bit: the compiler needs the 32-bit C and C++ libraries.
+    echo 'int main(){}' | ${CXX:-c++} -m32 -x c++ - -o /dev/null 2>/dev/null ||
+        fail 'The compiler cannot build 32-bit programs. Install the 32-bit libraries (Arch, with [multilib] enabled: pacman -S lib32-glibc lib32-gcc-libs; Debian/Ubuntu: apt install g++-multilib).'
+fi
 
-cmake --preset linux-game || fail 'Configuration failed (see the messages above)'
-cmake --build --preset linux-game || fail 'Build failed (see the messages above)'
-pack=build32/dqiv_pack
+cmake --preset $preset || fail 'Configuration failed (see the messages above)'
+cmake --build --preset $preset || fail 'Build failed (see the messages above)'
+pack=$build/dqiv_pack
 inbox=ROMandOBBfileHere
 
 # The game's data, from the player's ROM.
@@ -28,7 +35,7 @@ if [ ! -f assets/data/SOUND/sound_data.sdat ]; then
     if [ -z "$rom" ]; then
         zip=$(find "$inbox" -maxdepth 1 -type f -iname '*.zip' | head -n 1)
         if [ -n "$zip" ]; then
-            unzipped=build32/rom
+            unzipped=$build/rom
             rm -rf "$unzipped"; mkdir -p "$unzipped"
             if command -v unzip >/dev/null; then unzip -q "$zip" -d "$unzipped"
             elif command -v bsdtar >/dev/null; then bsdtar -xf "$zip" -C "$unzipped"
@@ -55,5 +62,5 @@ if [ ! -f assets/data/SOUND/MOBILE/snd_vol.dat ]; then
 fi
 
 mkdir -p dist
-"$pack" build32/DragonQuestIV assets addons dist/DragonQuestIV || fail 'Packaging failed'
+"$pack" $build/DragonQuestIV assets addons dist/DragonQuestIV || fail 'Packaging failed'
 echo 'Created dist/DragonQuestIV'

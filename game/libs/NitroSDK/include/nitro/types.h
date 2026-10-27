@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +44,12 @@ typedef s32 BOOL;
 #else
 #define ATTRIBUTE_ALIGN(x) __attribute__((aligned(x)))
 #endif
+
+/* An address kept in a 32-bit field of a game file or of a structure laid out
+   as on the DS: a 64-bit build keeps the game's memory below 2 GiB, where it
+   fits (native/LowMemory.hpp; FilePtr.hpp for C++). */
+#define PTR_TO_U32(pointer)       ((u32)(uintptr_t)(pointer))
+#define U32_TO_PTR(type, address) ((type*)(uintptr_t)(address))
 
 #define ARRAY_LEN(arr)   (s32)((sizeof(arr) / sizeof(*arr)))
 #define ARRAY_LEN_U(arr) (u32)((sizeof(arr) / sizeof(*arr)))

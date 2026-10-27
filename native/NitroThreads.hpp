@@ -23,5 +23,7 @@ void resumeNativeInterrupts(unsigned depth);
 struct StackRange {std::uintptr_t low=0,high=0;};
 StackRange currentNativeStack();
 void setCurrentNativeStack(StackRange fiber);
+// The OS thread's own stack, when it runs on one of its own (64-bit: below 2 GiB).
+void setThreadNativeStack(StackRange stack);
 #endif
 }

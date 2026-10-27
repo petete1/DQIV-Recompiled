@@ -22,7 +22,7 @@ typedef struct UnkSndArcInfo {
 typedef struct UnkSndArcFatEntry {
     /* 0x00 */ u32 offset;
     /* 0x04 */ u32 size;
-    /* 0x08 */ void* mem;
+    /* 0x08 */ u32 mem;   // void* (PTR_TO_U32)
     /* 0x0C */ u32 unk_0c;
 } UnkSndArcFatEntry;
 
@@ -315,11 +315,11 @@ void* func_02074b70(u32 fileId) {
     if (fileId >= fat->count) {
         return NULL;
     }
-    return fat->entries[fileId].mem;
+    return U32_TO_PTR(void, fat->entries[fileId].mem);
 }
 
 void func_02074b98(u32 fileId, void* mem) {
-    data_02113290->fat->entries[fileId].mem = mem;
+    data_02113290->fat->entries[fileId].mem = PTR_TO_U32(mem);
 }
 
 void func_02074bb4(void* mem, u32 size, void* data1, u32 data2) {

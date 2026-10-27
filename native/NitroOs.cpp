@@ -32,10 +32,12 @@ void resumeNativeInterrupts(unsigned saved) {
     irqDepth=saved;
 }
 #ifndef _WIN32
-namespace {thread_local StackRange fiberStack;}
+namespace {thread_local StackRange fiberStack,ownStack;}
 void setCurrentNativeStack(StackRange fiber) {fiberStack=fiber;}
+void setThreadNativeStack(StackRange stack) {ownStack=stack;}
 StackRange currentNativeStack() {
     if(fiberStack.high)return fiberStack;
+    if(ownStack.high)return ownStack;
     thread_local StackRange thread=[] {
         StackRange range;pthread_attr_t attributes;
         if(!pthread_getattr_np(pthread_self(),&attributes)) {

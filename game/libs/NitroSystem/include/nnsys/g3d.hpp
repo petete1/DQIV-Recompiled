@@ -124,7 +124,12 @@ struct NNSG3dResTex {
 struct NNSG3dRenderObj {
     unsigned int flag;                          // 0x00
     NNSG3dResMdl* resMdl;                       // 0x04
-    unsigned char unk_08[0x4c];                 // 0x08
+    // As g3d_internal.h, pointer-sized where it has pointers (64-bit builds).
+    void* unk_08[6];                            // 0x08 animations and blend functions
+    void* unk_20;                               // 0x20 callback
+    unsigned char unk_24[4];                    // 0x24 callback command and timing
+    void* unk_28[5];                            // 0x28 callbacks, user SBC, animation results
+    unsigned int unk_3c[6];                     // 0x3C animated material/joint/visibility bits
 };
 
 struct NNSG3dRS {

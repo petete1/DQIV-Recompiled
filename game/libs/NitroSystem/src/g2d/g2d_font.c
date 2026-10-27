@@ -54,7 +54,7 @@ void func_02069030(UnkFont* font, void* resource) {
 u16 func_02069060(UnkFont* font, u16 c) {
     UnkFontCodeMap* cmap;
 
-    for (cmap = font->unk_00->unk_10; cmap != NULL; cmap = cmap->unk_08) {
+    for (cmap = U32_TO_PTR(UnkFontCodeMap, font->unk_00->unk_10); cmap != NULL; cmap = U32_TO_PTR(UnkFontCodeMap, cmap->unk_08)) {
         if (cmap->unk_00 <= c && c <= cmap->unk_02) {
             return func_02068f68(cmap, c);
         }
@@ -65,7 +65,7 @@ u16 func_02069060(UnkFont* font, u16 c) {
 UnkCharWidths* func_020690a8(UnkFont* font, u16 index) {
     UnkFontWidth* cwdh;
 
-    for (cwdh = font->unk_00->unk_0c; cwdh != NULL; cwdh = cwdh->unk_04) {
+    for (cwdh = U32_TO_PTR(UnkFontWidth, font->unk_00->unk_0c); cwdh != NULL; cwdh = U32_TO_PTR(UnkFontWidth, cwdh->unk_04)) {
         if (cwdh->unk_00 <= index && index <= cwdh->unk_02) {
             return &cwdh->unk_08[index - cwdh->unk_00];
         }

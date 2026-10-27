@@ -1,4 +1,5 @@
 #pragma once
+#include "FilePtr.hpp"
 #include <globaldefs.h>
 #include "nitro/fx.hpp"
 
@@ -22,7 +23,7 @@ struct COLL_POLY {
 };
 
 struct COLL_EXT_DATA {
-    COLL_LINE* id_list;                         // 0x00
+    FilePtr<COLL_LINE> id_list;                 // 0x00
     int ext_num;                                // 0x04
     COLL_POLY ext_coll[1];                      // 0x08
 };
@@ -34,16 +35,16 @@ struct COLL_HEADER {
     unsigned short common_poly_size;            // 0x06
     unsigned int id_size;                       // 0x08
     VecFx32 check_point[2];                     // 0x0C
-    COLL_POLY* poly;                            // 0x24
-    COLL_EXT_DATA* ext_data;                    // 0x28
-    COLL_LINE* x0;                              // 0x2C
-    COLL_LINE* x1;                              // 0x30
-    COLL_LINE* y0;                              // 0x34
-    COLL_LINE* y1;                              // 0x38
-    COLL_LINE* z0;                              // 0x3C
-    COLL_LINE* z1;                              // 0x40
-    char* check;                                // 0x44
-    char* check2;                               // 0x48
+    FilePtr<COLL_POLY> poly;                    // 0x24
+    FilePtr<COLL_EXT_DATA> ext_data;            // 0x28
+    FilePtr<COLL_LINE> x0;                      // 0x2C
+    FilePtr<COLL_LINE> x1;                      // 0x30
+    FilePtr<COLL_LINE> y0;                      // 0x34
+    FilePtr<COLL_LINE> y1;                      // 0x38
+    FilePtr<COLL_LINE> z0;                      // 0x3C
+    FilePtr<COLL_LINE> z1;                      // 0x40
+    FilePtr<char> check;                        // 0x44
+    FilePtr<char> check2;                       // 0x48
 };
 
 // collision file as loaded: 0x10-byte file header, then the COLL_HEADER block

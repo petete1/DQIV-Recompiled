@@ -26,7 +26,7 @@ typedef struct UnkFontGlyph {
 typedef struct UnkFontWidth {
     u16 unk_00;                 // 0x00 first glyph index
     u16 unk_02;                 // 0x02 last glyph index
-    struct UnkFontWidth* unk_04; // 0x04 next block
+    u32 unk_04;                 // 0x04 next block (UnkFontWidth)
     UnkCharWidths unk_08[1];    // 0x08 width table
 } UnkFontWidth;
 
@@ -36,7 +36,7 @@ typedef struct UnkFontCodeMap {
     u16 unk_02;                 // 0x02 last character code
     u16 unk_04;                 // 0x04 mapping method (0 direct, 1 table, 2 scan)
     u16 unk_06;                 // 0x06
-    struct UnkFontCodeMap* unk_08; // 0x08 next block
+    u32 unk_08;                 // 0x08 next block (UnkFontCodeMap)
     u16 unk_0c[1];              // 0x0C mapping data
 } UnkFontCodeMap;
 
@@ -47,9 +47,9 @@ typedef struct UnkFontInfo {
     u16 unk_02;                 // 0x02 replacement glyph index
     UnkCharWidths unk_04;       // 0x04 default widths
     u8 unk_07;                  // 0x07 character encoding
-    UnkFontGlyph* unk_08;       // 0x08 glyphs
-    UnkFontWidth* unk_0c;       // 0x0C widths
-    UnkFontCodeMap* unk_10;     // 0x10 code maps
+    u32 unk_08;                 // 0x08 glyphs (UnkFontGlyph)
+    u32 unk_0c;                 // 0x0C widths (UnkFontWidth)
+    u32 unk_10;                 // 0x10 code maps (UnkFontCodeMap)
 } UnkFontInfo;
 
 typedef u16 (*UnkCharSplitter)(const void** str);

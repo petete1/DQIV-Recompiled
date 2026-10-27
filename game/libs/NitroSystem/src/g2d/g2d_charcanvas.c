@@ -169,9 +169,9 @@ static inline void UnkCanvasReaderInit(UnkBitReader* reader, const void* src) {
     reader->unk_00 = (u8*)src;
     reader->unk_05 = 0;
 }
-static inline u8 UnkCanvasFontHeight(const UnkFont* font) { return font->unk_00->unk_08->unk_01; }
-static inline u8 UnkCanvasFontWidth(const UnkFont* font) { return font->unk_00->unk_08->unk_00; }
-static inline u8 UnkCanvasFontBpp(const UnkFont* font) { return font->unk_00->unk_08->unk_06; }
+static inline u8 UnkCanvasFontHeight(const UnkFont* font) { return U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_01; }
+static inline u8 UnkCanvasFontWidth(const UnkFont* font) { return U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_00; }
+static inline u8 UnkCanvasFontBpp(const UnkFont* font) { return U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_06; }
 static inline int UnkCanvasCharSize(const UnkCharCanvas* cc) { return CHR_SIZE(cc->unk_0c); }
 /* LetterChar, adapted from the user-provided NitroSystem g2d_CharCanvas.c.
  * Copyright 2004-2007 Nintendo. All rights reserved. */
@@ -279,7 +279,7 @@ void func_02069324(UnkGlyphCharParam* i)
 }
 /* Draws a glyph into a BG-style canvas (characters laid out in rows of unk_10). */
 void func_02069564(UnkCharCanvas* cc, UnkFont* font, int x, int y, int cl, UnkGlyph* glyph) {
-    UnkFontGlyph* cglp = font->unk_00->unk_08;
+    UnkFontGlyph* cglp = U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08);
     int areaW = cc->unk_04;
     int areaH = cc->unk_08;
     int glyphW = glyph->unk_00->unk_01;
@@ -338,9 +338,9 @@ void func_02069564(UnkCharCanvas* cc, UnkFont* font, int x, int y, int cl, UnkGl
     param.unk_24 = cl - 1;
     param.unk_14 = glyphH;
     yEnd = y - ch * 8;
-    param.unk_1c = font->unk_00->unk_08->unk_06;
+    param.unk_1c = U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_06;
     param.unk_20 = cc->unk_0c;
-    param.unk_18 = param.unk_1c * font->unk_00->unk_08->unk_00;
+    param.unk_18 = param.unk_1c * U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_00;
     for (; y > yEnd; y -= 8) {
         param.unk_0c = y;
         for (px = x; px > xEnd; px -= 8) {
@@ -671,9 +671,9 @@ int func_02069d94(UnkCharCanvas* cc, UnkFont* font, int x, int y, int cl, u16 c)
         index = font->unk_00->unk_02;
     }
     glyph.unk_00 = func_020690a8(font, index);
-    glyph.unk_04 = font->unk_00->unk_08->unk_08 + index * font->unk_00->unk_08->unk_02;
+    glyph.unk_04 = U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_08 + index * U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08)->unk_02;
 
-    cglp = font->unk_00->unk_08;
+    cglp = U32_TO_PTR(UnkFontGlyph, font->unk_00->unk_08);
     switch (cglp->unk_07) {
     case 0:
     case 7:

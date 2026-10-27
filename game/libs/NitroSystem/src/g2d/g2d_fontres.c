@@ -67,7 +67,7 @@ BOOL func_02069ee4(void* resource, UnkFontInfo** info) {
     }
     *info = &((UnkFontInfoBlock*)block)->unk_08;
     if (oldVersion) {
-        (*info)->unk_08->unk_07 = 0;
+        U32_TO_PTR(UnkFontGlyph, (*info)->unk_08)->unk_07 = 0;
     }
     return TRUE;
 }
@@ -83,12 +83,12 @@ void func_0206a038(void* resource) {
         case SIG_FINF: {
             UnkFontInfo* finf = &((UnkFontInfoBlock*)block)->unk_08;
 
-            finf->unk_08 = (UnkFontGlyph*)((u32)finf->unk_08 + (u32)header);
-            if (finf->unk_0c != NULL) {
-                finf->unk_0c = (UnkFontWidth*)((u32)finf->unk_0c + (u32)header);
+            finf->unk_08 += PTR_TO_U32(header);
+            if (finf->unk_0c != 0) {
+                finf->unk_0c += PTR_TO_U32(header);
             }
-            if (finf->unk_10 != NULL) {
-                finf->unk_10 = (UnkFontCodeMap*)((u32)finf->unk_10 + (u32)header);
+            if (finf->unk_10 != 0) {
+                finf->unk_10 += PTR_TO_U32(header);
             }
         } break;
         case SIG_CGLP:
@@ -96,15 +96,15 @@ void func_0206a038(void* resource) {
         case SIG_CWDH: {
             UnkFontWidth* cwdh = &((UnkFontWidthBlock*)block)->unk_08;
 
-            if (cwdh->unk_04 != NULL) {
-                cwdh->unk_04 = (UnkFontWidth*)((u32)cwdh->unk_04 + (u32)header);
+            if (cwdh->unk_04 != 0) {
+                cwdh->unk_04 += PTR_TO_U32(header);
             }
         } break;
         case SIG_CMAP: {
             UnkFontCodeMap* cmap = &((UnkFontCodeMapBlock*)block)->unk_08;
 
-            if (cmap->unk_08 != NULL) {
-                cmap->unk_08 = (UnkFontCodeMap*)((u32)cmap->unk_08 + (u32)header);
+            if (cmap->unk_08 != 0) {
+                cmap->unk_08 += PTR_TO_U32(header);
             }
         } break;
         }

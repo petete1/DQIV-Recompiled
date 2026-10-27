@@ -3,8 +3,10 @@ project(DQIV_PC VERSION 1.0.0 LANGUAGES C CXX)
 if(WIN32)
     enable_language(RC)
 endif()
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-    message(FATAL_ERROR "The original game resources contain 32-bit pointers: configure a 32-bit build (cmake --preset windows-game or cmake --preset linux-game).")
+# The original game resources contain 32-bit pointers. A 64-bit Linux build
+# keeps the game's memory below 2 GiB, where its addresses fit in 32 bits.
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$"))
+    message(FATAL_ERROR "The original game resources contain 32-bit pointers: configure a 32-bit build (cmake --preset windows-game or cmake --preset linux-game), or a 64-bit build on x86-64 Linux (cmake --preset linux64-game).")
 endif()
 if(MSVC)
     # Native C ABI adapters can report errors with C++ exceptions.
@@ -24,6 +26,11 @@ else()
     set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
     add_compile_options(-fno-pie)
     add_link_options(-no-pie)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # The decompiled code casts addresses to 32-bit integers; they fit, as
+        # the game's memory stays below 2 GiB (native/LowMemory.hpp).
+        add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fpermissive>")
+    endif()
     string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
     string(REPLACE "-O3" "-O2" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 endif()
@@ -89,6 +96,7 @@ add_library(dqiv_core STATIC
     native/NitroAlgorithms.cpp
     game/libs/NitroSDK/src/os/os_printf.c
     native/NitroOs.cpp
+    native/LowMemory.cpp
     native/GxGeometry.cpp
     native/GxTextures.cpp
     native/GxRasterizer.cpp

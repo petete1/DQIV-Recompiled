@@ -3,7 +3,7 @@
 
 // DS-only sound handle
 struct SoundSeqHandle {
-    int unk_00;                                 // 0x00
+    void* unk_00;                               // 0x00 SDK handle: its player
     int unk_04;                                 // 0x04
     int volumeSys_;                                 // 0x08  volume (sys)
     int volume_;                                 // 0x0C  volume
@@ -27,7 +27,7 @@ struct SoundSeqHandle {
 };
 
 struct SoundStreamHandle {
-    int unk_00;                                 // 0x00
+    void* unk_00;                               // 0x00 SDK handle: its stream
     int unk_04;                                 // 0x04
 
     SoundStreamHandle();

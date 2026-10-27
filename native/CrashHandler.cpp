@@ -138,12 +138,20 @@ void trace(void* pc=nullptr) {
 // runtime's _s32_div_f/_u32_div_f), and the game relies on it (a colour fade
 // of zero frames). On x86 the division traps: the faulting div/idiv is
 // finished the DS way and execution goes on.
+#ifdef __x86_64__
+constexpr int programCounter=REG_RIP,accumulator=REG_RAX,dataRegister=REG_RDX;
+#else
+constexpr int programCounter=REG_EIP,accumulator=REG_EAX,dataRegister=REG_EDX;
+#endif
 bool divideLikeTheDs(greg_t* registers) {
-    const auto* code=reinterpret_cast<const unsigned char*>(registers[REG_EIP]);
-    unsigned length=0;bool word=false;
+    const auto* code=reinterpret_cast<const unsigned char*>(registers[programCounter]);
+    unsigned length=0;bool word=false,quad=false;
     for(;;++length) {
         const unsigned char prefix=code[length];
         if(prefix==0x66) {word=true;continue;}
+#ifdef __x86_64__
+        if((prefix&0xf0)==0x40) {quad=(prefix&8)!=0;continue;} // REX
+#endif
         if(prefix==0x2e||prefix==0x36||prefix==0x3e||prefix==0x26||prefix==0x64||prefix==0x65||prefix==0xf0||prefix==0xf2||prefix==0xf3)continue;
         break;
     }
@@ -158,12 +166,13 @@ bool divideLikeTheDs(greg_t* registers) {
         if(mod==1)length+=1;
         if(mod==2)length+=4;
     }
-    auto& eax=reinterpret_cast<unsigned&>(registers[REG_EAX]);
-    auto& edx=reinterpret_cast<unsigned&>(registers[REG_EDX]);
+    auto& eax=reinterpret_cast<unsigned&>(registers[accumulator]);
+    auto& edx=reinterpret_cast<unsigned&>(registers[dataRegister]);
     if(opcode==0xf6)eax=(eax&0xffff0000u)|(eax&0xffu); // AL = AL, AH = 0
-    else if(word)edx&=0xffff0000u;                     // AX = AX, DX = 0
-    else edx=0;                                         // EAX = EAX, EDX = 0
-    registers[REG_EIP]+=length;
+    else if(word&&!quad)edx&=0xffff0000u;              // AX = AX, DX = 0
+    else if(quad)registers[dataRegister]=0;             // RAX = RAX, RDX = 0
+    else registers[accumulator]=eax,registers[dataRegister]=0; // EAX = EAX, EDX = 0 (upper halves cleared)
+    registers[programCounter]+=length;
     return true;
 }
 void showFatalError() {
@@ -187,8 +196,8 @@ void onFault(int signal,siginfo_t* info,void* context) {
         }
         return;
     }
-    std::fprintf(stderr,"Native signal %d at %p, address %p\n",signal,reinterpret_cast<void*>(registers[REG_EIP]),info->si_addr);
-    trace(reinterpret_cast<void*>(registers[REG_EIP]));
+    std::fprintf(stderr,"Native signal %d at %p, address %p\n",signal,reinterpret_cast<void*>(registers[programCounter]),info->si_addr);
+    trace(reinterpret_cast<void*>(registers[programCounter]));
     showFatalError();
     _exit(4);
 }

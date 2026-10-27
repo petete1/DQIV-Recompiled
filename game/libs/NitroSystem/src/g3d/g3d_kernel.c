@@ -10,14 +10,16 @@ extern UnkBlendFunc data_020c3de0;          // default material blend function
 
 extern void func_0206785c(u32 value, void* dest, u32 size);
 
-/* Returns the size of an animation object for this animation and model. */
+/* Returns the size of an animation object for this animation and model: its
+   header (0x1A bytes on the DS, larger with 64-bit pointers), then its map. */
+#define ANM_OBJ_SIZE(numMap) ((offsetof(UnkAnmObj, unk_1a) + (numMap) * 2 + 3) & ~3)
 u32 func_0206a26c(const UnkResAnmHeader* resAnm, const UnkResMdlInfo* resMdl) {
     switch (resAnm->unk_00) {
     case 'M':
-        return (resMdl->unk_18 * 2 + 0x1c) & ~3;
+        return ANM_OBJ_SIZE(resMdl->unk_18);
     case 'J':
     case 'V':
-        return (resMdl->unk_17 * 2 + 0x1c) & ~3;
+        return ANM_OBJ_SIZE(resMdl->unk_17);
     default:
         return 0;
     }

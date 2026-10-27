@@ -15,15 +15,15 @@ extern "C" {
 
 inline int CARD_ReadBackup(unsigned int src, void* dst, unsigned int len)
 {
-    return func_0205db78(src, (unsigned int)dst, len, NULL, NULL, 0, 6, 1, 0);
+    return func_0205db78(src, (unsigned int)(size_t)dst, len, NULL, NULL, 0, 6, 1, 0);
 }
 
 inline int CARD_WriteAndVerifyBackup(unsigned int dst, const void* src, unsigned int len)
 {
-    return func_0205db78((unsigned int)src, dst, len, NULL, NULL, 0, 8, 10, 2);
+    return func_0205db78((unsigned int)(size_t)src, dst, len, NULL, NULL, 0, 8, 10, 2);
 }
 
 inline int CARD_WriteAndVerifyBackupAsync(unsigned int dst, const void* src, unsigned int len, void* callback, void* arg)
 {
-    return func_0205db78((unsigned int)src, dst, len, callback, arg, 1, 8, 10, 2);
+    return func_0205db78((unsigned int)(size_t)src, dst, len, callback, arg, 1, 8, 10, 2);
 }

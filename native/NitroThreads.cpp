@@ -11,6 +11,7 @@
 #define FIBER_ENTRY void
 #endif
 #include "NitroThreads.hpp"
+#include "LowMemory.hpp"
 #include <algorithm>
 #include <cstring>
 #include <exception>
@@ -24,7 +25,7 @@ unsigned OS_DisableIRQ();
 unsigned OS_RestoreIRQ(unsigned);
 OSThreadInfo ThreadInfo{};
 }
-static_assert(sizeof(OSThread)==0xc0 && sizeof(OSMutex)==0x18);
+static_assert(sizeof(void*)>4 || (sizeof(OSThread)==0xc0 && sizeof(OSMutex)==0x18));
 namespace pc {
 namespace {
 struct StopThread {};
@@ -66,8 +67,13 @@ void fiberStart(unsigned low,unsigned high) {
 }
 void* createFiber(void (*entry)(void*),void* argument) {
     const std::size_t page=std::size_t(sysconf(_SC_PAGESIZE)),size=1024*1024+page;
-    void* mapping=mmap(nullptr,size,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_STACK,-1,0);
+    int flags=MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE|MAP_STACK;
+#ifdef __x86_64__
+    flags|=MAP_32BIT; // the game keeps stack addresses in 32-bit integers
+#endif
+    void* mapping=mmap(nullptr,size,PROT_READ|PROT_WRITE,flags,-1,0);
     if(mapping==MAP_FAILED)return nullptr;
+    requireLowAddress(mapping,size);
     mprotect(mapping,page,PROT_NONE);
     auto* fiber=new Fiber{{},static_cast<unsigned char*>(mapping),size,entry,argument};
     getcontext(&fiber->context);
@@ -257,7 +263,7 @@ void func_020787c4(OSThread* sdk,void (*function)(void*),void* argument,void* st
     auto& r=pc::ThreadRuntime::get();pc::IrqGuard guard;
     if(!sdk || !function || !stack || size<8 || priority>31 || r.records.contains(sdk))throw std::runtime_error("Invalid native SDK thread creation");
     *sdk={};sdk->priority=priority;sdk->id=r.nextId++;
-    sdk->stackBottom=reinterpret_cast<u32>(stack);sdk->stackTop=sdk->stackBottom-size;
+    sdk->stackBottom=u32(reinterpret_cast<std::uintptr_t>(stack));sdk->stackTop=sdk->stackBottom-size;
     auto* memory=static_cast<unsigned char*>(stack)-size;std::memset(memory,0,size);
     const unsigned top=0x7bf9dd5b,bottom=0xfddb597d;
     std::memcpy(memory,&top,4);std::memcpy(memory+size-4,&bottom,4);

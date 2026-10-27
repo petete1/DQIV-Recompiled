@@ -3,7 +3,7 @@
 
 #include <nitro/types.h>
 
-typedef long fx32;
+typedef s32 fx32;
 typedef s16 fx16;
 
 typedef struct {

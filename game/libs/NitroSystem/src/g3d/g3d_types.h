@@ -56,7 +56,9 @@ typedef struct UnkRenderObj {
     UnkBlendFunc unk_14;        // 0x14 joint blend function
     UnkAnmObj* unk_18;          // 0x18 visibility animations
     UnkBlendFunc unk_1c;        // 0x1C visibility blend function
-    u8 unk_20[0x1c];            // 0x20
+    void* unk_20;               // 0x20 callback
+    u8 unk_24[4];               // 0x24 callback command and timing
+    void* unk_28[5];            // 0x28 callbacks, user SBC, animation results
     u32 unk_3c[2];              // 0x3C animated material bits
     u32 unk_44[2];              // 0x44 animated joint bits
     u32 unk_4c[2];              // 0x4C animated visibility bits

@@ -3,7 +3,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-static_assert(sizeof(void*)==4);
 namespace {
 std::recursive_mutex backupMutex;
 pc::SaveStore* backup=nullptr;

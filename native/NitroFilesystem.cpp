@@ -7,7 +7,7 @@
 #include <mutex>
 #include <stdexcept>
 
-static_assert(sizeof(FS_File)==0x48 && offsetof(FS_File,currentPosition)==0x2c);
+static_assert(sizeof(void*)>4 || (sizeof(FS_File)==0x48 && offsetof(FS_File,currentPosition)==0x2c));
 namespace {
 std::mutex fsMutex;
 const pc::Assets* mountedAssets=nullptr;

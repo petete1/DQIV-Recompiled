@@ -1,6 +1,7 @@
 #include "GameServices.hpp"
 #include "Compression.hpp"
 #include "Archive.hpp"
+#include "LowMemory.hpp"
 #include "main/data/FileLoader.hpp"
 #include <algorithm>
 #include <cstring>
@@ -52,7 +53,8 @@ Heap& getHeap(void* p) {
     return *it->second;
 }
 void* makeHeap(std::size_t capacity) {
-    auto heap = std::make_unique<Heap>(); heap->capacity = capacity;
+    // The DS heap sizes; a 64-bit build's objects are larger (8-byte pointers).
+    auto heap = std::make_unique<Heap>(); heap->capacity = pc::wideAddresses ? capacity * 2 : capacity;
     auto pointer = heap.get(); heaps().emplace(pointer, std::move(heap)); return pointer;
 }
 void* allocate(void* heap, int size, int alignment) {
@@ -64,6 +66,8 @@ void* allocate(void* heap, int size, int alignment) {
     auto& h = getHeap(heap);
     if (n > h.capacity - h.used) throw std::bad_alloc();
     void* p = ::operator new(n, std::align_val_t(align));
+    try { pc::requireLowAddress(p, n); }
+    catch (...) { ::operator delete(p, std::align_val_t(align)); throw; }
     try { allocations().emplace(p, Allocation{n, align, heap}); }
     catch (...) { ::operator delete(p, std::align_val_t(align)); throw; }
     h.used += n; return p;

@@ -22,6 +22,7 @@
 #include "NitroWireless.hpp"
 #include "Input.hpp"
 #include "Settings.hpp"
+#include "LowMemory.hpp"
 #ifdef _WIN32
 #include <share.h>
 // Laptops with two graphics chips run the game on the discrete one.
@@ -52,7 +53,6 @@ extern "C" {
 #include <windows.h>
 #endif
 
-static_assert(sizeof(void*) == 4, "The original game resources contain 32-bit pointers");
 
 namespace {
 #ifdef _WIN32
@@ -96,8 +96,8 @@ void preferFastCores() {}
 #endif
 }
 
-static_assert(sizeof(DataObject) == 0x10);
-static_assert(sizeof(GameApplication) == 0xb4);
+static_assert(pc::wideAddresses || sizeof(DataObject) == 0x10);
+static_assert(pc::wideAddresses || sizeof(GameApplication) == 0xb4);
 std::span<const pc::OverlayImage> gameOverlayImages();
 
 namespace {
@@ -143,7 +143,7 @@ pc::Assets openResources() {
 }
 }
 
-int main() {
+int runGame() {
     {
         std::filesystem::create_directories(pc::saveDirectory());
         adoptPreviousSave();
@@ -266,3 +266,6 @@ int main() {
         return 1;
     }
 }
+
+// 64-bit: on a stack below 2 GiB (LowMemory.hpp).
+int main() {return pc::runOnLowStack(runGame);}

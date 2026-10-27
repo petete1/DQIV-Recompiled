@@ -203,7 +203,7 @@ ARM int FLDObject::Setup(void* mdl, void* data, void* coll, int heap)
         switch (chunk->id) {
         case FLD_ID('F', 'M', 'A', 'P'):
             m_map = (FLD_MAP*)chunk;
-            ((FLD_MAP*)chunk)->order = (short**)&((FLD_MAP*)chunk)->obj[((FLD_MAP*)chunk)->obj_num];
+            ((FLD_MAP*)chunk)->order = (FilePtr<short>*)&((FLD_MAP*)chunk)->obj[((FLD_MAP*)chunk)->obj_num];
             m_map->index = (short*)&m_map->order[m_map->obj_num];
             break;
         case FLD_ID('F', 'M', 'D', 'L'):
@@ -1299,8 +1299,8 @@ ARM void FLDObject::draw()
     MtxFx43 saved;
     int state;
     FLD_MAP* map;
-    short** p;
-    short** end;
+    FilePtr<short>* p;
+    FilePtr<short>* end;
     FLD_MAP_OBJ* robj;
     FLD_MODEL* model;
     int flag;

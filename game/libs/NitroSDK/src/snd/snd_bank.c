@@ -50,21 +50,25 @@ typedef struct UnkSndInstPos {
 
 #define SND_BANK_HEADER_SIZE 0x3c
 
+#define LINK_ARC(link)  U32_TO_PTR(UnkSndWaveArc, (link)->waveArc)
+#define LINK_NEXT(link) U32_TO_PTR(UnkSndWaveArcLink, (link)->next)
+#define TOP_LINK(arc)   U32_TO_PTR(UnkSndWaveArcLink, (arc)->topLink)
+
 void func_0207b094(UnkSndBankData* bank, s32 index, UnkSndWaveArc* waveArc) {
     func_0207a71c();
 
-    if (bank->waveArcLink[index].waveArc != NULL) {
-        if (waveArc == bank->waveArcLink[index].waveArc) {
+    if (LINK_ARC(&bank->waveArcLink[index]) != NULL) {
+        if (waveArc == LINK_ARC(&bank->waveArcLink[index])) {
             func_0207a730();
             return;
         }
-        if (&bank->waveArcLink[index] == bank->waveArcLink[index].waveArc->topLink) {
-            bank->waveArcLink[index].waveArc->topLink = bank->waveArcLink[index].next;
-            DC_CleanRange(bank->waveArcLink[index].waveArc, SND_BANK_HEADER_SIZE);
+        if (&bank->waveArcLink[index] == TOP_LINK(LINK_ARC(&bank->waveArcLink[index]))) {
+            LINK_ARC(&bank->waveArcLink[index])->topLink = bank->waveArcLink[index].next;
+            DC_CleanRange(LINK_ARC(&bank->waveArcLink[index]), SND_BANK_HEADER_SIZE);
         } else {
             UnkSndWaveArcLink* link;
-            for (link = bank->waveArcLink[index].waveArc->topLink; link != NULL; link = link->next) {
-                if (&bank->waveArcLink[index] == link->next) {
+            for (link = TOP_LINK(LINK_ARC(&bank->waveArcLink[index])); link != NULL; link = LINK_NEXT(link)) {
+                if (&bank->waveArcLink[index] == LINK_NEXT(link)) {
                     break;
                 }
             }
@@ -74,10 +78,10 @@ void func_0207b094(UnkSndBankData* bank, s32 index, UnkSndWaveArc* waveArc) {
     }
 
     {
-        UnkSndWaveArcLink* next = waveArc->topLink;
-        waveArc->topLink = &bank->waveArcLink[index];
+        u32 next = waveArc->topLink;
+        waveArc->topLink = PTR_TO_U32(&bank->waveArcLink[index]);
         bank->waveArcLink[index].next = next;
-        bank->waveArcLink[index].waveArc = waveArc;
+        bank->waveArcLink[index].waveArc = PTR_TO_U32(waveArc);
     }
 
     func_0207a730();
@@ -90,17 +94,17 @@ void func_0207b160(UnkSndBankData* bank) {
 
     func_0207a71c();
     for (i = 0; i < 4; i++) {
-        UnkSndWaveArc* waveArc = bank->waveArcLink[i].waveArc;
+        UnkSndWaveArc* waveArc = LINK_ARC(&bank->waveArcLink[i]);
         if (waveArc == NULL) {
             continue;
         }
-        if (&bank->waveArcLink[i] == waveArc->topLink) {
+        if (&bank->waveArcLink[i] == TOP_LINK(waveArc)) {
             waveArc->topLink = bank->waveArcLink[i].next;
             DC_CleanRange(waveArc, SND_BANK_HEADER_SIZE);
         } else {
             UnkSndWaveArcLink* link;
-            for (link = waveArc->topLink; link != NULL; link = link->next) {
-                if (&bank->waveArcLink[i] == link->next) {
+            for (link = TOP_LINK(waveArc); link != NULL; link = LINK_NEXT(link)) {
+                if (&bank->waveArcLink[i] == LINK_NEXT(link)) {
                     break;
                 }
             }
@@ -118,11 +122,11 @@ void func_0207b1f8(UnkSndWaveArc* waveArc) {
 #ifdef DQIV_NATIVE
     pcSndForgetWaveAddresses(waveArc->waveOffset, waveArc->waveCount);
 #endif
-    link = waveArc->topLink;
+    link = TOP_LINK(waveArc);
     while (link != NULL) {
-        UnkSndWaveArcLink* next = link->next;
-        link->waveArc = NULL;
-        link->next = NULL;
+        UnkSndWaveArcLink* next = LINK_NEXT(link);
+        link->waveArc = 0;
+        link->next = 0;
         DC_CleanRange(link, sizeof(UnkSndWaveArcLink));
         link = next;
     }

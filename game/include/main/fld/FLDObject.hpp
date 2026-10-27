@@ -1,4 +1,5 @@
 #pragma once
+#include "FilePtr.hpp"
 #ifdef DQIV_NATIVE
 #include <bit>
 #endif
@@ -24,7 +25,7 @@ struct FLD_CHUNK {
 struct FLD_RES_TBL {
     FLD_CHUNK header;                           // 0x00
     int num;                                    // 0x08
-    void* res[1];                               // 0x0C
+    FilePtr<void> res[1];                       // 0x0C
 };
 
 // keyframe animation, keys follow the header (or are pointed by FLD_RENDER::keys)
@@ -84,7 +85,7 @@ struct FLD_LIGHT_KEY {
 struct FLD_MAT_LIST {
     unsigned int num;                           // 0x00
     struct {
-        NNSG3dResMdl* mdl;                      // 0x00
+        FilePtr<NNSG3dResMdl> mdl;              // 0x00
         int mat;                                // 0x04
     } list[1];                                  // 0x04
 };
@@ -92,7 +93,7 @@ struct FLD_MAT_LIST {
 struct FLD_LIGHT {
     union {
         char name[0x10];                        // 0x00
-        FLD_MAT_LIST* mat_list;                 // 0x00
+        FilePtr<FLD_MAT_LIST> mat_list;         // 0x00
     };
     FLD_ANIM anim;                              // 0x10
 };
@@ -134,12 +135,12 @@ struct FLD_FADE {
 struct FLD_MODEL {
     int unk_00;                                 // 0x00
     int unk_04;                                 // 0x04
-    NNSG3dResMdl* mdl;                          // 0x08
+    FilePtr<NNSG3dResMdl> mdl;                  // 0x08
     int flag;                                   // 0x0C
-    FLD_FADE* fade;                             // 0x10
+    FilePtr<FLD_FADE> fade;                     // 0x10
     int unk_14;                                 // 0x14
-    void* unk_18;                               // 0x18
-    void* unk_1c;                               // 0x1C
+    FilePtr<void> unk_18;                       // 0x18
+    FilePtr<void> unk_1c;                       // 0x1C
     int shape_num;                              // 0x20
     int shape0;                                 // 0x24
     int shape1;                                 // 0x28
@@ -163,8 +164,8 @@ struct FLD_MAP_OBJ {
     int uid;                                    // 0x2C
     int flag;                                   // 0x30
     int priority;                               // 0x34
-    FLD_RENDER* render;                         // 0x38
-    FLD_MODEL* model_info;                      // 0x3C
+    FilePtr<FLD_RENDER> render;                 // 0x38
+    FilePtr<FLD_MODEL> model_info;              // 0x3C
     short seq;                                  // 0x40
     short anim;                                 // 0x42
     short def_model;                            // 0x44
@@ -186,8 +187,8 @@ struct FLD_MAP {
     int uid_num;                                // 0x08
     int obj_num;                                // 0x0C
     int unk_10;                                 // 0x10
-    short* index;                               // 0x14
-    short** order;                              // 0x18
+    FilePtr<short> index;                       // 0x14
+    FilePtr<FilePtr<short>> order;              // 0x18
     int extra;                                  // 0x1C
     FLD_MAP_OBJ obj[1];                         // 0x20
 };
@@ -234,7 +235,7 @@ struct FLD_COMMON_TBL {
     int num;                                    // 0x08
     struct {
         int num;                                // 0x00
-        FLD_COMMON_KEY* key;                    // 0x04
+        FilePtr<FLD_COMMON_KEY> key;            // 0x04
     } anim[1];                                  // 0x0C
 };
 
@@ -266,7 +267,7 @@ struct FLD_PLTT_ENTRY {
     unsigned char anim;                         // 0x10
     unsigned char event;                        // 0x11
     unsigned char unk_12[2];                    // 0x12
-    unsigned short* pltt;                       // 0x14
+    FilePtr<unsigned short> pltt;               // 0x14
 };
 
 // 'FPLP'
