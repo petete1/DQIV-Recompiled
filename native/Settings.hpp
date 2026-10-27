@@ -15,7 +15,7 @@ struct GameSettings {
     int battleLayout=0;      // battles: BattleLayout
     int battleZoom=175;      // percent: the 16:9 battle scene seen closer (100, 125, 150, 175)
     bool stretch=false;
-    bool vsync=true;
+    bool vsync=true;         // Windows only (verticalSync())
     int quality=0;           // 0 automatic, otherwise the supersampling factor (1..4)
     bool smoothTextures=true;
     int volume=100;          // percent
@@ -83,6 +83,15 @@ inline constexpr int frameRates[]={60,120,144,165,240,0};
 inline constexpr int frameRateCount=6;
 inline constexpr int windowSizeCount=4;
 GameSettings& gameSettings();
+// Vertical sync as used: on Linux never (the compositor already syncs, and
+// waiting on it as well made the sound crackle), so it has no setting there.
+inline bool verticalSync(const GameSettings& s) {
+#ifdef _WIN32
+    return s.vsync;
+#else
+    (void)s;return false;
+#endif
+}
 // Reads the file when present (missing keys keep their defaults).
 void loadSettings();
 void saveSettings();

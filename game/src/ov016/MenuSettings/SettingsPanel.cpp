@@ -73,7 +73,9 @@ void SettingsPanel::buildRows()
         rows_[rowCount_++] = pc::settingBattleView;
         rows_[rowCount_++] = pc::settingBattleZoom;
         rows_[rowCount_++] = pc::settingStretch;
-        rows_[rowCount_++] = pc::settingVsync;
+#ifdef _WIN32
+        rows_[rowCount_++] = pc::settingVsync; // Linux never waits for it
+#endif
         rows_[rowCount_++] = pc::settingQuality;
         rows_[rowCount_++] = pc::settingTextures;
         break;

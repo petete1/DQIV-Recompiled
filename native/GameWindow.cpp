@@ -90,7 +90,7 @@ void GameWindow::applySettings() {
     // Strict vertical sync: the adaptive one (-1) shows a frame that misses
     // the refresh at once, and the game's own 60 Hz pace makes that steady,
     // a tear across the middle of the screen.
-    SDL_GL_SetSwapInterval(s.vsync?1:0);
+    SDL_GL_SetSwapInterval(verticalSync(s)?1:0);
     int interval=0;SDL_GL_GetSwapInterval(&interval);
     std::printf("Vertical sync: %d\n",interval);
     dualScreen().canvasWidth=s.wide?384*16/9.f:256.f;
@@ -350,7 +350,7 @@ void GameWindow::measureBetween(std::uint64_t cost) {
 bool GameWindow::interpolating() const {
     if(hidden_||!interpolator_||frameRateTarget()==60)return false;
     // With vertical sync, the screen's own rate bounds the frames shown.
-    if(!gameSettings().vsync)return true;
+    if(!verticalSync(gameSettings()))return true;
     const auto* mode=SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(window_));
     return mode&&mode->refresh_rate>61;
 }

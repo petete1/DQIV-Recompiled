@@ -137,7 +137,7 @@ The same screen, in the game's style, opens from "Settings" in the adventure log
   - 16:9 or DS screens, stretching;
   - battle display: Large (default: monsters zoomed to fill the battle area), Panorama (zoom set below), or the DS's two original screens;
   - battle zoom (Panorama battles): 100%, 125%, 150% or 175% (default), the monsters seen closer;
-  - vertical sync, 3D quality, smooth textures (No: the original DS pixels, without upscaling or filtering).
+  - vertical sync (Windows; on Linux the compositor syncs the picture), 3D quality, smooth textures (No: the original DS pixels, without upscaling or filtering).
 - **Keyboard** and **Gamepad**: the key or button for each action (A, B, X, Y, L, R, Start, Select, directions, party chat); the gamepad's triggers (LT / RT) can be bound too. Press A on a line, then the new key or button; Escape cancels. "Default controls" restores the page.
 
 On laptops with two graphics chips, the game asks Windows for the dedicated one (NVIDIA / AMD). On Linux it uses the system's default; to run it on an NVIDIA chip: `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia ./dist/DragonQuestIV`.
