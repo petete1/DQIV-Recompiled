@@ -4,6 +4,9 @@
 # When assets is incomplete, its data is extracted first from the files in
 # ROMandOBBfileHere: the European DS ROM (.nds, or a .zip holding it) and the
 # Android version's data file (.obb, optional: HD sound).
+# Without a ROM, the game is only compiled: dist/DragonQuestIV is written
+# without the game's data, and reads it from the assets and addons folders
+# beside it or in a folder above it; build again with the ROM to pack it.
 # The game keeps its save, settings and journal in dist/saves.
 # "./build.sh 64" builds a 64-bit program instead (x86-64; experimental), which
 # needs no 32-bit libraries.
@@ -30,10 +33,10 @@ inbox=ROMandOBBfileHere
 
 # The game's data, from the player's ROM.
 if [ ! -f assets/data/SOUND/sound_data.sdat ]; then
-    rom=$(find "$inbox" -maxdepth 1 -type f -iname '*.nds' | head -n 1)
+    rom=$(find -L "$inbox" -maxdepth 1 -type f -iname '*.nds' | head -n 1)
     unzipped=
     if [ -z "$rom" ]; then
-        zip=$(find "$inbox" -maxdepth 1 -type f -iname '*.zip' | head -n 1)
+        zip=$(find -L "$inbox" -maxdepth 1 -type f -iname '*.zip' | head -n 1)
         if [ -n "$zip" ]; then
             unzipped=$build/rom
             rm -rf "$unzipped"; mkdir -p "$unzipped"
@@ -44,15 +47,18 @@ if [ ! -f assets/data/SOUND/sound_data.sdat ]; then
             [ -n "$rom" ] || fail "$(basename "$zip") contains no .nds ROM"
         fi
     fi
-    [ -n "$rom" ] || fail "Put your European Dragon Quest IV ROM (.nds, or a .zip holding it) in the $inbox folder, then build again."
-    echo "Extracting the game's data from $(basename "$rom")"
-    "$pack" --rom "$rom" assets || fail 'ROM extraction failed'
-    [ -z "$unzipped" ] || rm -rf "$unzipped"
+    if [ -n "$rom" ]; then
+        echo "Extracting the game's data from $(basename "$rom")"
+        "$pack" --rom "$rom" assets || fail 'ROM extraction failed'
+        [ -z "$unzipped" ] || rm -rf "$unzipped"
+    else
+        echo "WARNING: No ROM in $inbox: the game is compiled without its data." >&2
+    fi
 fi
 
 # HD sound, from the Android version's data file (optional).
 if [ ! -f assets/data/SOUND/MOBILE/snd_vol.dat ]; then
-    obb=$(find "$inbox" -maxdepth 1 -type f -iname '*.obb' | head -n 1)
+    obb=$(find -L "$inbox" -maxdepth 1 -type f -iname '*.obb' | head -n 1)
     if [ -n "$obb" ]; then
         echo "Extracting the HD sound from $(basename "$obb")"
         "$pack" --obb "$obb" assets || fail 'HD sound extraction failed'
@@ -62,5 +68,10 @@ if [ ! -f assets/data/SOUND/MOBILE/snd_vol.dat ]; then
 fi
 
 mkdir -p dist
-"$pack" $build/DragonQuestIV assets addons dist/DragonQuestIV || fail 'Packaging failed'
-echo 'Created dist/DragonQuestIV'
+if [ -f assets/data/SOUND/sound_data.sdat ]; then
+    "$pack" $build/DragonQuestIV assets addons dist/DragonQuestIV || fail 'Packaging failed'
+    echo 'Created dist/DragonQuestIV'
+else
+    cp $build/DragonQuestIV dist/DragonQuestIV || fail 'Copy failed'
+    echo "Created dist/DragonQuestIV without the game's data: put your European Dragon Quest IV ROM (.nds, or a .zip holding it) in the $inbox folder and build again to add it."
+fi

@@ -161,7 +161,7 @@ The project contains no game data: it comes from your own copies of the game. Pu
 
 | File | |
 | --- | --- |
-| Your **European Dragon Quest IV ROM** for Nintendo DS (game code `YIVP`): the `.nds` file, or a `.zip` that contains it | required |
+| Your **European Dragon Quest IV ROM** for Nintendo DS (game code `YIVP`): the `.nds` file, or a `.zip` that contains it | required to play (on Linux, the game can be compiled without it) |
 | The **Android version's data file** (`main.xxxxx.com.square_enix.android_googleplay.dq4.obb`) | optional: HD music and sound effects; without it, the game uses the DS sound |
 
 ### Windows
@@ -213,7 +213,9 @@ Then run, from the project folder:
 ./build.sh
 ```
 
-It ends with `Created dist/DragonQuestIV`, or an `ERROR:` line saying what is missing (CMake, Ninja, 32-bit compiler support, the ROM). It does the same steps as `build.ps1` (compile, extract `assets` once from the ROM and `.obb`, pack), with the `linux-game` CMake preset and `cmake/linux-i686.cmake`. Intermediate files go to `build32`; only `dist/DragonQuestIV` matters.
+It ends with `Created dist/DragonQuestIV`, or an `ERROR:` line saying what is missing (CMake, Ninja, 32-bit compiler support). It does the same steps as `build.ps1` (compile, extract `assets` once from the ROM and `.obb`, pack), with the `linux-game` CMake preset and `cmake/linux-i686.cmake`. Intermediate files go to `build32`; only `dist/DragonQuestIV` matters.
+
+Without a ROM in `ROMandOBBfileHere` (and no `assets` extracted earlier), the game is only compiled: `dist/DragonQuestIV` is written without the game's data and looks for the `assets` and `addons` folders beside it or in a folder above it. To add the data, put the ROM (and the `.obb`) in `ROMandOBBfileHere` and run `build.sh` again: it extracts them and packs everything into the executable.
 
 To play, the computer needs the same 32-bit libraries at run time (not their headers); systems with Steam installed usually have them. C++ and GCC's own libraries are built into the executable.
 
