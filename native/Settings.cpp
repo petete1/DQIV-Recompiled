@@ -44,6 +44,10 @@ void loadSettings() {
         else if(key=="cameraZoom")s.cameraZoom=std::clamp(value,cameraZoomMin,cameraZoomMax);
         else if(key=="mobileSound")s.mobileSound=value!=0;
         else if(key=="centredCamera")s.centredCamera=value!=0;
+        else if(key=="cheatBattleInvincible")s.cheats.battleInvincible=value!=0;
+        else if(key=="cheatNoRandomEncounters")s.cheats.noRandomEncounters=value!=0;
+        else if(key=="cheatExpMultiplier")s.cheats.expMultiplier=normalizeCheatMultiplier(value);
+        else if(key=="cheatGoldMultiplier")s.cheats.goldMultiplier=normalizeCheatMultiplier(value);
         else if(key.rfind("key",0)==0&&key.size()>3) {
             const int i=std::atoi(key.c_str()+3);
             if(i>=0&&i<controlCount)s.keys[i]=static_cast<unsigned>(std::stoul(line.substr(equals+1)));
@@ -61,7 +65,9 @@ void saveSettings() {
     const auto& s=gameSettings();
     file<<"language="<<s.language<<"\nshowFps="<<s.showFps<<"\nfullscreen="<<s.fullscreen<<"\nwindowSize="<<s.windowSize
         <<"\nwide="<<s.wide<<"\nbattleLayout="<<s.battleLayout<<"\nbattleZoom="<<s.battleZoom<<"\nstretch="<<s.stretch<<"\nvsync="<<s.vsync<<"\nquality="<<s.quality
-        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\n";
+        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera
+        <<"\ncheatBattleInvincible="<<s.cheats.battleInvincible<<"\ncheatNoRandomEncounters="<<s.cheats.noRandomEncounters
+        <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier<<"\n";
     for(int i=0;i<controlCount;++i)file<<"key"<<i<<"="<<s.keys[i]<<"\npad"<<i<<"="<<s.pads[i]<<"\n";
 }
 namespace {
@@ -76,6 +82,23 @@ const char* japanese(const char* en) {
         {"Avoids tearing.","がめんの ずれを ふせぐ。"},
         {"B (cancel)","B (キャンセル)"},
         {"Back","もどる"},
+        {"Cheats","チート"},
+        {"Battle invincible","せんとうで むてき"},
+        {"No random battles","ランダムせんとう なし"},
+        {"EXP multiplier","けいけんちの ばいりつ"},
+        {"Gold multiplier","ゴールドの ばいりつ"},
+        {"Max gold","ゴールドを さいだいに"},
+        {"Max bank balance","ぎんこうを さいだいに"},
+        {"Max casino coins","コインを さいだいに"},
+        {"Max mini medals","メダルを さいだいに"},
+        {"Heal / revive party","なかまを ぜんかいふく"},
+        {"Quantity","かず"},
+        {"Add to bag","ふくろに いれる"},
+        {"Reset cheats","チートを リセット"},
+        {"Done","かんりょう"},
+        {"Bag full","ふくろが いっぱい"},
+        {"Already 99","すでに 99こ"},
+        {"Invalid item","ついか できません"},
         {"Battle messages","せんとうメッセージ"},
         {"Battle speed","せんとうの はやさ"},
         {"Camera zoom","カメラズーム"},
@@ -166,6 +189,7 @@ const char* pageTitle(int page,int language) {
     case pageKeyboard:return pick(language,"Keyboard","Clavier","Tastatur","Tastiera","Teclado");
     case pageGamepad:return pick(language,"Gamepad","Manette","Controller","Controller","Mando");
     case pageDisplay:return pick(language,"Display","Affichage","Anzeige","Schermo","Pantalla");
+    case pageCheats:return pick(language,"Cheats","Triches","Cheats","Trucchi","Trucos");
     }
     return pick(language,"Game","Jeu","Spiel","Gioco","Juego");
 }
@@ -230,6 +254,10 @@ const char* settingsBack(int language) {return pick(language,"Back","Retour","Zu
 const char* settingLabel(int item,int language) {
     switch(item) {
     case settingLanguage:return pick(language,"Language","Langue","Sprache","Lingua","Idioma");
+    case settingCheatInvincible:return pick(language,"Battle invincible","Invincible en combat","Im Kampf unbesiegbar","Invincibile in lotta","Invencible en combate");
+    case settingCheatNoEncounters:return pick(language,"No random battles","Sans combats aléat.","Keine Zufallskämpfe","Niente scontri casuali","Sin combates aleat.");
+    case settingCheatExp:return pick(language,"EXP multiplier","Multiplicateur EXP","EP-Multiplikator","Moltiplicatore EXP","Multiplicador EXP");
+    case settingCheatGold:return pick(language,"Gold multiplier","Multiplicateur d'or","Gold-Multiplikator","Moltiplicatore oro","Multiplicador de oro");
     case settingFps:return pick(language,"Show FPS","Afficher les FPS","FPS anzeigen","Mostra FPS","Mostrar FPS");
     case settingFullscreen:return pick(language,"Full screen","Plein écran","Vollbild","Schermo intero","Pantalla completa");
     case settingWindowSize:return pick(language,"Window size","Taille de la fenêtre","Fenstergröße","Dimensione finestra","Tamaño de ventana");
@@ -260,6 +288,10 @@ std::string settingValue(int item,int language) {
         return names[std::clamp(s.language,1,5)];
     }
     case settingFps:return yesNo(s.showFps,language);
+    case settingCheatInvincible:return yesNo(s.cheats.battleInvincible,language);
+    case settingCheatNoEncounters:return yesNo(s.cheats.noRandomEncounters,language);
+    case settingCheatExp:return "x"+std::to_string(s.cheats.expMultiplier);
+    case settingCheatGold:return "x"+std::to_string(s.cheats.goldMultiplier);
     case settingFullscreen:return yesNo(s.fullscreen,language);
     case settingWindowSize:return std::to_string(windowSizes[s.windowSize][0])+"x"+std::to_string(windowSizes[s.windowSize][1]);
     case settingPicture:return s.wide?"16:9":pick(language,"DS screens","Écrans DS","DS-Bildschirme","Schermi DS","Pantallas DS");
@@ -322,6 +354,18 @@ bool changeSetting(int item,int step) {
     switch(item) {
     case settingLanguage:s.language=cycle(s.language,0,5);return true;
     case settingFps:s.showFps=!s.showFps;return true;
+    case settingCheatInvincible:s.cheats.battleInvincible=!s.cheats.battleInvincible;return true;
+    case settingCheatNoEncounters:s.cheats.noRandomEncounters=!s.cheats.noRandomEncounters;return true;
+    case settingCheatExp: {
+        const int before=s.cheats.expMultiplier;
+        s.cheats.expMultiplier=changeCheatMultiplier(before,step);
+        return s.cheats.expMultiplier!=before;
+    }
+    case settingCheatGold: {
+        const int before=s.cheats.goldMultiplier;
+        s.cheats.goldMultiplier=changeCheatMultiplier(before,step);
+        return s.cheats.goldMultiplier!=before;
+    }
     case settingMobileSound:s.mobileSound=!s.mobileSound;return true;
     case settingFullscreen:s.fullscreen=!s.fullscreen;return true;
     case settingWindowSize:s.windowSize=cycle(s.windowSize,0,windowSizeCount-1);return true;
@@ -348,6 +392,27 @@ bool changeSetting(int item,int step) {
     }
     }
     return false;
+}
+const char* cheatActionLabel(CheatAction action,int language) {
+    switch(action) {
+    case cheatMaxGold:return pick(language,"Max gold","Or au maximum","Gold maximieren","Oro al massimo","Oro al máximo");
+    case cheatMaxBank:return pick(language,"Max bank balance","Banque au maximum","Bank maximieren","Banca al massimo","Banco al máximo");
+    case cheatMaxCasino:return pick(language,"Max casino coins","Jetons au maximum","Casino maximieren","Gettoni al massimo","Fichas al máximo");
+    case cheatMaxMedals:return pick(language,"Max mini medals","Médailles au maximum","Minimedaillen max.","Medaglie al massimo","Minimedallas al máx.");
+    case cheatRecoverParty:return pick(language,"Heal / revive party","Soigner / ranimer","Gruppe voll heilen","Cura / rianima gruppo","Curar / revivir grupo");
+    case cheatAddItem:return pick(language,"Add to bag","Ajouter au sac","In Beutel legen","Aggiungi alla sacca","Añadir a la bolsa");
+    case cheatReset:return pick(language,"Reset cheats","Réinitialiser triches","Cheats zurücksetzen","Ripristina trucchi","Restablecer trucos");
+    }
+    return "";
+}
+const char* cheatQuantityLabel(int language) {return pick(language,"Quantity","Quantité","Anzahl","Quantità","Cantidad");}
+const char* cheatResultLabel(int result,int language) {
+    switch(result) {
+    case cheatBagFull:return pick(language,"Bag full","Sac plein","Beutel voll","Sacca piena","Bolsa llena");
+    case cheatStackFull:return pick(language,"Already 99","Déjà 99","Bereits 99","Già 99","Ya hay 99");
+    case cheatInvalidItem:return pick(language,"Invalid item","Objet invalide","Ungültig","Non valido","No válido");
+    default:return pick(language,"Done","Fait","Fertig","Fatto","Hecho");
+    }
 }
 const char* battleSpeedLabel(int language) {
     return pick(language,"Battle messages","Messages de combat","Kampfnachrichten","Messaggi di battaglia","Mensajes de combate");

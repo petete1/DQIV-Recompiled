@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "Cheats.hpp"
 // Player settings of the PC version, kept in saves\settings.ini beside the game.
 namespace pc {
 // How fast dialogue text appears.
@@ -7,6 +8,7 @@ enum TextSpeed {textSlow,textNormal,textFast,textInstant,textSpeedCount};
 // The gamepad's triggers are axes in SDL: these codes bind them like buttons.
 inline constexpr int padLeftTrigger=100,padRightTrigger=101;
 struct GameSettings {
+    CheatSettings cheats;
     int language=1;          // game language: 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish
     bool showFps=false;
     bool fullscreen=false;
@@ -59,8 +61,8 @@ bool fastForward();
 // The game's frame count (with the power functions).
 extern "C" unsigned pcVBlankCount();
 namespace pc {
-// Pages of the settings: game, display, keyboard, gamepad.
-enum SettingsPage {pageGame,pageDisplay,pageKeyboard,pageGamepad,pageCount};
+// The final page is available only while playing an adventure.
+enum SettingsPage {pageGame,pageDisplay,pageKeyboard,pageGamepad,pageCheats,pageCount};
 const char* pageTitle(int page,int language);
 const char* controlName(int action,int language);
 // The key or gamepad button an action uses (defined with the window's input).
@@ -99,7 +101,8 @@ void saveSettings();
 // The settings, as the game's menus list them.
 enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize,settingPicture,settingStretch,
     settingVsync,settingQuality,settingTextures,settingVolume,settingTextSpeed,settingFrameRate,settingBattleBoost,
-    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,settingCount};
+    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,
+    settingCheatInvincible,settingCheatNoEncounters,settingCheatExp,settingCheatGold,settingCount};
 inline constexpr int cameraZoomMin=50,cameraZoomMax=200;
 // Changes the camera zoom by `step` (percent); for the mouse wheel and the right stick.
 void zoomCamera(int step);

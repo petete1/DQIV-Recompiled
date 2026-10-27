@@ -1,6 +1,17 @@
 #include "main/status/HaveStatusInfo.hpp"
 #include "main/status/ActionDefence.hpp"
 #include "main/status/UseItem.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#include "main/global/GlobalDQ4.hpp"
+namespace {
+bool nativeBattleInvincible(const status::HaveStatusInfo& info)
+{
+    return pc::gameSettings().cheats.battleInvincible && info.haveStatus_.isPlayer_ &&
+        g_GlobalDQ4.unkfunc_02058114(BATTLE_PART);
+}
+}
+#endif
 
 
 dss::Flag status::HaveStatusInfo::globalFlag_;
@@ -372,6 +383,9 @@ THUMB int status::HaveStatusInfo::getGold()
 
 THUMB void status::HaveStatusInfo::setHp(unsigned short hp)
 {
+#ifdef DQIV_NATIVE
+    if (nativeBattleInvincible(*this)) return;
+#endif
     if (!this->noDamage_)
     {
         this->haveStatus_.setHp(hp);
@@ -389,6 +403,9 @@ THUMB int status::HaveStatusInfo::getHp()
 
 THUMB void status::HaveStatusInfo::addBaseHp(int hp)
 {
+#ifdef DQIV_NATIVE
+    if (nativeBattleInvincible(*this)) return;
+#endif
     if (this->noDamage_ == 0)
     {
         this->haveStatus_.addBaseHp(hp);
@@ -461,6 +478,9 @@ THUMB void status::HaveStatusInfo::addHpMax(unsigned short hp)
 
 THUMB void status::HaveStatusInfo::setMp(unsigned short mp)
 {
+#ifdef DQIV_NATIVE
+    if (nativeBattleInvincible(*this)) return;
+#endif
     if (!this->noDamage_)
         this->haveStatus_.setMp(mp);
 }
@@ -472,6 +492,9 @@ THUMB int status::HaveStatusInfo::getMp()
 
 THUMB void status::HaveStatusInfo::addMp(int mp)
 {
+#ifdef DQIV_NATIVE
+    if (nativeBattleInvincible(*this)) return;
+#endif
     if (!this->noDamage_)
     {
         this->haveStatus_.addBaseMp(mp);

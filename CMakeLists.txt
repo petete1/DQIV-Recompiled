@@ -178,7 +178,7 @@ target_link_libraries(dqiv_nitro_system PUBLIC dqiv_core)
 
 # The game: a window without console; output and crash reports go to a
 # journal beside the save.
-add_executable(DragonQuestIV WIN32 native/GameBoot.cpp native/GameWindow.cpp native/GpuRenderer.cpp native/GlLoader.cpp
+add_executable(DragonQuestIV WIN32 native/GameBoot.cpp native/GameWindow.cpp native/GpuRenderer.cpp native/GlLoader.cpp native/Cheats.cpp
     native/TextCanvas.cpp native/InputBindings.cpp native/FramePresenter.cpp native/NitroSymbols.cpp native/DssRuntime.cpp
     native/CrashHandler.cpp native/ErrorWindow.cpp)
 if(WIN32)

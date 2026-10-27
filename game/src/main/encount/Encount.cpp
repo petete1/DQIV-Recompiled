@@ -9,6 +9,9 @@
 #include "main/param/MonsterMap.hpp"
 #include "main/dss/Random.hpp"
 #include "ov003/btl/BattleMonster.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 
 THUMB encount::Encount::Encount()
     : battleMode_(Normal), tileId_(-1), timeZone_(TIME_ZONE_NONE), chapter_(0), enable_(1), brewCount_(0),
@@ -58,6 +61,12 @@ THUMB void encount::Encount::setup(EncountPart part, LandType land)
 
 THUMB void encount::Encount::exec()
 {
+#ifdef DQIV_NATIVE
+    if (pc::gameSettings().cheats.noRandomEncounters) {
+        brewCount_ = 0;
+        return;
+    }
+#endif
     if (enable_ == 0) {
         return;
     }
@@ -156,6 +165,12 @@ THUMB btl::FirstAttack encount::Encount::getFirstAttack()
 
 THUMB bool encount::Encount::isEncounted()
 {
+#ifdef DQIV_NATIVE
+    if (pc::gameSettings().cheats.noRandomEncounters) {
+        brewCount_ = 0;
+        return false;
+    }
+#endif
     if (brewCount_ != 0 && chapter_ != 0) {
         return true;
     }
@@ -164,6 +179,12 @@ THUMB bool encount::Encount::isEncounted()
 
 THUMB bool encount::Encount::isEncountedNext()
 {
+#ifdef DQIV_NATIVE
+    if (pc::gameSettings().cheats.noRandomEncounters) {
+        brewCount_ = 0;
+        return false;
+    }
+#endif
     if (brewCount_ > 1 && chapter_ != 0) {
         return true;
     }

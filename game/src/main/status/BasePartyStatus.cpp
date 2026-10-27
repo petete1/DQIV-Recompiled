@@ -6,6 +6,9 @@
 #include "main/status/HaveAction.hpp"
 #include "main/status/UseAction.hpp"
 #include "main/status/UseActionParam.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 
 THUMB
 int status::PartyStatus::noDamageEnable_;
@@ -865,6 +868,9 @@ THUMB void status::PartyStatus::reflectBattleExp() {
     if (status::BaseAction::doubleFlag_ != 0) {
         this->battleExp_ <<= 1;          
     }
+#ifdef DQIV_NATIVE
+    this->battleExp_ = pc::scaleCheatReward(this->battleExp_, pc::gameSettings().cheats.expMultiplier, 0xffffff);
+#endif
     setPlayerMode();
     int count = getCount();
     for (int i = 0; i < count; i++) {
@@ -879,6 +885,9 @@ THUMB void status::PartyStatus::reflectBattleGold() {
     if (status::BaseAction::doubleFlag_) {
         this->battleGold_ = this->battleGold_ * 2;
     }
+#ifdef DQIV_NATIVE
+    this->battleGold_ = pc::scaleCheatReward(this->battleGold_, pc::gameSettings().cheats.goldMultiplier, 999999);
+#endif
     addGold(this->battleGold_);     
 }
 
