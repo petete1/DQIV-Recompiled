@@ -4,9 +4,10 @@
 # When assets is incomplete, its data is extracted first from the files in
 # ROMandOBBfileHere: the European DS ROM (.nds, or a .zip holding it) and the
 # Android version's data file (.obb, optional: HD sound).
-# Without a ROM, the game is only compiled: dist/DragonQuestIV is written
-# without the game's data, and reads it from the assets and addons folders
-# beside it or in a folder above it; build again with the ROM to pack it.
+# Without a ROM, dist/DragonQuestIV holds only the PC version's additions and
+# reads the game's data in place from the ROM and .obb that the player puts in
+# dist/ROMandOBBfileHere (the layout of a release); build again with the ROM
+# to pack it.
 # The game keeps its save, settings and journal in dist/saves.
 # "./build.sh 64" builds a 64-bit program instead (x86-64; experimental), which
 # needs no 32-bit libraries.
@@ -72,6 +73,19 @@ if [ -f assets/data/SOUND/sound_data.sdat ]; then
     "$pack" $build/DragonQuestIV assets addons dist/DragonQuestIV || fail 'Packaging failed'
     echo 'Created dist/DragonQuestIV'
 else
-    cp $build/DragonQuestIV dist/DragonQuestIV || fail 'Copy failed'
-    echo "Created dist/DragonQuestIV without the game's data: put your European Dragon Quest IV ROM (.nds, or a .zip holding it) in the $inbox folder and build again to add it."
+    "$pack" $build/DragonQuestIV addons dist/DragonQuestIV || fail 'Packaging failed'
+    mkdir -p dist/$inbox
+    cat > dist/$inbox/README.txt <<'TEXT'
+Put your own copies of the game here before starting DragonQuestIV:
+
+- Your European Dragon Quest IV ROM for Nintendo DS (game code YIVP): the
+  .nds file (extracted from its .zip, if it came in one). Required.
+- The data file of the Android version of Dragon Quest IV
+  (main.xxxxx.com.square_enix.android_googleplay.dq4.obb). Optional: it gives
+  the game the HD music and sound effects of the mobile version; without it,
+  the game uses the DS sound.
+
+The game reads them from here each time it starts; nothing is copied.
+TEXT
+    echo "Created dist/DragonQuestIV without the game's data: it reads the ROM and .obb put in dist/$inbox."
 fi

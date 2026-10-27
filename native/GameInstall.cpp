@@ -8,7 +8,7 @@
 namespace pc {
 namespace {
 // A range of a file, read on demand (the ROM is 128 MB, the data file 200 MB).
-struct Range {std::uint64_t offset=0,size=0;};
+using Range=FileRange;
 class Source {
 public:
     explicit Source(const std::filesystem::path& path):stream_(path,std::ios::binary|std::ios::ate) {
@@ -27,7 +27,7 @@ private:
     std::ifstream stream_;
     std::uint64_t size_=0;
 };
-void extract(Source& source,const std::map<std::string,Range>& files,const std::filesystem::path& folder) {
+void extract(Source& source,const FileRanges& files,const std::filesystem::path& folder) {
     for(const auto& [name,range]:files) {
         const auto path=folder/std::filesystem::path(std::u8string(name.begin(),name.end()));
         std::filesystem::create_directories(path.parent_path());
@@ -40,13 +40,13 @@ void extract(Source& source,const std::map<std::string,Range>& files,const std::
 
 // Nintendo DS ROM: file name table (directories, then names) and file
 // allocation table (start and end of each file).
-std::map<std::string,Range> romFiles(Source& rom) {
+FileRanges romFiles(Source& rom) {
     const auto header=rom.read({0,0x200});
     const Binary h(header);
     const Range fnt{h.u32(0x40),h.u32(0x44)},fat{h.u32(0x48),h.u32(0x4c)};
     const auto names=rom.read(fnt),table=rom.read(fat);
     const Binary n(names),f(table);
-    std::map<std::string,Range> files;
+    FileRanges files;
     const auto walk=[&](auto& self,unsigned directory,const std::string& path,int depth)->void {
         if(depth>16)throw std::runtime_error("ROM directories too deep");
         const std::size_t entry=8*(directory&0xfff);
@@ -69,7 +69,7 @@ std::map<std::string,Range> romFiles(Source& rom) {
 
 // Zip archive (the Android .obb): central directory entries stored without
 // compression, as the data file keeps its sounds.
-std::map<std::string,Range> zipFiles(Source& zip,const std::string& folder,const std::string& prefix) {
+FileRanges zipFiles(Source& zip,const std::string& folder,const std::string& prefix) {
     const std::uint64_t tail=std::min<std::uint64_t>(zip.size(),65536+22);
     const auto end=zip.read({zip.size()-tail,tail});
     std::size_t record=std::string::npos;
@@ -80,7 +80,7 @@ std::map<std::string,Range> zipFiles(Source& zip,const std::string& folder,const
     const std::uint64_t count=e.u16(record+10),size=e.u32(record+12),offset=e.u32(record+16);
     const auto directory=zip.read({offset,size});
     const Binary d(directory);
-    std::map<std::string,Range> files;
+    FileRanges files;
     std::size_t p=0;
     for(std::uint64_t i=0;i<count;++i) {
         if(d.u32(p)!=0x02014b50)throw std::runtime_error("Invalid zip directory");
@@ -118,20 +118,28 @@ std::string romGameCode(const std::filesystem::path& path) {
         return std::string(header.begin()+12,header.begin()+16);
     } catch(const std::exception&) {return {};}
 }
-void extractRom(const std::filesystem::path& path,const std::filesystem::path& folder) {
+FileRanges romFileRanges(const std::filesystem::path& path) {
     const auto code=romGameCode(path);
     if(code.empty())throw std::runtime_error(path.string()+" is not a Nintendo DS ROM");
     if(code!=europeanGameCode)throw std::runtime_error(path.string()+" is not the European Dragon Quest IV (game code "+code+", expected YIVP)");
     Source rom(path);
-    const auto files=romFiles(rom);
+    auto files=romFiles(rom);
     if(!files.contains("data/SOUND/sound_data.sdat"))throw std::runtime_error("The ROM has no game data");
-    extract(rom,files,folder);
+    return files;
+}
+FileRanges mobileSoundRanges(const std::filesystem::path& path) {
+    Source zip(path);
+    auto files=zipFiles(zip,mobileFolder,mobilePrefix);
+    if(!files.contains(std::string(mobilePrefix)+"snd_vol.dat"))
+        throw std::runtime_error(path.string()+" does not contain the sounds of the Android version of Dragon Quest IV");
+    return files;
+}
+void extractRom(const std::filesystem::path& path,const std::filesystem::path& folder) {
+    Source rom(path);
+    extract(rom,romFileRanges(path),folder);
 }
 void extractMobileSounds(const std::filesystem::path& path,const std::filesystem::path& folder) {
     Source zip(path);
-    const auto files=zipFiles(zip,mobileFolder,mobilePrefix);
-    if(!files.contains(std::string(mobilePrefix)+"snd_vol.dat"))
-        throw std::runtime_error(path.string()+" does not contain the sounds of the Android version of Dragon Quest IV");
-    extract(zip,files,folder);
+    extract(zip,mobileSoundRanges(path),folder);
 }
 }

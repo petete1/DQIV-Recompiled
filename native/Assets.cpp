@@ -36,13 +36,17 @@ void Assets::add(const std::filesystem::path& root) {
     }
     for (auto& [name, entry] : files) files_.insert_or_assign(name, std::move(entry));
 }
+void Assets::addRanges(const std::filesystem::path& file, const std::map<std::string, std::pair<std::uint64_t, std::uint64_t>>& ranges) {
+    for (const auto& [name, range] : ranges)
+        files_.insert_or_assign(assetKey(name), Entry{file, range.first, range.second, 0, false, true});
+}
 std::vector<std::uint8_t> Assets::read(const std::string& name) const {
     const auto found = files_.find(assetKey(name));
     if (found == files_.end()) throw std::runtime_error("Asset missing: " + name);
     const auto& entry=found->second;
     std::ifstream stream(entry.path, std::ios::binary | std::ios::ate);
     if (!stream) throw std::runtime_error("Cannot open asset: " + name);
-    const auto size = entry.packed ? std::streamoff(entry.size) : std::streamoff(stream.tellg());
+    const auto size = entry.packed || entry.ranged ? std::streamoff(entry.size) : std::streamoff(stream.tellg());
     if (size < 0) throw std::runtime_error("Cannot size asset: " + name);
     std::vector<std::uint8_t> data(static_cast<std::size_t>(size));
     stream.seekg(static_cast<std::streamoff>(entry.offset));

@@ -2,6 +2,7 @@
 // the PC window, renderer and sound.
 #include "Assets.hpp"
 #include "AssetPack.hpp"
+#include "GameInstall.hpp"
 #include "GameServices.hpp"
 #include "NitroFilesystem.hpp"
 #include "NitroBackup.hpp"
@@ -44,6 +45,8 @@ extern "C" {
 #include "main/achievement/AchievementTriggers.hpp"
 #include "Achievements.hpp"
 #include <array>
+#include <cctype>
+#include <map>
 #include <cstdio>
 #include <exception>
 #include <iostream>
@@ -124,21 +127,50 @@ void showError(const std::string& text) {
 }
 // The game's resources: packed inside the executable or, in a build tree, the
 // assets folder (the game's data) and the addons folder (the PC version's
-// additions) beside it or beside one of its parent folders.
+// additions) beside it or beside one of its parent folders. Without the
+// game's data (an executable built without the ROM), it is read in place from
+// the player's ROM and .obb in the ROMandOBBfileHere folder beside it.
 pc::Assets openResources() {
     const auto executable=pc::executablePath();
-    if(pc::hasAssetPack(executable))return pc::Assets(executable);
     pc::Assets assets;
-    for(const char* name:{"assets","addons"})
-        for(auto directory=executable.parent_path();!directory.empty();) {
-            if(std::filesystem::is_directory(directory/name)) {assets.add(directory/name);break;}
-            const auto parent=directory.parent_path();if(parent==directory)break;directory=parent;
-        }
-#ifdef _WIN32
-    if(!assets.contains("data/SOUND/sound_data.sdat"))throw std::runtime_error("Game data not found: build the game with build.ps1");
-#else
-    if(!assets.contains("data/SOUND/sound_data.sdat"))throw std::runtime_error("Game data not found: build the game with build.sh");
-#endif
+    if(pc::hasAssetPack(executable))assets.add(executable);
+    else
+        for(const char* name:{"assets","addons"})
+            for(auto directory=executable.parent_path();!directory.empty();) {
+                if(std::filesystem::is_directory(directory/name)) {assets.add(directory/name);break;}
+                const auto parent=directory.parent_path();if(parent==directory)break;directory=parent;
+            }
+    const char* sound="data/SOUND/sound_data.sdat";
+    if(!assets.contains(sound)) {
+        const auto inbox=executable.parent_path()/"ROMandOBBfileHere";
+        const auto withExtension=[&inbox](const char* extension) {
+            std::filesystem::path found;
+            std::error_code ignored;
+            for(const auto& entry:std::filesystem::directory_iterator(inbox,ignored)) {
+                auto name=entry.path().extension().string();
+                for(char& c:name)c=char(std::tolower(static_cast<unsigned char>(c)));
+                if(name==extension&&entry.is_regular_file()&&(found.empty()||entry.path()<found))found=entry.path();
+            }
+            return found;
+        };
+        const auto toAssets=[](const pc::FileRanges& files) {
+            std::map<std::string,std::pair<std::uint64_t,std::uint64_t>> ranges;
+            for(const auto& [name,range]:files)ranges.emplace(name,std::pair{range.offset,range.size});
+            return ranges;
+        };
+        if(const auto rom=withExtension(".nds");!rom.empty()) {
+            assets.addRanges(rom,toAssets(pc::romFileRanges(rom)));
+            std::cout<<"Game data: "<<rom.filename().string()<<'\n';
+            if(const auto obb=withExtension(".obb");!obb.empty()) {
+                assets.addRanges(obb,toAssets(pc::mobileSoundRanges(obb)));
+                std::cout<<"HD sound: "<<obb.filename().string()<<'\n';
+            }
+        } else if(!withExtension(".zip").empty())
+            throw std::runtime_error("Extract the .nds ROM from its .zip into "+inbox.string());
+    }
+    if(!assets.contains(sound))
+        throw std::runtime_error("Game data not found: put your European Dragon Quest IV ROM (.nds) in "+
+            (executable.parent_path()/"ROMandOBBfileHere").string()+" (and the Android version's .obb for the HD sound)");
     return assets;
 }
 }

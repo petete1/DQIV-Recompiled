@@ -10,6 +10,8 @@ The original Nintendo DS game (built from its decompilation) runs natively on Wi
 
 Double-click `dist\DragonQuestIV.exe` (Windows) or run `dist/DragonQuestIV` (Linux). Every game resource is packed inside it, so it can be moved on its own.
 
+**Linux release** (no building needed): download the archive from the releases page and extract it. Put your European Dragon Quest IV ROM (`.nds`, game code `YIVP`) in the `ROMandOBBfileHere` folder beside `DragonQuestIV`, and optionally the Android version's `.obb` for the HD sound, then run `DragonQuestIV`. The game reads them from there each time it starts; it contains none of the game's data. The same happens with a `dist/DragonQuestIV` built without a ROM (see [Building](#building)).
+
 The game keeps its files in a `saves` folder next to the executable:
 
 | File | Contents |
@@ -215,7 +217,7 @@ Then run, from the project folder:
 
 It ends with `Created dist/DragonQuestIV`, or an `ERROR:` line saying what is missing (CMake, Ninja, 32-bit compiler support). It does the same steps as `build.ps1` (compile, extract `assets` once from the ROM and `.obb`, pack), with the `linux-game` CMake preset and `cmake/linux-i686.cmake`. Intermediate files go to `build32`; only `dist/DragonQuestIV` matters.
 
-Without a ROM in `ROMandOBBfileHere` (and no `assets` extracted earlier), the game is only compiled: `dist/DragonQuestIV` is written without the game's data and looks for the `assets` and `addons` folders beside it or in a folder above it. To add the data, put the ROM (and the `.obb`) in `ROMandOBBfileHere` and run `build.sh` again: it extracts them and packs everything into the executable.
+Without a ROM in `ROMandOBBfileHere` (and no `assets` extracted earlier), `dist/DragonQuestIV` holds only the PC version's additions, with an empty `dist/ROMandOBBfileHere` folder beside it: the layout of a release. The game then reads the ROM and `.obb` put in that folder each time it starts (an `.nds`, not a `.zip`). To pack the data into the executable instead, put the ROM (and the `.obb`) in the project's `ROMandOBBfileHere` and run `build.sh` again.
 
 To play, the computer needs the same 32-bit libraries at run time (not their headers); systems with Steam installed usually have them. C++ and GCC's own libraries are built into the executable.
 
