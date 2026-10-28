@@ -105,7 +105,7 @@ void func_02074d84(UnkList* list) {
 }
 
 BOOL func_02074d94(UnkSndHeap* heap, void* frmHeap) {
-    func_02067dec(&heap->sectionList, 0xC);
+    func_02067dec(&heap->sectionList, offsetof(UnkSndHeapSection, link)); /* 0x0C on the DS */
     heap->frmHeap = frmHeap;
 
     if (!func_02074dc8(heap)) {

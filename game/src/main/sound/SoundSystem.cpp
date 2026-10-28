@@ -141,8 +141,15 @@ ARM void DsSoundSystem::unkfunc_020865f4(void* file, int flag)
 {
     arcFileName_ = file;
     useStream_ = flag;
-    heapMemory_ = dssAlloc(&g_appHeap, 0x9b000, 0x20);
-    heap_ = func_02074bd8(heapMemory_, 0x9b000);
+#ifdef DQIV_NATIVE
+    // The sound heap's own blocks and players are larger with 64-bit
+    // pointers: they get twice the DS's room there.
+    const int size = sizeof(void*) > 4 ? 0x9b000 * 2 : 0x9b000;
+#else
+    const int size = 0x9b000;
+#endif
+    heapMemory_ = dssAlloc(&g_appHeap, size, 0x20);
+    heap_ = func_02074bd8(heapMemory_, size);
     unkfunc_02086634();
 }
 

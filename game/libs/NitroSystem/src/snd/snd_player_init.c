@@ -218,8 +218,9 @@ void func_02073598(void)
     UnkSndSeqPlayer* player;
     UnkSndPlayerGroupState* group;
 
-    func_02067dec(&data_021122f8, 0x14);
-    func_02067dec(&data_021122ec, 0x14);
+    /* The links' offsets, 0x14 and 0x0C on the DS (larger with 64-bit pointers). */
+    func_02067dec(&data_021122f8, offsetof(UnkSndSeqPlayer, prioLink));
+    func_02067dec(&data_021122ec, offsetof(UnkSndSeqPlayer, prioLink));
 
     player = data_02112304;
     for (i = 0; i < 16; i++, player++) {
@@ -230,7 +231,7 @@ void func_02073598(void)
 
     group = data_02112744;
     for (i = 0; i < 32; i++, group++) {
-        func_02067dec(&group->playerList, 0xc);
+        func_02067dec(&group->playerList, offsetof(UnkSndSeqPlayer, unk_0c));
         func_02067dec(&group->heapList, 0);
         group->volume = 0x7f;
         group->playableSeqCount = 1;

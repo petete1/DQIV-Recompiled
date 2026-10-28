@@ -37,9 +37,9 @@ void func_02068054(UnkFndHeapHead* heap, u32 signature, void* start, void* end, 
     heap->unk_1c = end;
     heap->unk_20 = 0;
     heap->unk_20 = (heap->unk_20 & ~0xff) | (option & 0xff);
-    func_02067dec(&heap->unk_0c, 4);
+    func_02067dec(&heap->unk_0c, offsetof(UnkFndHeapHead, unk_04)); /* 4 on the DS */
     if (!data_0210ced4) {
-        func_02067dec(&data_0210ced8, 4);
+        func_02067dec(&data_0210ced8, offsetof(UnkFndHeapHead, unk_04));
         data_0210ced4 = TRUE;
     }
     func_02067e30(func_0206802c(heap), heap);
