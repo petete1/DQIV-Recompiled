@@ -1,4 +1,5 @@
 #include "GameWindow.hpp"
+#include "DebugTools.hpp"
 #include "AudioOutput.hpp"
 #include "GlLoader.hpp"
 #include "Input.hpp"
@@ -20,7 +21,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2};
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3};
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -255,6 +256,24 @@ void GameWindow::drawInterface(int width,int height) {
         }
         gpu_->drawOverlay(overlayFps,fpsPicture_->pixels(),fpsPicture_->width(),fpsPicture_->height(),rebuild,
             int(std::lround(10*scale)),int(std::lround(10*scale)),width,height);
+    }
+    // Debug menu: the position overlay, below the FPS.
+    if(const auto debug=debugOverlayText();!debug.empty()) {
+        std::vector<std::string> lines;
+        for(std::size_t start=0;start<debug.size();) {
+            const auto end=debug.find('\n',start);
+            lines.push_back(debug.substr(start,end==std::string::npos?std::string::npos:end-start));
+            if(end==std::string::npos)break;
+            start=end+1;
+        }
+        const int size=int(std::lround(14*scale)),line=size*5/4;
+        if(!debugPicture_||debugPicture_->height()!=int(lines.size())*line+size/2)
+            debugPicture_=std::make_unique<TextCanvas>(int(std::lround(330*scale)),int(lines.size())*line+size/2);
+        debugPicture_->clear(0xa0000000);
+        for(std::size_t i=0;i<lines.size();++i)
+            debugPicture_->text(size/2,size/4+int(i)*line,lines[i],size,0xffe8e8e8,false,0,debugPicture_->width()-size);
+        gpu_->drawOverlay(overlayDebug,debugPicture_->pixels(),debugPicture_->width(),debugPicture_->height(),true,
+            int(std::lround(10*scale)),int(std::lround(46*scale)),width,height);
     }
     drawToast(width,height,scale);
 }

@@ -1,6 +1,9 @@
 #pragma ipa file
 #include "main/fld/FldCollision.hpp"
 #include "main/fld/FldStage.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 #include "main/menu/MenuManager.hpp"
 
 static int g_floor_ret;
@@ -99,6 +102,13 @@ ARM void FldCollision::computeCollWall(const dss::Fix32Vector3& oldPos, const ds
     unsigned short count;
     COLL_HEADER* coll = m_fld->m_coll;
     m_id = -1;
+#ifdef DQIV_DEBUG_MENU
+    // Debug menu: through walls, the step is taken as it is.
+    if (pc::debugState().walkThroughWalls) {
+        retPos = newPos;
+        return;
+    }
+#endif
     retPos = oldPos;
     m_searchLen2.value = 0x7fffffff;
     unsigned short start = coll->floor_poly_size;

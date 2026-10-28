@@ -24,6 +24,7 @@
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SETTING.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ACHIEVEMENTS.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CHEATS.hpp"
+#include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_DEBUG.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CAREER.hpp"
 
 // global instances of the town menus
@@ -54,5 +55,8 @@ TownMenu_OPERATION_SETTING gTownMenu_OPERATION_SETTING;
 #ifdef DQIV_NATIVE
 TownMenu_OPERATION_ACHIEVEMENTS gTownMenu_OPERATION_ACHIEVEMENTS;
 TownMenu_OPERATION_CHEATS gTownMenu_OPERATION_CHEATS;
+#endif
+#ifdef DQIV_DEBUG_MENU
+TownMenu_OPERATION_DEBUG gTownMenu_OPERATION_DEBUG;
 #endif
 TownMenu_OPERATION_CAREER gTownMenu_OPERATION_CAREER;

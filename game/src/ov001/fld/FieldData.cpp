@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "ov001/fld/FieldData.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 #ifdef DQIV_NATIVE
 #include "DualScreen.hpp"
 #endif
@@ -8661,6 +8664,12 @@ ARM void fld::FieldData::setPosition(dss::Fix32Vector3& pos)
 
 ARM bool fld::FieldData::isEnable(int bx, int by)
 {
+#ifdef DQIV_DEBUG_MENU
+    // Debug menu: through walls, the world map is open everywhere.
+    if (pc::debugState().walkThroughWalls) {
+        return true;
+    }
+#endif
     for (int i = 0; i < SYMBOL_NUM_MAX; i++) {
         WorldSymbolData* pSymbolData = &m_world_symbol.m_symbol_data[i];
         if (pSymbolData->id == 1 && cmn::g_extraMapLink.checkEraseSymbolNo(pSymbolData->uid) != 1) {

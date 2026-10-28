@@ -49,6 +49,7 @@ private:
     unsigned fpsFrames_=0,fpsShown_=0;
     bool running_=true,stretch_=false,screenshot_=false,hidden_=false,settingsUsed_=false,fpsChanged_=true,suppressInput_=false;
     std::unique_ptr<TextCanvas> fpsPicture_;
+    std::unique_ptr<TextCanvas> debugPicture_; // debug menu's position overlay
     std::function<bool(float)> interpolator_;
     bool stickZoom_=false; // the right stick is zooming (saved when released)
     bool partyChatHeld_=false; // the party chat control was down at the last poll

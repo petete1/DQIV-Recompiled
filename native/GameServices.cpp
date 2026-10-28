@@ -122,6 +122,7 @@ GameServices::~GameServices() {
     allocations().clear(); heaps().clear(); g_appHeap = {}; g_compressedDataPtrs[0] = g_compressedDataPtrs[1] = nullptr; mounted = nullptr;
 }
 std::size_t liveGameAllocations() { return allocations().size(); }
+std::vector<std::uint8_t> readGameFile(const std::string& name) { return assets().contains(name) ? assets().read(name) : std::vector<std::uint8_t>{}; }
 bool isGameTextPointer(std::uintptr_t value) {
     // The original menu API encodes either a string pointer or a message ID
     // in an integer and recognizes pointers by the DS RAM address range.

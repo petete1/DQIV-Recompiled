@@ -10,7 +10,8 @@
 # to pack it.
 # The game keeps its save, settings and journal in dist/saves.
 # "./build.sh 64" builds a 64-bit program instead (x86-64; experimental), which
-# needs no 32-bit libraries.
+# needs no 32-bit libraries. "./build.sh debug" (or "./build.sh 64 debug")
+# adds the debug menu (Misc > Debug), for testing; releases never have it.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -18,7 +19,15 @@ fail() { echo; echo "ERROR: $*" >&2; exit 1; }
 
 command -v cmake >/dev/null || fail 'CMake was not found. Install CMake 3.24 or later (Arch: pacman -S cmake; Debian/Ubuntu: apt install cmake).'
 command -v ninja >/dev/null || fail 'Ninja was not found (Arch: pacman -S ninja; Debian/Ubuntu: apt install ninja-build).'
-if [ "${1:-}" = 64 ]; then
+wide= debug=OFF
+for argument in "$@"; do
+    case $argument in
+    64) wide=1 ;;
+    debug) debug=ON ;;
+    *) fail "Unknown option: $argument (use 64 and/or debug)" ;;
+    esac
+done
+if [ -n "$wide" ]; then
     preset=linux64-game build=build64
 else
     preset=linux-game build=build32
@@ -27,7 +36,7 @@ else
         fail 'The compiler cannot build 32-bit programs. Install the 32-bit libraries (Arch, with [multilib] enabled: pacman -S lib32-glibc lib32-gcc-libs; Debian/Ubuntu: apt install g++-multilib).'
 fi
 
-cmake --preset $preset || fail 'Configuration failed (see the messages above)'
+cmake --preset $preset -DDQIV_DEBUG_MENU=$debug || fail 'Configuration failed (see the messages above)'
 cmake --build --preset $preset || fail 'Build failed (see the messages above)'
 pack=$build/dqiv_pack
 inbox=ROMandOBBfileHere

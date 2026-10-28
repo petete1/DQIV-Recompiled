@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.24)
 project(DQIV_PC VERSION 1.0.0 LANGUAGES C CXX)
+# A debug menu for testing (Misc > Debug): warps, battles, party and story
+# tools. Off in normal builds and releases; ./build.sh debug turns it on.
+option(DQIV_DEBUG_MENU "Build the debug menu (Misc > Debug)" OFF)
+if(DQIV_DEBUG_MENU)
+    add_compile_definitions(DQIV_DEBUG_MENU=1)
+endif()
 if(WIN32)
     enable_language(RC)
 endif()
@@ -180,7 +186,7 @@ target_link_libraries(dqiv_nitro_system PUBLIC dqiv_core)
 # journal beside the save.
 add_executable(DragonQuestIV WIN32 native/GameBoot.cpp native/GameWindow.cpp native/GpuRenderer.cpp native/GlLoader.cpp native/Cheats.cpp
     native/TextCanvas.cpp native/InputBindings.cpp native/FramePresenter.cpp native/NitroSymbols.cpp native/DssRuntime.cpp
-    native/CrashHandler.cpp native/ErrorWindow.cpp)
+    native/CrashHandler.cpp native/ErrorWindow.cpp native/DebugTools.cpp)
 if(WIN32)
     target_sources(DragonQuestIV PRIVATE native/DragonQuestIV.rc)
     target_link_libraries(DragonQuestIV PRIVATE dqiv_game dqiv_nitro_system dqiv_sound dqiv_audio)

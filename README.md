@@ -242,6 +242,18 @@ It writes `dist/DragonQuestIV` like the 32-bit build (it replaces a 32-bit one t
 
 The original game keeps addresses in 32-bit integers and in its files, so the 64-bit program keeps the game's memory below 2 GiB (`native/LowMemory.hpp`): at start it restarts itself once without address randomization, so that its heap begins right after the executable. It has been tested through the opening, towns, the world map, battles and the menus of chapter 1; the later chapters have not been played with it yet.
 
+#### Debug menu (for testing)
+
+`./build.sh debug` (or `./build.sh 64 debug`) builds the game with a **Debug** command at the end of the Misc menu, for testing; normal builds and releases do not have it. Its pages (L / R) hold, apart from what the cheats do:
+
+- **Warp**: Zoom to any of the Zoom spell's 29 places; go to any of the game's 544 maps by its code (from the developers' list, by area), at its first entrance; walk through walls (towns, dungeons, world map); switch day and night (as the Day-Night spell); give or take the wagon, the ship and the balloon (they are moored where Zoom lands).
+- **Battle**: fight 1 to 8 of any monster, on the ground of the place where you stand.
+- **Party**: set a member's level (the level's stats and spells), teach a member every spell of their list, add or remove any character.
+- **Story**: start a chapter from its beginning; view and flip any global, area or local story flag (this can break an adventure: use a copy of the save).
+- **Tools**: an overlay with the map code, the chapter, the time of day, the position and the last message's number; play any music track or sound effect; fill the bestiary; start poker or a slot machine (from a town).
+
+Once a debug tool has changed the game, no achievement is earned until the game is started again.
+
 ### Project contents
 
 | Folder / file | Contents |
@@ -256,4 +268,4 @@ The original game keeps addresses in 32-bit integers and in its files, so the 64
 | `cmake\` | placement of the game's modules (DS overlays); the 32-bit Linux toolchain (`linux-i686.cmake`) and the step that places the modules with GCC (`overlay-object.sh`) |
 | `build.bat` | double-click to run `build.ps1` |
 | `build.ps1` | builds the game and creates `dist\DragonQuestIV.exe` |
-| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` (`./build.sh 64`: the 64-bit build) |
+| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` (`./build.sh 64`: the 64-bit build; `./build.sh debug`: with the debug menu) |

@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "main/debug/DebugInfo.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 #include "main/dss/Display.hpp"
 #include "main/cmn/CommonPartyInfo.hpp"
 #include "main/cmn/WorldLocation.hpp"
@@ -132,6 +135,11 @@ THUMB void DebugInfo::clearMessageIDs()
 
 THUMB void DebugInfo::addMessageID(int messageID)
 {
+#ifdef DQIV_DEBUG_MENU
+    if (messageID != 99999999) {
+        pc::debugState().lastMessage = messageID;
+    }
+#endif
     for (int i = 0; i < 16; i++) {
         if (messageID_[i] == -1) {
             messageID_[i] = messageID;

@@ -1,4 +1,7 @@
 #include "Achievements.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 #include "SaveStore.hpp"
 #include "HdPictures.hpp"
 #include <algorithm>
@@ -127,6 +130,9 @@ int achievementIndex(int id) {
 bool achievementUnlocked(int index) {return index>=0&&index<count&&states[index].unlocked!=0;}
 void unlockAchievement(int index) {
     if(index<0||index>=count||states[index].unlocked)return;
+#ifdef DQIV_DEBUG_MENU
+    if(debugState().used)return; // not earned with the debug menu's help
+#endif
     states[index].unlocked=std::time(nullptr);
     toasts.push_back(index);
     saveAchievements();
@@ -139,6 +145,9 @@ int achievementsUnlocked() {
 unsigned achievementProgress(int index) {return index>=0&&index<count?states[index].progress:0;}
 void addAchievementProgress(int index,unsigned bits) {
     if(index<0||index>=count||(states[index].progress&bits)==bits)return;
+#ifdef DQIV_DEBUG_MENU
+    if(debugState().used)return;
+#endif
     states[index].progress|=bits;
     saveAchievements();
 }

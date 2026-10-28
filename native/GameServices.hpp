@@ -13,6 +13,8 @@ public:
     GameServices& operator=(const GameServices&) = delete;
 };
 std::size_t liveGameAllocations();
+// A file of the game's data (empty when missing).
+std::vector<std::uint8_t> readGameFile(const std::string& name);
 std::span<const std::uint8_t> gameAllocation(const void* pointer);
 // Bytes readable from `pointer` to the end of its game allocation (0 when it is not in one).
 std::size_t gameBytesAfter(const void* pointer);

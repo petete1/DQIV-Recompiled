@@ -25,10 +25,16 @@ THUMB void MenuTemplate_town::TOWN_OPERATION(menu::MenuItem* menuitem, int activ
 #ifdef DQIV_NATIVE
         {1, 2, 0x80, 0x84, 0x56, 0x10}, // the achievements
         {1, 2, 0x20, 0x9c, 0x56, 0x10}, // the cheats
+        {1, 2, 0x80, 0x9c, 0x56, 0x10}, // the debug menu (debug builds)
 #endif
         {-1, -1, 0, 0, 0, 0},
     };
 #ifdef DQIV_NATIVE
+    // Six rows are closer (drawTacticsCommandList).
+    const int rowStep = max > 10 ? 0x12 : 0x18;
+    for (int i = 0; menu_op[i].code != 0xff; i++) {
+        menu_op[i].y = 0x24 + (i / 2) * rowStep;
+    }
     menuitem->setMenuItem(menu_op, 2, (max + 1) / 2, max);
 #else
     menuitem->setMenuItem(menu_op, 2, 5, max);

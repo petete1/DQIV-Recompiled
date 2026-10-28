@@ -9,7 +9,7 @@ struct TownMenu_OPERATION_ROOT : menu::MenuBase
 {
 #ifdef DQIV_NATIVE
     // After the game's nine commands (0..8).
-    enum { COMMAND_ACHIEVEMENTS = 9, COMMAND_CHEATS = 10 };
+    enum { COMMAND_ACHIEVEMENTS = 9, COMMAND_CHEATS = 10, COMMAND_DEBUG = 11 };
 #endif
     menu::MenuItem menuItem_;               /* 0x1C */
     menu::MenuItem cancelItem_;             /* 0x80 */
@@ -18,7 +18,7 @@ struct TownMenu_OPERATION_ROOT : menu::MenuBase
     int sortDone_;                            /* 0x1AC */
     unsigned char mode_;                    /* 0x1B0 */
 #ifdef DQIV_NATIVE
-    char command_[11];                      // two more: the achievements, the cheats
+    char command_[12];                      // the achievements, the cheats, the debug menu
 #else
     char command_[9];                       /* 0x1B1 */
 #endif
