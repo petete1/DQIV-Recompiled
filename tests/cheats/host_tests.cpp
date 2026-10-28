@@ -28,6 +28,7 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(pc::saveDirectory());
     auto& settings = pc::gameSettings();
     CHECK(!settings.cheats.battleInvincible && !settings.cheats.noRandomEncounters);
+    CHECK(!settings.cheats.guaranteedCriticals);
     CHECK(settings.cheats.expMultiplier == 1 && settings.cheats.goldMultiplier == 1);
     CHECK(settings.centredCamera);
     for (int multiplier : pc::cheatMultipliers) {
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
 
     // Actual settings serializer: missing keys, round trip, malformed values.
     pc::loadSettings();
-    settings.cheats = {true, true, 32, 8};
+    settings.cheats = {true, true, 32, 8, true};
     settings.volume = 30;
     settings.centredCamera = false;
     settings.keys[0] = 'v';
@@ -53,6 +54,7 @@ int main(int argc, char** argv) {
     settings = pc::GameSettings{};
     pc::loadSettings();
     CHECK(settings.cheats.battleInvincible && settings.cheats.noRandomEncounters);
+    CHECK(settings.cheats.guaranteedCriticals);
     CHECK(settings.cheats.expMultiplier == 32 && settings.cheats.goldMultiplier == 8);
     CHECK(settings.volume == 30 && settings.keys[0] == 'v');
     CHECK(!settings.centredCamera);
@@ -169,8 +171,10 @@ int main(int argc, char** argv) {
     CHECK(party.players[2].haveStatusInfo_.haveStatus_.exp == 0);
     CHECK(party.players[3].haveStatusInfo_.haveStatus_.exp == 0);
     status::BaseAction::doubleFlag_ = 0;
+    settings.cheats.guaranteedCriticals = true;
     CHECK(pc::runCheatAction(pc::cheatReset) == pc::cheatDone);
     CHECK(!settings.cheats.battleInvincible && !settings.cheats.noRandomEncounters);
+    CHECK(!settings.cheats.guaranteedCriticals);
     CHECK(settings.cheats.expMultiplier == 1 && settings.cheats.goldMultiplier == 1);
     CHECK(party.gold_ == 160); // Resetting switches does not undo saved edits.
 
@@ -208,12 +212,12 @@ int main(int argc, char** argv) {
     CHECK(panel.page_ == pc::pageGamepad);
     // Misc > Cheats: the cheats alone, without other pages to turn to.
     panel.openCheats();
-    CHECK(panel.page_ == pc::pageCheats && panel.rowCount_ == 14);
+    CHECK(panel.page_ == pc::pageCheats && panel.rowCount_ == 15);
     input(panel, item, PAD_BUTTON_L);
     input(panel, item, PAD_BUTTON_R);
     CHECK(panel.page_ == pc::pageCheats);
     panel.execute(item);
-    CHECK(MenuTemplate_materiel::rows == 14);
+    CHECK(MenuTemplate_materiel::rows == 15);
     item.active_ = rowIndex(panel, pc::settingCheatInvincible);
     input(panel, item, 0, 2);
     CHECK(settings.cheats.battleInvincible && !pc::takeSettingsApply());

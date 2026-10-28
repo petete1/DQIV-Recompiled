@@ -102,7 +102,7 @@ void saveSettings();
 enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize,settingPicture,settingStretch,
     settingVsync,settingQuality,settingTextures,settingVolume,settingTextSpeed,settingFrameRate,settingBattleBoost,
     settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,
-    settingCheatInvincible,settingCheatNoEncounters,settingCheatExp,settingCheatGold,settingCount};
+    settingCheatInvincible,settingCheatNoEncounters,settingCheatCriticals,settingCheatExp,settingCheatGold,settingCount};
 inline constexpr int cameraZoomMin=50,cameraZoomMax=200;
 // Changes the camera zoom by `step` (percent); for the mouse wheel and the right stick.
 void zoomCamera(int step);

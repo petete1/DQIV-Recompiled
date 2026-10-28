@@ -7,6 +7,7 @@ struct CheatSettings {
     bool noRandomEncounters = false;
     int expMultiplier = 1;
     int goldMultiplier = 1;
+    bool guaranteedCriticals = false;
 };
 
 inline constexpr int cheatMultipliers[] = {1, 2, 4, 8, 16, 32, 64};

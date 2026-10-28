@@ -112,6 +112,7 @@ void SettingsPanel::buildRows()
     case pc::pageCheats:
         rows_[rowCount_++] = pc::settingCheatInvincible;
         rows_[rowCount_++] = pc::settingCheatNoEncounters;
+        rows_[rowCount_++] = pc::settingCheatCriticals;
         rows_[rowCount_++] = pc::settingCheatExp;
         rows_[rowCount_++] = pc::settingCheatGold;
         rows_[rowCount_++] = ROW_CHEAT_GOLD;

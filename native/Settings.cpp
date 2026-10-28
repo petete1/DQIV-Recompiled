@@ -46,6 +46,7 @@ void loadSettings() {
         else if(key=="centredCamera")s.centredCamera=value!=0;
         else if(key=="cheatBattleInvincible")s.cheats.battleInvincible=value!=0;
         else if(key=="cheatNoRandomEncounters")s.cheats.noRandomEncounters=value!=0;
+        else if(key=="cheatGuaranteedCriticals")s.cheats.guaranteedCriticals=value!=0;
         else if(key=="cheatExpMultiplier")s.cheats.expMultiplier=normalizeCheatMultiplier(value);
         else if(key=="cheatGoldMultiplier")s.cheats.goldMultiplier=normalizeCheatMultiplier(value);
         else if(key.rfind("key",0)==0&&key.size()>3) {
@@ -67,6 +68,7 @@ void saveSettings() {
         <<"\nwide="<<s.wide<<"\nbattleLayout="<<s.battleLayout<<"\nbattleZoom="<<s.battleZoom<<"\nstretch="<<s.stretch<<"\nvsync="<<s.vsync<<"\nquality="<<s.quality
         <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera
         <<"\ncheatBattleInvincible="<<s.cheats.battleInvincible<<"\ncheatNoRandomEncounters="<<s.cheats.noRandomEncounters
+        <<"\ncheatGuaranteedCriticals="<<s.cheats.guaranteedCriticals
         <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier<<"\n";
     for(int i=0;i<controlCount;++i)file<<"key"<<i<<"="<<s.keys[i]<<"\npad"<<i<<"="<<s.pads[i]<<"\n";
 }
@@ -85,6 +87,7 @@ const char* japanese(const char* en) {
         {"Cheats","チート"},
         {"Battle invincible","せんとうで むてき"},
         {"No random battles","ランダムせんとう なし"},
+        {"Guaranteed criticals","かならず かいしんのいちげき"},
         {"EXP multiplier","けいけんちの ばいりつ"},
         {"Gold multiplier","ゴールドの ばいりつ"},
         {"Max gold","ゴールドを さいだいに"},
@@ -256,6 +259,7 @@ const char* settingLabel(int item,int language) {
     case settingLanguage:return pick(language,"Language","Langue","Sprache","Lingua","Idioma");
     case settingCheatInvincible:return pick(language,"Battle invincible","Invincible en combat","Im Kampf unbesiegbar","Invincibile in lotta","Invencible en combate");
     case settingCheatNoEncounters:return pick(language,"No random battles","Sans combats aléat.","Keine Zufallskämpfe","Niente scontri casuali","Sin combates aleat.");
+    case settingCheatCriticals:return pick(language,"Guaranteed criticals","Coups critiques assurés","Immer kritische Treffer","Colpi critici garantiti","Golpes críticos seguros");
     case settingCheatExp:return pick(language,"EXP multiplier","Multiplicateur EXP","EP-Multiplikator","Moltiplicatore EXP","Multiplicador EXP");
     case settingCheatGold:return pick(language,"Gold multiplier","Multiplicateur d'or","Gold-Multiplikator","Moltiplicatore oro","Multiplicador de oro");
     case settingFps:return pick(language,"Show FPS","Afficher les FPS","FPS anzeigen","Mostra FPS","Mostrar FPS");
@@ -290,6 +294,7 @@ std::string settingValue(int item,int language) {
     case settingFps:return yesNo(s.showFps,language);
     case settingCheatInvincible:return yesNo(s.cheats.battleInvincible,language);
     case settingCheatNoEncounters:return yesNo(s.cheats.noRandomEncounters,language);
+    case settingCheatCriticals:return yesNo(s.cheats.guaranteedCriticals,language);
     case settingCheatExp:return "x"+std::to_string(s.cheats.expMultiplier);
     case settingCheatGold:return "x"+std::to_string(s.cheats.goldMultiplier);
     case settingFullscreen:return yesNo(s.fullscreen,language);
@@ -356,6 +361,7 @@ bool changeSetting(int item,int step) {
     case settingFps:s.showFps=!s.showFps;return true;
     case settingCheatInvincible:s.cheats.battleInvincible=!s.cheats.battleInvincible;return true;
     case settingCheatNoEncounters:s.cheats.noRandomEncounters=!s.cheats.noRandomEncounters;return true;
+    case settingCheatCriticals:s.cheats.guaranteedCriticals=!s.cheats.guaranteedCriticals;return true;
     case settingCheatExp: {
         const int before=s.cheats.expMultiplier;
         s.cheats.expMultiplier=changeCheatMultiplier(before,step);

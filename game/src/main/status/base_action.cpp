@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "main/status/BaseAction.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 #include "main/status/BaseActionStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "main/status/BasePartyStatus.hpp"
@@ -2140,6 +2143,14 @@ THUMB int status::BaseAction::checkActorKaishin(status::CharacterStatus *target)
         if (target->haveStatusInfo_.isAllKaishin()) {
             status::BaseAction::kaishinFlag_ = 1;
         }
+#ifdef DQIV_NATIVE
+        // Cheat: the party's attacks are always critical hits (not the
+        // equipment, confusion and Oomph that rule them out above).
+        if (target->characterType_ == PLAYER && pc::gameSettings().cheats.guaranteedCriticals) {
+            status::BaseAction::kaishinFlag_ = 1;
+            status::BaseAction::missFlag_ = 0;
+        }
+#endif
         if (actionIndex_ == 0xE7 && dssrand::rand(4) == 0) {
             status::BaseAction::tsukonFlag_ = 1;
         }
