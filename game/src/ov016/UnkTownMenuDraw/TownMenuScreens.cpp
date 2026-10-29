@@ -608,36 +608,25 @@ THUMB void drawTacticsCommandList(int mode, char* command, int count)
         drawMenuFrame(0, 0x80, 0xd8, 0x20, -1);
         return;
     }
-#ifdef DQIV_NATIVE
-    // Six rows (the PC version's commands) are closer, above the command buttons.
-    const int rowStep = count > 10 ? 0x12 : 0x18;
-#else
-    const int rowStep = 0x18;
-#endif
     for (int i = 0; i < count; i++) {
 #ifdef DQIV_NATIVE
         if (command[i] == TownMenu_OPERATION_ROOT::COMMAND_ACHIEVEMENTS) {
             // The PC version's command: its name (a string) in the game's language.
             static char s_achievements[48];
             snprintf(s_achievements, sizeof(s_achievements), "%s", pc::achievementsTitle(pc::gameSettings().language));
-            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * rowStep + 0x24, (int)s_achievements);
-            continue;
-        }
-        if (command[i] == TownMenu_OPERATION_ROOT::COMMAND_DEBUG) {
-            static char s_debug[] = "Debug";
-            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * rowStep + 0x24, (int)s_debug);
+            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, (int)s_achievements);
             continue;
         }
         if (command[i] == TownMenu_OPERATION_ROOT::COMMAND_CHEATS) {
             static char s_cheats[48];
             snprintf(s_cheats, sizeof(s_cheats), "%s", pc::pageTitle(pc::pageCheats, pc::gameSettings().language));
-            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * rowStep + 0x24, (int)s_cheats);
+            drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, (int)s_cheats);
             continue;
         }
 #endif
-        drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * rowStep + 0x24, tactics[command[i]]);
+        drawCommandLabel((i % 2) * 0x50 + 0x20 + (i % 2) * 16, (i / 2) * 16 + 0x24 + (i / 2) * 8, tactics[command[i]]);
     }
-    drawMenuFrame(0x10, 0x18, 0xd0, ((count - 1) / 2) * rowStep + 0x28, -1);
+    drawMenuFrame(0x10, 0x18, 0xd0, ((count - 1) / 2) * 0x18 + 0x28, -1);
 }
 
 THUMB void drawPartyOrderIcons(char* order, int mode)

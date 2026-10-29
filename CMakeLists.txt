@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
 project(DQIV_PC VERSION 1.0.0 LANGUAGES C CXX)
-# A debug menu for testing (Misc > Debug): warps, battles, party and story
-# tools. Off in normal builds and releases; ./build.sh debug turns it on.
-option(DQIV_DEBUG_MENU "Build the debug menu (Misc > Debug)" OFF)
+# Debug tools for testing (tabs of Misc > Cheats): warps, battles, party and
+# story tools. On by default; ./build.sh nodebug leaves them out.
+option(DQIV_DEBUG_MENU "Build the debug tools (tabs of Misc > Cheats)" ON)
 if(DQIV_DEBUG_MENU)
     add_compile_definitions(DQIV_DEBUG_MENU=1)
 endif()

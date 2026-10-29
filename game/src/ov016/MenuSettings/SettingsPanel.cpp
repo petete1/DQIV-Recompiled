@@ -292,11 +292,16 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
 void SettingsPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int, int, int, int))
 {
     const int language = pc::gameSettings().language;
-    const char* pages[pc::pageCount];
+    const char* pages[8];
     for (int page = 0; page < pageCount(); page++) {
         pages[page] = pc::pageTitle(cheatsOnly_ ? pc::pageCheats : page, language);
     }
-    unkfunc_native_tabs(pages, pageCount(), cheatsOnly_ ? 0 : page_, x, w, frame);
+    int tabCount = pageCount();
+    for (int tab = 1; tabs_ && tab < tabCount_ && tab < 8; tab++) {
+        pages[tab] = tabs_[tab];
+        tabCount = tab + 1;
+    }
+    unkfunc_native_tabs(pages, tabCount, cheatsOnly_ ? 0 : page_, x, w, frame);
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     for (int i = 0; i < rowCount_; i++) {
         const int row = rows_[i];

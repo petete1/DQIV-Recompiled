@@ -64,6 +64,20 @@ void DebugPanel::open()
     buildRows();
 }
 
+void DebugPanel::showPage(int page, const char* const* tabs, int tabCount)
+{
+    page_ = page;
+    tabs_ = tabs;
+    tabCount_ = tabCount;
+    doneRow_ = -1;
+    buildRows();
+}
+
+const char* DebugPanel::pageTitle(int page)
+{
+    return s_pages[page];
+}
+
 void DebugPanel::buildRows()
 {
     rowCount_ = 0;
@@ -249,24 +263,6 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
         redraw = 1;
         doneRow_ = -1;
     }
-    // L and R turn the pages.
-    int page = page_;
-    if (dss::g_Pad.edge() & PAD_BUTTON_R) {
-        page = (page + 1) % PAGE_COUNT;
-    }
-    if (dss::g_Pad.edge() & PAD_BUTTON_L) {
-        page = (page + PAGE_COUNT - 1) % PAGE_COUNT;
-    }
-    if (page != page_) {
-        page_ = page;
-        doneRow_ = -1;
-        buildRows();
-        item.active_ = 0;
-        item.result_ = 0;
-        item.lastresult_ = 0;
-        redraw = 1;
-        return false;
-    }
     // Held left / right step through the long lists (maps, monsters, flags).
     int step = 0;
     if (dss::g_Pad.repeat() & PAD_KEY_LEFT) {
@@ -310,11 +306,8 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
 
 void DebugPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int, int, int, int))
 {
-    const char* pages[PAGE_COUNT];
-    for (int page = 0; page < PAGE_COUNT; page++) {
-        pages[page] = s_pages[page];
-    }
-    unkfunc_native_tabs(pages, PAGE_COUNT, page_, x, w, frame);
+    // The cheats window's tabs: the cheats, then these pages.
+    unkfunc_native_tabs(tabs_, tabCount_, page_ + 1, x, w, frame);
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     const auto& maps = pc::debugMaps();
     const auto& characters = pc::debugCharacters();

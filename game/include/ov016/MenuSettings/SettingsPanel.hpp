@@ -35,6 +35,9 @@ struct SettingsPanel
     int lastCheatRow_ = -1;
     int lastCheatResult_ = 0;
     bool cheatsOnly_ = false;
+    // The cheats window's own tabs (the debug pages after the cheats), when set.
+    const char* const* tabs_ = nullptr;
+    int tabCount_ = 0;
 
     void open(bool inGame);
     // The cheats page alone, during a game.

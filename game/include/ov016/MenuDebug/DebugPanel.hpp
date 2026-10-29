@@ -2,9 +2,10 @@
 #ifdef DQIV_DEBUG_MENU
 #include "main/menu/MenuBase.hpp"
 
-// The debug menu (Misc > Debug, in debug builds), in the settings' style:
-// pages turned by L / R. Left / right choose a value, A runs a line's action.
-// Its tools are in native/DebugTools.hpp.
+// The debug tools (DQIV_DEBUG_MENU), pages of the cheats window after the
+// cheats themselves (Misc > Cheats), which turns them with L / R. Left /
+// right choose a value, A runs a line's action. Its tools are in
+// native/DebugTools.hpp.
 struct DebugPanel
 {
     enum Page { PAGE_WARP, PAGE_BATTLE, PAGE_PARTY, PAGE_STORY, PAGE_TOOLS, PAGE_COUNT };
@@ -37,6 +38,11 @@ struct DebugPanel
     bool closeMenus_ = false;
 
     void open();
+    // Shows a page; the cheats window draws `tabs` (its first tab is the cheats).
+    void showPage(int page, const char* const* tabs, int tabCount);
+    const char* const* tabs_ = nullptr;
+    int tabCount_ = 0;
+    static const char* pageTitle(int page);
     void execute(menu::MenuItem& item);
     // True when the player leaves; closeMenus_ then asks to close every menu
     // (an action that changes the scene, once they are closed).

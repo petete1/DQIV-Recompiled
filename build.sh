@@ -10,8 +10,8 @@
 # to pack it.
 # The game keeps its save, settings and journal in dist/saves.
 # "./build.sh 64" builds a 64-bit program instead (x86-64; experimental), which
-# needs no 32-bit libraries. "./build.sh debug" (or "./build.sh 64 debug")
-# adds the debug menu (Misc > Debug), for testing; releases never have it.
+# needs no 32-bit libraries. The debug tools (tabs of Misc > Cheats) are
+# built in; "./build.sh nodebug" (or "./build.sh 64 nodebug") leaves them out.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -19,12 +19,12 @@ fail() { echo; echo "ERROR: $*" >&2; exit 1; }
 
 command -v cmake >/dev/null || fail 'CMake was not found. Install CMake 3.24 or later (Arch: pacman -S cmake; Debian/Ubuntu: apt install cmake).'
 command -v ninja >/dev/null || fail 'Ninja was not found (Arch: pacman -S ninja; Debian/Ubuntu: apt install ninja-build).'
-wide= debug=OFF
+wide= debug=ON
 for argument in "$@"; do
     case $argument in
     64) wide=1 ;;
-    debug) debug=ON ;;
-    *) fail "Unknown option: $argument (use 64 and/or debug)" ;;
+    nodebug) debug=OFF ;;
+    *) fail "Unknown option: $argument (use 64 and/or nodebug)" ;;
     esac
 done
 if [ -n "$wide" ]; then

@@ -5,7 +5,6 @@
 #ifdef DQIV_NATIVE
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ACHIEVEMENTS.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CHEATS.hpp"
-#include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_DEBUG.hpp"
 #endif
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_TACTICS.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SHIFT_PARTY.hpp"
@@ -261,12 +260,6 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
             close();
             gTownMenu_OPERATION_CHEATS.open();
             break;
-#ifdef DQIV_DEBUG_MENU
-        case COMMAND_DEBUG:
-            close();
-            gTownMenu_OPERATION_DEBUG.open();
-            break;
-#endif
 #endif
         case 8:
             mode_ = 8;
@@ -391,10 +384,6 @@ THUMB int TownMenu_OPERATION_ROOT::setupCommandList(char* command)
 #ifdef DQIV_NATIVE
         command[9] = COMMAND_ACHIEVEMENTS;
         command[10] = COMMAND_CHEATS;
-#ifdef DQIV_DEBUG_MENU
-        command[11] = COMMAND_DEBUG;
-        return 12;
-#endif
         return 11;
 #endif
         return 9;
@@ -407,11 +396,6 @@ THUMB int TownMenu_OPERATION_ROOT::setupCommandList(char* command)
     // The PC version's achievements and cheats, after the settings.
     command[8] = COMMAND_ACHIEVEMENTS;
     command[9] = COMMAND_CHEATS;
-#ifdef DQIV_DEBUG_MENU
-    command[10] = COMMAND_DEBUG;
-    command[11] = -1;
-    return 11;
-#endif
     command[10] = -1;
     return 10;
 #endif

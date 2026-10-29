@@ -149,7 +149,7 @@ The 80 achievements of [RetroAchievements' set](https://retroachievements.org/ga
 ### More
 
 - **Quitting**: "Quit game" in the adventure log menu, or at the bottom of Settings > Game, closes the game (keyboard or gamepad). After "End adventure" at a church, the "turn the power off" screen closes the game on A, B or Start.
-- **Cheats**: **Misc > Cheats** during a game (from [OMGitsMatt45's Debug Addon](https://github.com/OMGitsMatt45/DQIV-Recompiled-Debug-Addon)). Left / right change the switches: invincible in battle, no random battles, guaranteed critical hits, EXP and gold multipliers (x1 to x64); they are kept in `settings.ini`, not in the save, and start off. A runs the actions: maximum gold, bank balance, casino coins or mini medals; heal and revive the whole party; add an item (left / right picks it) in a chosen quantity to the bag; reset the cheats. Gold, items and recovery stay in the adventure once it is saved. `docs/cheats-testing.md` and `tests/cheats` hold its checks.
+- **Cheats**: **Misc > Cheats** during a game (its first tab; the debug tools follow) (from [OMGitsMatt45's Debug Addon](https://github.com/OMGitsMatt45/DQIV-Recompiled-Debug-Addon)). Left / right change the switches: invincible in battle, no random battles, guaranteed critical hits, EXP and gold multipliers (x1 to x64); they are kept in `settings.ini`, not in the save, and start off. A runs the actions: maximum gold, bank balance, casino coins or mini medals; heal and revive the whole party; add an item (left / right picks it) in a chosen quantity to the bag; reset the cheats. Gold, items and recovery stay in the adventure once it is saved. `docs/cheats-testing.md` and `tests/cheats` hold its checks.
 - **Quick save anywhere**: Misc > Quick save works everywhere, dungeons included, except in the middle of an action (rope, fall, stairs). The game then goes on; on the DS it stopped. Resuming the interrupted adventure from the adventure log menu brings you back to the exact same spot.
 - **Shops**: the buy list has tabs at the top: every item first, then the categories the shop sells (weapons, armour, shields, helmets, accessories, items); L / R switch tabs. Every item has its HD icon next to its name.
 - **Menus over the world**: the scenery stays on the whole 16:9 picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.
@@ -242,9 +242,9 @@ It writes `dist/DragonQuestIV` like the 32-bit build (it replaces a 32-bit one t
 
 The original game keeps addresses in 32-bit integers and in its files, so the 64-bit program keeps the game's memory below 2 GiB (`native/LowMemory.hpp`): at start it restarts itself once without address randomization, so that its heap begins right after the executable. It has been tested through the opening, towns, the world map, battles and the menus of chapter 1; the later chapters have not been played with it yet.
 
-#### Debug menu (for testing)
+#### Debug tools (for testing)
 
-`./build.sh debug` (or `./build.sh 64 debug`) builds the game with a **Debug** command at the end of the Misc menu, for testing; normal builds and releases do not have it. Its pages (L / R) hold, apart from what the cheats do:
+**Misc > Cheats** also holds debug tools, as more tabs after the cheats (L / R turns them). They are built in by default; `./build.sh nodebug` (or `./build.sh 64 nodebug`) leaves them out. Apart from what the cheats do, they hold:
 
 - **Warp**: Zoom to any of the Zoom spell's 29 places; go to any of the game's 544 maps by its code (from the developers' list, by area), at its first entrance; walk through walls (towns, dungeons, world map); switch day and night (as the Day-Night spell); give or take the wagon, the ship and the balloon (they are moored where Zoom lands).
 - **Battle**: fight 1 to 8 of any monster, on the ground of the place where you stand.
@@ -268,4 +268,4 @@ Once a debug tool has changed the game, no achievement is earned until the game 
 | `cmake\` | placement of the game's modules (DS overlays); the 32-bit Linux toolchain (`linux-i686.cmake`) and the step that places the modules with GCC (`overlay-object.sh`) |
 | `build.bat` | double-click to run `build.ps1` |
 | `build.ps1` | builds the game and creates `dist\DragonQuestIV.exe` |
-| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` (`./build.sh 64`: the 64-bit build; `./build.sh debug`: with the debug menu) |
+| `build.sh` | Linux: builds the game and creates `dist/DragonQuestIV` (`./build.sh 64`: the 64-bit build; `./build.sh nodebug`: without the debug tools) |
