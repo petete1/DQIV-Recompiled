@@ -3,6 +3,9 @@
 # When assets is incomplete, its data is extracted first from the files in
 # ROMandOBBfileHere: the European DS ROM (.nds, or a .zip holding it) and the
 # Android version's data file (.obb, optional: HD sound).
+# Without a ROM, dist\DragonQuestIV.exe holds only the PC version's additions and
+# reads the game's data in place from the ROM and .obb that the player puts in
+# dist\ROMandOBBfileHere (the layout of a release).
 # The game keeps its save, settings and journal in dist\saves.
 $ErrorActionPreference = 'Stop'
 
@@ -94,11 +97,14 @@ try {
                 if (-not $rom) { throw "$($zip.Name) contains no .nds ROM" }
             }
         }
-        if (-not $rom) { throw "Put your European Dragon Quest IV ROM (.nds, or a .zip holding it) in the $inbox folder, then build again." }
-        Write-Host "Extracting the game's data from $($rom.Name)"
-        & $pack --rom $rom.FullName assets
-        if ($LASTEXITCODE -ne 0) { throw 'ROM extraction failed' }
-        if ($unzipped) { Remove-Item -Recurse -Force $unzipped }
+        if ($rom) {
+            Write-Host "Extracting the game's data from $($rom.Name)"
+            & $pack --rom $rom.FullName assets
+            if ($LASTEXITCODE -ne 0) { throw 'ROM extraction failed' }
+            if ($unzipped) { Remove-Item -Recurse -Force $unzipped }
+        } else {
+            Write-Warning "No ROM in $inbox`: the game is compiled without its data."
+        }
     }
 
     # HD sound, from the Android version's data file (optional).
@@ -114,9 +120,29 @@ try {
     }
 
     New-Item -ItemType Directory -Force dist | Out-Null
-    & $pack build32\Release\DragonQuestIV.exe assets addons dist\DragonQuestIV.exe
-    if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
-    Write-Host 'Created dist\DragonQuestIV.exe' -ForegroundColor Green
+    if (Test-Path 'assets\data\SOUND\sound_data.sdat') {
+        & $pack build32\Release\DragonQuestIV.exe assets addons dist\DragonQuestIV.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+        Write-Host 'Created dist\DragonQuestIV.exe' -ForegroundColor Green
+    } else {
+        & $pack build32\Release\DragonQuestIV.exe addons dist\DragonQuestIV.exe
+        if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+        New-Item -ItemType Directory -Force "dist\$inbox" | Out-Null
+        # The same text as build.sh's.
+        Set-Content -Encoding ascii "dist\$inbox\README.txt" @'
+Put your own copies of the game here before starting DragonQuestIV:
+
+- Your European Dragon Quest IV ROM for Nintendo DS (game code YIVP): the
+  .nds file (extracted from its .zip, if it came in one). Required.
+- The data file of the Android version of Dragon Quest IV
+  (main.xxxxx.com.square_enix.android_googleplay.dq4.obb). Optional: it gives
+  the game the HD music and sound effects of the mobile version; without it,
+  the game uses the DS sound.
+
+The game reads them from here each time it starts; nothing is copied.
+'@
+        Write-Host "Created dist\DragonQuestIV.exe without the game's data: it reads the ROM and .obb put in dist\$inbox." -ForegroundColor Green
+    }
 } catch {
     $failed = $true
     Write-Host ''

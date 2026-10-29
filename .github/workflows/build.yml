@@ -1,0 +1,100 @@
+# Builds the three versions without the game's data (no ROM ever reaches CI)
+# on every push and pull request; a version tag (1.9, 1.8.1...) also packs the
+# release zips into a draft release, published by hand.
+name: Build
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        bits: [64, 32]
+    runs-on: ubuntu-latest
+    # Ubuntu 22.04's glibc (2.35): the game starts on older systems than the build machine's.
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CC: gcc-12
+      CXX: g++-12
+    steps:
+      - name: Install the build tools and SDL's libraries
+        run: |
+          libs="libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev
+                libwayland-dev libxkbcommon-dev libdecor-0-dev libegl-dev libgl-dev libpulse-dev libasound2-dev libudev-dev libdbus-1-dev"
+          if [ ${{ matrix.bits }} = 32 ]; then
+            dpkg --add-architecture i386
+            libs="g++-12-multilib $(for l in $libs; do printf '%s:i386 ' $l; done)"
+          fi
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git file binutils python3-pip gcc-12 g++-12 \
+            pkg-config libwayland-bin wayland-protocols $libs
+          # Ubuntu 22.04's CMake is 3.22; the game needs 3.24.
+          pip3 install cmake ninja
+      - uses: actions/checkout@v7
+      - name: Build
+        run: ./build.sh ${{ matrix.bits == 64 && '64' || '' }}
+      - name: Check the program
+        run: |
+          file dist/DragonQuestIV | grep -q "ELF ${{ matrix.bits }}-bit" || { echo "Not a ${{ matrix.bits }}-bit program"; exit 1; }
+          glibc=$(objdump -T dist/DragonQuestIV | grep -o 'GLIBC_[0-9.]*' | sort -Vu | tail -1)
+          [ "$(printf '%s\nGLIBC_2.35\n' $glibc | sort -V | tail -1)" = GLIBC_2.35 ] || { echo "Needs $glibc (more than 2.35)"; exit 1; }
+          [ $(stat -c %s dist/DragonQuestIV) -lt 50000000 ] || { echo "Game data was packed"; exit 1; }
+          test -f dist/ROMandOBBfileHere/README.txt
+          # A missing library header only leaves its feature out of SDL: catch that here.
+          config=$(ls build*/_deps/sdl3-build/include-config-*/build_config/SDL_build_config.h)
+          for d in SDL_VIDEO_DRIVER_X11 SDL_VIDEO_DRIVER_WAYLAND SDL_AUDIO_DRIVER_PULSEAUDIO SDL_AUDIO_DRIVER_ALSA HAVE_LIBUDEV_H; do
+            grep -q "#define $d 1" $config || { echo "SDL was built without $d"; exit 1; }
+          done
+          echo "OK: ${{ matrix.bits }}-bit, $glibc"
+      - name: Cheats tests
+        if: matrix.bits == 64
+        run: python3 tests/cheats/run_host_tests.py
+      - run: mkdir -p out/DragonQuestIV && cp -r dist/DragonQuestIV dist/ROMandOBBfileHere out/DragonQuestIV/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux${{ matrix.bits }}
+          path: out
+          retention-days: 14
+
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build
+        run: powershell -ExecutionPolicy Bypass -File .\build.ps1
+      - run: |
+          New-Item -ItemType Directory -Force out\DragonQuestIV | Out-Null
+          Copy-Item dist\DragonQuestIV.exe out\DragonQuestIV\
+          Copy-Item -Recurse dist\ROMandOBBfileHere out\DragonQuestIV\
+      - uses: actions/upload-artifact@v7
+        with:
+          name: win32
+          path: out
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Artifacts lose the executable bit.
+          chmod +x linux32/DragonQuestIV/DragonQuestIV linux64/DragonQuestIV/DragonQuestIV
+          for name in linux32 linux64 win32; do
+            (cd $name && zip -qr -X ../DragonQuestIV-$name-$GITHUB_REF_NAME.zip DragonQuestIV)
+          done
+          gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --generate-notes \
+            -R "$GITHUB_REPOSITORY" DragonQuestIV-*.zip
