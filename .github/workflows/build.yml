@@ -3,7 +3,13 @@
 # release zips into a draft release, published by hand.
 name: Build
 
-on: [push, pull_request, workflow_dispatch]
+# Changes that can't change the programs (docs, tests) don't build; tags always do.
+on:
+  push:
+    paths-ignore: ['**.md', 'docs/**', 'tests/**', '.gitignore']
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'tests/**', '.gitignore']
+  workflow_dispatch:
 
 permissions:
   contents: read
