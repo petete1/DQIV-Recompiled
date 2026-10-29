@@ -76,7 +76,9 @@ struct DsSoundPlayer {
 struct DsSoundSystem {
     void* heapMemory_;                               // 0x00 sound heap memory
     void* heap_;                               // 0x04 sound heap
-    unsigned char arc_[0x90];                 // 0x08 sound archive
+    // The sound archive (snd_arc.c's UnkSndArc): 0x90 bytes on the DS, 0xD0
+    // with 64-bit pointers.
+    alignas(8) unsigned char arc_[sizeof(void*) > 4 ? 0xd0 : 0x90]; // 0x08 sound archive
     int unk_98;                                 // 0x98
     void* arcFileName_;                               // 0x9C sound archive file
     int useStream_;                                 // 0xA0

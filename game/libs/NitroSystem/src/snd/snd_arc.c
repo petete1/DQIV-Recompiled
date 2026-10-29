@@ -65,6 +65,9 @@ static inline void* UnkSndArc_OffsetToPtr(const void* base, u32 offset) {
 
 UnkSndArc* data_02113290; // current archive
 
+/* The game keeps its archive in a buffer of this size (DsSoundSystem::arc_). */
+_Static_assert(sizeof(UnkSndArc) <= (sizeof(void*) > 4 ? 0xd0 : 0x90), "DsSoundSystem::arc_ is too small");
+
 void* func_02074d1c(void* heap, u32 size, void (*callback)(void*, u32, void*, u32), void* data1, u32 data2);
 
 BOOL func_020745cc(UnkSndArc* arc, void* heap, BOOL loadSymb);
