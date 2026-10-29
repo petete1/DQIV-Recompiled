@@ -1,5 +1,6 @@
 #include "HostGame.hpp"
 #include "Settings.hpp"
+#include "DualScreen.hpp"
 #include "ov016/MenuSettings/SettingsPanel.hpp"
 #include <climits>
 #include <fstream>
@@ -7,6 +8,8 @@
 #include <stdexcept>
 
 namespace {int checks = 0;}
+// The picture's settings (the window sets its width).
+pc::DualScreenSettings& pc::dualScreen() {static DualScreenSettings settings; return settings;}
 #define CHECK(expr) do {if (!(expr)) throw std::runtime_error(#expr); ++checks;} while (0)
 void frame(int, int, int, int, int) {}
 bool input(SettingsPanel& panel, menu::MenuItem& item, unsigned keys = 0, int result = 0) {

@@ -96,11 +96,11 @@ void extendProjection(std::int32_t (&m)[4][4]);
 // Towns and dungeons: how far (0..1) the bottom camera's view is moved from the
 // picture's lower half to its middle, which centres the party it follows.
 void setUnifiedCentre(double centre);
-// A point of the 16:9 battle scene (normalized device coordinates) moved to
+// A point of the wide battle scene (normalized device coordinates) moved to
 // the DS screen pixel it falls on, as the DS rasterizer snaps its vertices:
 // the parts of a monster then meet without gaps, even zoomed.
 void snapBattlePoint(float& x,float& y);
-// How much larger battle monsters are drawn (the battle zoom of 16:9
+// How much larger battle monsters are drawn (the battle zoom of wide
 // battles; 1 otherwise): their sizes on screen grow by this.
 double battleSpriteScale();
 // The battle zoom of the frame whose monster screen positions the game reads

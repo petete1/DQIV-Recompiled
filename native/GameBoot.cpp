@@ -221,8 +221,7 @@ int runGame() {
         });
         // Both DS screens become one picture, presented by the GPU.
         pc::dualScreen().unified=true;
-        pc::dualScreen().canvasWidth=384*16/9.f;
-        window.applySettings();
+        window.applySettings(); // the picture's width (GameWindow::updatePictureWidth)
         bool running=true;
         pc::GameServices services(assets);
         pc::NitroFilesystem filesystem(assets);

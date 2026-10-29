@@ -1,5 +1,7 @@
 #include "Settings.hpp"
 #include "SaveStore.hpp"
+#include "DualScreen.hpp"
+#include <cmath>
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
@@ -76,7 +78,8 @@ namespace {
 // Japanese texts, found by their English text.
 const char* japanese(const char* en) {
     static const std::unordered_map<std::string_view,const char*> texts={
-        {"16:9 fills the screen; DS screens keeps the original layout.","16:9は がめんいっぱい、DSのがめんは もとのならび。"},
+        {"Wide fills the screen without stretching; DS screens keeps the original layout.","ワイドは がめんいっぱい（ひきのばさない）、DSのがめんは もとのならび。"},
+        {"Wide","ワイド"},
         {"3D quality","3Dのひんしつ"},
         {"3D supersampling; Auto adapts to the graphics card.","3Dのスーパーサンプリング。オートは グラフィックカードにあわせる。"},
         {"A (confirm)","A (けってい)"},
@@ -299,7 +302,17 @@ std::string settingValue(int item,int language) {
     case settingCheatGold:return "x"+std::to_string(s.cheats.goldMultiplier);
     case settingFullscreen:return yesNo(s.fullscreen,language);
     case settingWindowSize:return std::to_string(windowSizes[s.windowSize][0])+"x"+std::to_string(windowSizes[s.windowSize][1]);
-    case settingPicture:return s.wide?"16:9":pick(language,"DS screens","Écrans DS","DS-Bildschirme","Schermi DS","Pantallas DS");
+    case settingPicture: {
+        if(!s.wide)return pick(language,"DS screens","Écrans DS","DS-Bildschirme","Schermi DS","Pantallas DS");
+        // The shape in use: the nearest common one, else width:height.
+        const float shape=dualScreen().canvasWidth/384;
+        struct Named {float shape;const char* name;};
+        static constexpr Named names[]={{4.f/3,"4:3"},{3.f/2,"3:2"},{16.f/10,"16:10"},{16.f/9,"16:9"},{2.37f,"21:9"}};
+        std::string name;
+        for(const auto& n:names)if(std::fabs(shape-n.shape)<(n.shape>2?0.05f:0.02f))name=n.name;
+        if(name.empty())name=std::to_string(int(std::lround(shape*100)))+":100";
+        return std::string(pick(language,"Wide","Large","Breit","Panoramico","Panorámica"))+" ("+name+")";
+    }
     case settingBattleView:
         if(s.battleLayout==battleLarge)return pick(language,"Large","Grand","Groß","Grande","Grande");
         if(s.battleLayout==battlePanorama)return pick(language,"Panorama","Panorama","Panorama","Panorama","Panorama");
@@ -339,7 +352,7 @@ const char* settingHint(int item,int language) {
     case settingBattleView:return pick(language,"Large: monsters zoomed to fill the battle area; Panorama: the zoom below.",
         "Grand : monstres agrandis pour remplir la zone de combat ; Panorama : le zoom ci-dessous.","Groß: Monster vergrößert, um den Kampfbereich zu füllen; Panorama: der Zoom unten.",
         "Grande: mostri ingranditi per riempire l'area di battaglia; Panorama: lo zoom sotto.","Grande: monstruos ampliados para llenar la zona de combate; Panorama: el zoom de abajo.");
-    case settingPicture:return pick(language,"16:9 fills the screen; DS screens keeps the original layout.","16:9 remplit l'écran ; Écrans DS garde la disposition d'origine.","16:9 füllt den Bildschirm; DS-Bildschirme: Original.","16:9 riempie lo schermo; Schermi DS: disposizione originale.","16:9 llena la pantalla; Pantallas DS: disposición original.");
+    case settingPicture:return pick(language,"Wide fills the screen without stretching; DS screens keeps the original layout.","Large remplit l'écran sans étirer ; Écrans DS garde la disposition d'origine.","Breit füllt den Bildschirm ohne Verzerrung; DS-Bildschirme: Original.","Panoramico riempie lo schermo senza deformare; Schermi DS: originale.","Panorámica llena la pantalla sin estirar; Pantallas DS: disposición original.");
     case settingCentredCamera:return pick(language,"Towns and dungeons: the party in the middle of the picture (No: as on the DS).",
         "Villes et donjons : le groupe au milieu de l'image (Non : comme sur la DS).","Städte und Dungeons: die Gruppe in der Bildmitte (Nein: wie auf dem DS).",
         "Città e dungeon: il gruppo al centro dell'immagine (No: come sul DS).","Pueblos y mazmorras: el grupo en el centro de la imagen (No: como en DS).");

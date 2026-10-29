@@ -13,7 +13,7 @@ struct GameSettings {
     bool showFps=false;
     bool fullscreen=false;
     int windowSize=1;        // index into windowSizes
-    bool wide=true;          // 16:9 picture, or the DS screens' width
+    bool wide=true;          // a wide picture (the screen's shape), or the DS screens' width
     int battleLayout=0;      // battles: BattleLayout
     int battleZoom=175;      // percent: the 16:9 battle scene seen closer (100, 125, 150, 175)
     bool stretch=false;

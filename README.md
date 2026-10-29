@@ -2,7 +2,7 @@
 
 # Dragon Quest IV: native PC version
 
-The original Nintendo DS game (built from its decompilation) runs natively on Windows and Linux, without an emulator. It has HD rendering, both screens joined into one 16:9 picture, the mobile version's sound and the party chat back in every language.
+The original Nintendo DS game (built from its decompilation) runs natively on Windows and Linux, without an emulator. It has HD rendering, both screens joined into one wide picture that takes the shape of your screen (16:9, 16:10, 21:9…) without stretching, the mobile version's sound and the party chat back in every language.
 
 ![The town in HD, 16:9](docs/images/town.jpg)
 
@@ -43,7 +43,7 @@ All keys and gamepad buttons can be changed in the settings.
 Letters follow the active keyboard layout (AZERTY included).
 
 Function keys:
-- **F8**: 16:9 picture or the DS screens' width.
+- **F8**: wide picture or the DS screens' width.
 - **F9**: window size.
 - **F10**: stretch or keep proportions.
 - **F11**: fullscreen.
@@ -53,7 +53,7 @@ Function keys:
 
 ### Both screens become one picture
 
-On the DS, towns and dungeons are drawn on two screens, each at 30 frames per second (the bottom screen on odd frames, the top one on even frames). Here every frame is drawn whole by the bottom camera, extended over the top screen: one seamless picture at 60 frames per second. In 16:9 the scene widens at the sides.
+On the DS, towns and dungeons are drawn on two screens, each at 30 frames per second (the bottom screen on odd frames, the top one on even frames). Here every frame is drawn whole by the bottom camera, extended over the top screen: one seamless picture at 60 frames per second. In the wide picture the scene widens at the sides.
 
 ![The DS screens beside the PC picture, same moment](docs/images/ds-vs-pc.jpg)
 
@@ -80,9 +80,9 @@ The camera zooms from 50% to 200% in towns, dungeons and on the world map. Use t
 
 ![Camera zoom, 70% and 170%](docs/images/camera-zoom.jpg)
 
-### 16:9 battles
+### Wide battles
 
-Battles fill the 16:9 picture: the party's windows are drawn a little smaller at the top, the commands keep their place at the bottom, and the scene is zoomed so that the monsters fill the room between them, groups of four included (up to twice their DS size; 1.15 to 1.5 times for the tallest bosses such as Estark, seen whole). The monsters' names, the damage numbers and the light on the targeted monster follow the monsters outside the DS bottom screen, above it and beside it; monsters and names never touch the windows or the menus. Settings > Display > Battle display also offers **Panorama** (the scene over the whole picture, with the party's windows on top; Battle zoom brings the monsters closer, bosses are fitted under the windows) and **DS screens** (the original two screens).
+Battles fill the wide picture (the Large layout needs at least 16:10; narrower screens use the normal one): the party's windows are drawn a little smaller at the top, the commands keep their place at the bottom, and the scene is zoomed so that the monsters fill the room between them, groups of four included (up to twice their DS size; 1.15 to 1.5 times for the tallest bosses such as Estark, seen whole). The monsters' names, the damage numbers and the light on the targeted monster follow the monsters outside the DS bottom screen, above it and beside it; monsters and names never touch the windows or the menus. Settings > Display > Battle display also offers **Panorama** (the scene over the whole picture, with the party's windows on top; Battle zoom brings the monsters closer, bosses are fitted under the windows) and **DS screens** (the original two screens).
 
 ![A 16:9 battle](docs/images/battle.jpg)
 
@@ -134,7 +134,7 @@ The same screen, in the game's style, opens from "Settings" in the adventure log
   - fullscreen and window size;
   - frames per second: 60, 120, 144, 165, 240 or unlimited;
   - camera zoom;
-  - 16:9 or DS screens, stretching;
+  - wide (the screen's or window's shape, from 4:3 to 21:9 — 2.4:1 — with bars beyond) or DS screens, stretching;
   - battle display: Large (default: monsters zoomed to fill the battle area), Panorama (zoom set below), or the DS's two original screens;
   - battle zoom (Panorama battles): 100%, 125%, 150% or 175% (default), the monsters seen closer;
   - vertical sync (Windows; on Linux the compositor syncs the picture), 3D quality, smooth textures (No: the original DS pixels, without upscaling or filtering).
@@ -152,9 +152,9 @@ The 80 achievements of [RetroAchievements' set](https://retroachievements.org/ga
 - **Cheats**: **Misc > Cheats** during a game (its first tab; the debug tools follow) (from [OMGitsMatt45's Debug Addon](https://github.com/OMGitsMatt45/DQIV-Recompiled-Debug-Addon)). Left / right change the switches: invincible in battle, no random battles, guaranteed critical hits, EXP and gold multipliers (x1 to x64); they are kept in `settings.ini`, not in the save, and start off. A runs the actions: maximum gold, bank balance, casino coins or mini medals; heal and revive the whole party; add an item (left / right picks it) in a chosen quantity to the bag; reset the cheats. Gold, items and recovery stay in the adventure once it is saved. `docs/cheats-testing.md` and `tests/cheats` hold its checks.
 - **Quick save anywhere**: Misc > Quick save works everywhere, dungeons included, except in the middle of an action (rope, fall, stairs). The game then goes on; on the DS it stopped. Resuming the interrupted adventure from the adventure log menu brings you back to the exact same spot.
 - **Shops**: the buy list has tabs at the top: every item first, then the categories the shop sells (weapons, armour, shields, helmets, accessories, items); L / R switch tabs. Every item has its HD icon next to its name.
-- **Menus over the world**: the scenery stays on the whole 16:9 picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.
+- **Menus over the world**: the scenery stays on the whole wide picture, frozen as on the DS, and the windows float over it. There are no black bars or stacked DS screens.
 - **Two-screen scenes** (logos, casino, monster book, adventure log menus): both screens are placed side by side and enlarged. When one screen stays empty, the other is shown alone at twice the size.
-- **Transitions**: the shattering effect when a battle starts covers the whole 16:9 picture. The ending's staff roll scrolls from one screen to the other without a break.
+- **Transitions**: the shattering effect when a battle starts covers the whole wide picture. The ending's staff roll scrolls from one screen to the other without a break.
 - **Wireless**: the DS radio is emulated with no other console in range (tag mode, exchanges). The game behaves like a single DS and stays fully playable.
 
 

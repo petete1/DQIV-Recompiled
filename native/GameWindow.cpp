@@ -94,7 +94,7 @@ void GameWindow::applySettings() {
     SDL_GL_SetSwapInterval(verticalSync(s)?1:0);
     int interval=0;SDL_GL_GetSwapInterval(&interval);
     std::printf("Vertical sync: %d\n",interval);
-    dualScreen().canvasWidth=s.wide?384*16/9.f:256.f;
+    updatePictureWidth();
     stretch_=s.stretch;
     gpu_->settings.autoQuality=s.quality==0;
     gpu_->settings.supersample=s.quality==0?4:s.quality;
@@ -112,6 +112,16 @@ void GameWindow::canvasPixels(const GpuLayout& layout,float& width,float& height
     const float scale=std::min(w/layout.canvasWidth,h/layout.canvasHeight);
     width=layout.canvasWidth*scale;height=layout.canvasHeight*scale;
 }
+void GameWindow::updatePictureWidth() {
+    // The two DS screens are 384 pixels tall: the wide picture takes the
+    // window's (or the screen's) shape around them, from 4:3 to 2.4:1 (the
+    // "21:9" screens: 2560x1080, 3440x1440; the DS world was not drawn wider:
+    // bars beyond), without stretching.
+    if(!gameSettings().wide) {dualScreen().canvasWidth=256.f;return;}
+    int w=0,h=0;SDL_GetWindowSizeInPixels(window_,&w,&h);
+    const float shape=h>0?std::clamp(float(w)/float(h),4.f/3.f,2.4f):16.f/9.f;
+    dualScreen().canvasWidth=384*shape;
+}
 bool GameWindow::poll() {
     // Settings changed in the game's own menu.
     if(takeSettingsApply())applySettings();
@@ -120,6 +130,8 @@ bool GameWindow::poll() {
     SDL_Event e;
     while(SDL_PollEvent(&e)) {
         if(e.type==SDL_EVENT_QUIT)running_=false;
+        // Full screen, another window size: the wide picture follows its shape.
+        if(e.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)updatePictureWidth();
         if(e.type==SDL_EVENT_MOUSE_WHEEL&&e.wheel.y!=0) {
             // The mouse wheel zooms the camera.
             zoomCamera(e.wheel.y>0?10:-10);
@@ -167,9 +179,9 @@ bool GameWindow::poll() {
             // Camera: keypad + / - zoom.
             if(key==SDLK_KP_PLUS||key==SDLK_KP_MINUS) {zoomCamera(key==SDLK_KP_PLUS?10:-10);if(settingsUsed_)saveSettings();}
             if(key==SDLK_F8) {
-                // 16:9 picture, or the DS screens' own width.
-                s.wide=!(dualScreen().canvasWidth>256);
-                dualScreen().canvasWidth=s.wide?384*16/9.f:256.f;
+                // The wide picture, or the DS screens' own width.
+                s.wide=!s.wide;
+                updatePictureWidth();
                 if(settingsUsed_)saveSettings();
             }
             if(key==SDLK_F9) {
