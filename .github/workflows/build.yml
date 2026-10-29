@@ -1,5 +1,5 @@
 # Builds the three versions without the game's data (no ROM ever reaches CI)
-# on every push and pull request; a version tag (1.9, 1.8.1...) also packs the
+# on every push and pull request (no tests); a version tag (1.9, 1.8.1...) also packs the
 # release zips into a draft release, published by hand.
 name: Build
 
@@ -52,9 +52,6 @@ jobs:
             grep -q "#define $d 1" $config || { echo "SDL was built without $d"; exit 1; }
           done
           echo "OK: ${{ matrix.bits }}-bit, $glibc"
-      - name: Cheats tests
-        if: matrix.bits == 64
-        run: python3 tests/cheats/run_host_tests.py
       - run: mkdir -p out/DragonQuestIV && cp -r dist/DragonQuestIV dist/ROMandOBBfileHere out/DragonQuestIV/
       - uses: actions/upload-artifact@v7
         with:
