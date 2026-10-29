@@ -242,6 +242,10 @@ It writes `dist/DragonQuestIV` like the 32-bit build (it replaces a 32-bit one t
 
 The original game keeps addresses in 32-bit integers and in its files, so the 64-bit program keeps the game's memory below 2 GiB (`native/LowMemory.hpp`): at start it restarts itself once without address randomization, so that its heap begins right after the executable. It has been tested through the opening, towns, the world map, battles and the menus of chapter 1; the later chapters have not been played with it yet.
 
+#### Automatic builds
+
+GitHub builds the three versions (Linux 32-bit and 64-bit, Windows) without the game's data on every push and pull request: see the repository's Actions tab, where each run's builds can be downloaded for 14 days. The Linux builds are made on Ubuntu 22.04, so they start on systems with glibc 2.35 or later. Pushing a version tag (`git tag 1.9 && git push fork 1.9`) also packs `DragonQuestIV-linux32-1.9.zip`, `DragonQuestIV-linux64-1.9.zip` and `DragonQuestIV-win32-1.9.zip` into a draft release, to check and publish by hand (`.github/workflows/build.yml`).
+
 #### Debug tools (for testing)
 
 **Misc > Cheats** also holds debug tools, as more tabs after the cheats (L / R turns them). They are built in by default; `./build.sh nodebug` (or `./build.sh 64 nodebug`) leaves them out. Apart from what the cheats do, they hold:
