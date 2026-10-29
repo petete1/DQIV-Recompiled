@@ -46,7 +46,8 @@ jobs:
         with:
           fetch-depth: 0 # the tags: the version shown in the game
       - name: Build
-        run: ./build.sh ${{ matrix.bits == 64 && '64' || '' }}
+        # The container's user doesn't own the checkout: git (the version) refuses it otherwise.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE" && ./build.sh ${{ matrix.bits == 64 && '64' || '' }}
       - name: Check the program
         run: |
           file dist/DragonQuestIV | grep -q "ELF ${{ matrix.bits }}-bit" || { echo "Not a ${{ matrix.bits }}-bit program"; exit 1; }
@@ -59,7 +60,7 @@ jobs:
           for d in SDL_VIDEO_DRIVER_X11 SDL_VIDEO_DRIVER_WAYLAND SDL_AUDIO_DRIVER_PULSEAUDIO SDL_AUDIO_DRIVER_ALSA HAVE_LIBUDEV_H; do
             grep -q "#define $d 1" $config || { echo "SDL was built without $d"; exit 1; }
           done
-          version=$(grep -o '"[^"]*"' build*/generated/Version.cpp)
+          version=$(grep -o 'return "[^"]*"' build*/generated/Version.cpp | cut -d'"' -f2)
           case $version in *unknown*|*dirty*) echo "Version $version"; exit 1 ;; esac
           echo "OK: ${{ matrix.bits }}-bit, $glibc, version $version"
       - run: mkdir -p out/DragonQuestIV && cp -r dist/DragonQuestIV dist/ROMandOBBfileHere out/DragonQuestIV/
