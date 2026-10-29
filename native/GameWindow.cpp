@@ -8,6 +8,7 @@
 #include "Settings.hpp"
 #include "Achievements.hpp"
 #include "HdPictures.hpp"
+#include "Version.hpp"
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -21,7 +22,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3};
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4};
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -286,6 +287,18 @@ void GameWindow::drawInterface(int width,int height) {
             debugPicture_->text(size/2,size/4+int(i)*line,lines[i],size,0xffe8e8e8,false,0,debugPicture_->width()-size);
         gpu_->drawOverlay(overlayDebug,debugPicture_->pixels(),debugPicture_->width(),debugPicture_->height(),true,
             int(std::lround(10*scale)),int(std::lround(46*scale)),width,height);
+    }
+    if(versionShown_) {
+        const int size=int(std::lround(14*scale)),margin=int(std::lround(10*scale));
+        const bool rebuild=!versionPicture_||versionPicture_->height()!=size*3/2;
+        if(rebuild) {
+            const int textWidth=TextCanvas(1,1).measure(version(),size);
+            versionPicture_=std::make_unique<TextCanvas>(textWidth+size,size*3/2);
+            versionPicture_->clear(0xa0000000);
+            versionPicture_->text(size/2,size/4,version(),size,0xffb0b0b0);
+        }
+        gpu_->drawOverlay(overlayVersion,versionPicture_->pixels(),versionPicture_->width(),versionPicture_->height(),rebuild,
+            width-versionPicture_->width()-margin,height-versionPicture_->height()-margin,width,height);
     }
     drawToast(width,height,scale);
 }

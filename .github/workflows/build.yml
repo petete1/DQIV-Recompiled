@@ -43,6 +43,8 @@ jobs:
           # Ubuntu 22.04's CMake is 3.22; the game needs 3.24.
           pip3 install cmake ninja
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the tags: the version shown in the game
       - name: Build
         run: ./build.sh ${{ matrix.bits == 64 && '64' || '' }}
       - name: Check the program
@@ -57,7 +59,9 @@ jobs:
           for d in SDL_VIDEO_DRIVER_X11 SDL_VIDEO_DRIVER_WAYLAND SDL_AUDIO_DRIVER_PULSEAUDIO SDL_AUDIO_DRIVER_ALSA HAVE_LIBUDEV_H; do
             grep -q "#define $d 1" $config || { echo "SDL was built without $d"; exit 1; }
           done
-          echo "OK: ${{ matrix.bits }}-bit, $glibc"
+          version=$(grep -o '"[^"]*"' build*/generated/Version.cpp)
+          case $version in *unknown*|*dirty*) echo "Version $version"; exit 1 ;; esac
+          echo "OK: ${{ matrix.bits }}-bit, $glibc, version $version"
       - run: mkdir -p out/DragonQuestIV && cp -r dist/DragonQuestIV dist/ROMandOBBfileHere out/DragonQuestIV/
       - uses: actions/upload-artifact@v7
         with:
@@ -70,6 +74,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the tags: the version shown in the game
       - name: Build
         run: powershell -ExecutionPolicy Bypass -File .\build.ps1
       - run: |

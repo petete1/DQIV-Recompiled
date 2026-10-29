@@ -186,7 +186,12 @@ target_link_libraries(dqiv_nitro_system PUBLIC dqiv_core)
 # journal beside the save.
 add_executable(DragonQuestIV WIN32 native/GameBoot.cpp native/GameWindow.cpp native/GpuRenderer.cpp native/GlLoader.cpp native/Cheats.cpp
     native/TextCanvas.cpp native/InputBindings.cpp native/FramePresenter.cpp native/NitroSymbols.cpp native/DssRuntime.cpp
-    native/CrashHandler.cpp native/ErrorWindow.cpp native/DebugTools.cpp)
+    native/CrashHandler.cpp native/ErrorWindow.cpp native/DebugTools.cpp "${CMAKE_BINARY_DIR}/generated/Version.cpp")
+# The version shown on the first screens and in the journal, from git at every build.
+add_custom_target(dqiv_version BYPRODUCTS "${CMAKE_BINARY_DIR}/generated/Version.cpp"
+    COMMAND "${CMAKE_COMMAND}" -DSOURCE="${CMAKE_SOURCE_DIR}" -DOUTPUT="${CMAKE_BINARY_DIR}/generated/Version.cpp"
+        -P "${CMAKE_SOURCE_DIR}/cmake/version.cmake")
+add_dependencies(DragonQuestIV dqiv_version)
 if(WIN32)
     target_sources(DragonQuestIV PRIVATE native/DragonQuestIV.rc)
     target_link_libraries(DragonQuestIV PRIVATE dqiv_game dqiv_nitro_system dqiv_sound dqiv_audio)

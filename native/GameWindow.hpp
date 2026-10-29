@@ -37,6 +37,8 @@ public:
     int frameRateTarget() const; // 0: unlimited
     // Applies gameSettings() to the window, the renderer and the audio.
     void applySettings();
+    // The version, in a corner of the first screens, until an adventure is chosen.
+    void hideVersion() {versionShown_=false;}
 private:
     // The wide picture takes the window's shape (4:3 to 2.4:1, the ultrawides); see DualScreen.hpp.
     void updatePictureWidth();
@@ -52,6 +54,8 @@ private:
     bool running_=true,stretch_=false,screenshot_=false,hidden_=false,settingsUsed_=false,fpsChanged_=true,suppressInput_=false;
     std::unique_ptr<TextCanvas> fpsPicture_;
     std::unique_ptr<TextCanvas> debugPicture_; // debug menu's position overlay
+    std::unique_ptr<TextCanvas> versionPicture_;
+    bool versionShown_=true;
     std::function<bool(float)> interpolator_;
     bool stickZoom_=false; // the right stick is zooming (saved when released)
     bool partyChatHeld_=false; // the party chat control was down at the last poll

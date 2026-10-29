@@ -44,6 +44,7 @@ extern "C" {
 #include "main/global/GlobalDQ4.hpp"
 #include "main/achievement/AchievementTriggers.hpp"
 #include "Achievements.hpp"
+#include "Version.hpp"
 #include <array>
 #include <cctype>
 #include <map>
@@ -211,6 +212,7 @@ int runGame() {
     }
     try {
         std::cout.setf(std::ios::unitbuf);
+        std::cout<<"Version: "<<pc::version()<<'\n';
         pc::loadSettings();
         pc::loadAchievements();
         preferFastCores();
@@ -286,7 +288,9 @@ int runGame() {
         for(unsigned frame=0;running;++frame) {
             // The journal keeps the scene changes (battle, town, field...).
             const auto currentScene=int(g_GlobalDQ4.unkfunc_0205810c());
-            if(scene!=currentScene) {scene=currentScene;std::cout<<"Scene "<<scene<<", frame "<<frame<<'\n';}
+            if(scene!=currentScene) {
+                if(scene==3)window.hideVersion(); // leaving the adventure log menu
+                scene=currentScene;std::cout<<"Scene "<<scene<<", frame "<<frame<<'\n';}
             threads.checkErrors();
             {
                 pc::ProfileScope step("frame");
