@@ -1,2 +1,3 @@
-// The game's icon (Explorer, taskbar and window).
-1 ICON "../icon/DragonQuestIV.ico"
+// The game's icon (Explorer, taskbar and window): the DS banner icon from the
+// ROM, 32x32 pixel art scaled up without smoothing.
+1 ICON "../icon/DragonQuestIV-DS.ico"

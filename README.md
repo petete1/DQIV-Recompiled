@@ -267,7 +267,7 @@ Once a debug tool has changed the game, no achievement is earned until the game 
 | `addons\` | the PC version's additions: the party chat texts (English, French, German, Italian, Spanish) |
 | `ROMandOBBfileHere\` | where you put your ROM and `.obb` (never added to git) |
 | `assets\` | created by `build.ps1` or `build.sh`: the game's data extracted from your ROM and `.obb` (never added to git) |
-| `icon\` | the game's icon (`DragonQuestIV.ico`, built into the executable) |
+| `icon\` | the icons: `DragonQuestIV-DS.ico` (the DS banner icon, built into the Windows executable) and `DragonQuestIV.png` (the README picture) |
 | `docs\images\` | the pictures of this page |
 | `cmake\` | placement of the game's modules (DS overlays); the 32-bit Linux toolchain (`linux-i686.cmake`) and the step that places the modules with GCC (`overlay-object.sh`) |
 | `build.bat` | double-click to run `build.ps1` |
