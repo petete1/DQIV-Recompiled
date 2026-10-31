@@ -260,6 +260,8 @@ Once a debug tool has changed the game, no achievement is earned until the game 
 
 ### Project contents
 
+The source code's structure is described in [docs/architecture.md](docs/architecture.md).
+
 | Folder / file | Contents |
 | --- | --- |
 | `game\` | the game's sources (decompilation) and the parts of the DS SDKs it uses |
