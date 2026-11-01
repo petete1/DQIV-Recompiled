@@ -142,6 +142,21 @@ THUMB int TextExtractor::extract_text(char* dst, int size, int type, int no, int
     if ((type != 0x80000000 || no != 0x32) && type != 0xd0000000 && ((unsigned char*)dst)[0] == 0) {
         ret = 0;
     }
+#ifdef DQIV_NATIVE
+    // Names party chat shows that the data leaves empty (the European DS had no
+    // party chat): the two children rescued in chapter 1 (party 13 and 14),
+    // named in Japanese only, and Rose (24), named as her own lines name her
+    // (Spanish: "Rosa" there, "Rose" in the data).
+    if (type == 0x50000000 && TextAPI::m_lang >= 0 && TextAPI::m_lang <= 5) {
+        static const char* const child[] = { 0, "Child", "Enfant", "Kind", "Bambino", "Niño" };
+        static const char* const rose[] = { "ロザリー", 0, "Rose", "Rosi", "Rosa", "Rosa" };
+        const char* name = no == 13 || no == 14 ? child[TextAPI::m_lang] : no == 24 ? rose[TextAPI::m_lang] : 0;
+        if (name != 0) {
+            dss::strcpy_s(dst, size, name);
+            ret = 1;
+        }
+    }
+#endif
     if (ret == 0) {
         dss::sprintf_s(dst, size, "<ERR %s.%d>", getTypeName(type), no);
     }
