@@ -607,6 +607,36 @@ ARM void drawBackgroundGradient()
     G3_Color(data_0211d380.vx | (data_0211d380.vy << 5) | (data_0211d380.vz << 10));
     G3_Translate(0, 0, 1024 << FX32_SHIFT);
     G3_Scale(256 << FX32_SHIFT, 192 << FX32_SHIFT, FX32_ONE);
+#ifdef DQIV_NATIVE
+    // Joined screens (DualScreen.hpp): one gradient from the top screen's top
+    // colours to the bottom screen's bottom ones. Each half is still drawn on its
+    // own frame; they meet at the average, where the DS screens' colours differ.
+    if (pc::unifiedFrame()) {
+        auto colour = [](const dss::Vector3<int>& c) { return c.vx | (c.vy << 5) | (c.vz << 10); };
+        auto middle = [](const dss::Vector3<int>& a, const dss::Vector3<int>& b) {
+            return ((a.vx + b.vx + 1) >> 1) | (((a.vy + b.vy + 1) >> 1) << 5) | (((a.vz + b.vz + 1) >> 1) << 10);
+        };
+        const int middleLeft = middle(s_bgGradientTopUpLeft, s_bgGradientBottomDownLeft);
+        const int middleRight = middle(s_bgGradientTopUpRight, s_bgGradientBottomDownRight);
+        const bool bottom = getDisplayFrame() & 1;
+        G3_Begin(1);
+        G3_Color(bottom ? colour(s_bgGradientBottomDownLeft) : middleLeft);
+        G3_TexCoord(0, 0);
+        G3_Vtx(0, FX32_ONE, 0);
+        G3_Color(bottom ? colour(s_bgGradientBottomDownRight) : middleRight);
+        G3_TexCoord(0, 0);
+        G3_Vtx(FX32_ONE, FX32_ONE, 0);
+        G3_Color(bottom ? middleRight : colour(s_bgGradientTopUpRight));
+        G3_TexCoord(0, 0);
+        G3_Vtx(FX32_ONE, 0, 0);
+        G3_Color(bottom ? middleLeft : colour(s_bgGradientTopUpLeft));
+        G3_TexCoord(0, 0);
+        G3_Vtx(0, 0, 0);
+        G3_End();
+        G3_PopMtx(1);
+        return;
+    }
+#endif
     if (getDisplayFrame() & 1) {
         G3_Begin(1);
         G3_Color(s_bgGradientBottomDownLeft.vx | (s_bgGradientBottomDownLeft.vy << 5) | (s_bgGradientBottomDownLeft.vz << 10));
