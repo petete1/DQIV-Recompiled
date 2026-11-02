@@ -497,6 +497,8 @@ void GpuRenderer::beginFrameTiming() {
     if(queryActive_||queriesPending_==4)return;
     gl::BeginQuery(GL_TIME_ELAPSED,frameQueries_[queryHead_]);queryActive_=true;
 }
+// The queries still in flight (up to 4) hold fast frames too.
+void GpuRenderer::ignoreFrameTiming() {ignoredSamples_=4;gpuTime_=0;gpuSamples_=0;}
 void GpuRenderer::endFrameTiming() {
     if(queryActive_) {gl::EndQuery(GL_TIME_ELAPSED);queryActive_=false;queryHead_=(queryHead_+1)%4;++queriesPending_;}
     // Results arrive a few frames later; collect those that are ready.
@@ -505,7 +507,9 @@ void GpuRenderer::endFrameTiming() {
         int available=0;gl::GetQueryObjectiv(query,GL_QUERY_RESULT_AVAILABLE,&available);
         if(!available)break;
         GLuint64 time=0;gl::GetQueryObjectui64v(query,GL_QUERY_RESULT,&time);
-        --queriesPending_;gpuTime_+=double(time);++gpuSamples_;
+        --queriesPending_;
+        if(ignoredSamples_) {--ignoredSamples_;continue;}
+        gpuTime_+=double(time);++gpuSamples_;
         if(profiling())profileAdd("gpu-frame",double(time)/1000);
     }
     if(gpuSamples_<30)return;
@@ -515,26 +519,23 @@ void GpuRenderer::endFrameTiming() {
     const int current=supersample();
     gpuTime_=0;gpuSamples_=0;
     if(!settings.autoQuality)return;
-    // Lower after two busy half-seconds; raise when the next factor (cost
-    // growing with its square) would still leave a wide margin.
+    // Lower after one busy half-second (each one starves the sound); raise
+    // when the next factor (cost growing with its square) would still leave
+    // a wide margin.
     const double next=milliseconds*double((current+1)*(current+1))/double(current*current);
     // Thresholds for 60 frames per second (12 and 7 ms), scaled to the frame rate.
     const double budget=settings.frameMilliseconds/(1000.0/60);
     if(milliseconds>12*budget&&current>1) {
-        quietWindows_=0;
-        if(++busyWindows_>=2) {
-            // A light scene would raise it again, and the next battle would
-            // stutter (and starve the sound) until lowered: it stays below.
-            autoSupersample_=autoCeiling_=current-1;busyWindows_=0;
-            std::printf("GPU %.1f ms par image: supersampling x%d\n",milliseconds,autoSupersample_);
-        }
+        // A light scene would raise it again, and the next battle would
+        // stutter (and starve the sound) until lowered: it stays below.
+        autoSupersample_=autoCeiling_=current-1;quietWindows_=0;
+        std::printf("GPU %.1f ms par image: supersampling x%d\n",milliseconds,autoSupersample_);
     } else if(next<7*budget&&current<std::min(settings.supersample,autoCeiling_)) {
-        busyWindows_=0;
         if(++quietWindows_>=4) {
             autoSupersample_=current+1;quietWindows_=0;
             std::printf("GPU %.1f ms par image: supersampling x%d\n",milliseconds,autoSupersample_);
         }
-    } else quietWindows_=busyWindows_=0;
+    } else quietWindows_=0;
 }
 void GpuRenderer::keepWorld() {
     const auto& source=fogApplied_[0]?fogged_[0]:scene_[0];

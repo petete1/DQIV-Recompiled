@@ -269,6 +269,7 @@ int runGame() {
             int boost=g_GlobalDQ4.unkfunc_0205810c()==13?pc::gameSettings().battleBoost+1:1;
             if(pc::fastForward())boost=std::max(boost,pc::fastForwardSpeed);
             fastFrame=boost>1&&++boostFrames%unsigned(boost)!=0;
+            if(boost>1)window.gpu().ignoreFrameTiming();
             if(shown) {
                 pc::ProfileScope timing("sound");
                 sound.render(samples);mobileSound.mix(samples);

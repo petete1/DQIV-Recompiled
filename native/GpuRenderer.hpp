@@ -109,6 +109,9 @@ public:
     // Last presented frame, top-down ARGB (for screenshots).
     std::vector<std::uint32_t> readPresented(int& width,int& height);
     int supersample() const; // the factor in use
+    // Fast frames (fast forward, faster battles): several renders per frame
+    // shown would read as a slow GPU, so automatic quality skips their timings.
+    void ignoreFrameTiming();
     // Draws an interface picture (premultiplied ARGB, top-down) at window pixel
     // (x, y) over the presented frame; `changed` uploads it again.
     void drawOverlay(unsigned id,std::span<const std::uint32_t> pixels,int width,int height,bool changed,
@@ -147,7 +150,7 @@ private:
     unsigned frameQueries_[4]{},queryHead_=0,queriesPending_=0;
     bool queryActive_=false;
     double gpuTime_=0; // nanoseconds summed over gpuSamples_ frames
-    unsigned gpuSamples_=0,quietWindows_=0,busyWindows_=0;
+    unsigned gpuSamples_=0,quietWindows_=0,ignoredSamples_=0;
     int autoSupersample_=2,autoCeiling_=4; // autoCeiling_: below the last factor found too slow
     std::uint64_t renders_=0;
     std::unordered_map<std::uint64_t,GpuTexture> textures_;
