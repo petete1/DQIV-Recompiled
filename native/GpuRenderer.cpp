@@ -523,10 +523,12 @@ void GpuRenderer::endFrameTiming() {
     if(milliseconds>12*budget&&current>1) {
         quietWindows_=0;
         if(++busyWindows_>=2) {
-            autoSupersample_=current-1;busyWindows_=0;
+            // A light scene would raise it again, and the next battle would
+            // stutter (and starve the sound) until lowered: it stays below.
+            autoSupersample_=autoCeiling_=current-1;busyWindows_=0;
             std::printf("GPU %.1f ms par image: supersampling x%d\n",milliseconds,autoSupersample_);
         }
-    } else if(next<7*budget&&current<settings.supersample) {
+    } else if(next<7*budget&&current<std::min(settings.supersample,autoCeiling_)) {
         busyWindows_=0;
         if(++quietWindows_>=4) {
             autoSupersample_=current+1;quietWindows_=0;
@@ -1088,7 +1090,7 @@ void GpuRenderer::present(const GpuLayout& layout,std::span<const std::uint32_t>
     stage.emplace("present-draw");
     beginFrameTiming();
     // A new window size starts again from the highest quality.
-    if(output_.width!=windowWidth||output_.height!=windowHeight) {autoSupersample_=2;gpuTime_=0;gpuSamples_=0;}
+    if(output_.width!=windowWidth||output_.height!=windowHeight) {autoSupersample_=2;autoCeiling_=4;gpuTime_=0;gpuSamples_=0;}
     // Composed off screen, so a hidden window can still be read back.
     resize(output_,windowWidth,windowHeight,false,false);
     gl::BindFramebuffer(GL_FRAMEBUFFER,output_.framebuffer);

@@ -148,7 +148,7 @@ private:
     bool queryActive_=false;
     double gpuTime_=0; // nanoseconds summed over gpuSamples_ frames
     unsigned gpuSamples_=0,quietWindows_=0,busyWindows_=0;
-    int autoSupersample_=2;
+    int autoSupersample_=2,autoCeiling_=4; // autoCeiling_: below the last factor found too slow
     std::uint64_t renders_=0;
     std::unordered_map<std::uint64_t,GpuTexture> textures_;
     std::unordered_map<unsigned,unsigned> samplingState_; // texture name -> its sampling parameters + 1

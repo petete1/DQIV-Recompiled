@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 namespace pc {
 namespace {
 void requireAudio(bool success) {if(!success)throw std::runtime_error(std::string("Native audio: ")+SDL_GetError());}
@@ -35,6 +36,13 @@ void AudioOutput::write(std::span<const std::int16_t> stereo) {
         if(!queued)profileAdd("audio-empty",0);
     }
     if(stereo.size()/2+queued>std::uint64_t(rate_)*3/10)return;
+    // The game makes exactly the device's rate, so the queue keeps whatever
+    // lead it starts with: 60 ms of silence ahead (at the start, and again
+    // after running dry) lets a slow frame pass unheard.
+    if(!queued&&!stereo.empty()) {
+        const std::vector<std::int16_t> cushion(std::size_t(rate_)*6/100*2);
+        requireAudio(SDL_PutAudioStreamData(stream_,cushion.data(),static_cast<int>(cushion.size()*2)));
+    }
     if(!stereo.empty())requireAudio(SDL_PutAudioStreamData(stream_,stereo.data(),static_cast<int>(stereo.size_bytes())));
 }
 unsigned AudioOutput::queuedFrames() const {
