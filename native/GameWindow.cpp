@@ -259,11 +259,16 @@ bool GameWindow::poll() {
 void GameWindow::drawInterface(int width,int height) {
     const float scale=std::max(0.6f,height/720.f);
     if(gameSettings().showFps&&settingsUsed_) {
-        const bool rebuild=fpsChanged_||!fpsPicture_||fpsPicture_->height()!=int(std::lround(30*scale));
+        const int supersample=gpu_->supersample();
+        const bool rebuild=fpsChanged_||supersample!=supersampleShown_||!fpsPicture_||fpsPicture_->height()!=int(std::lround(30*scale));
         if(rebuild) {
-            fpsPicture_=std::make_unique<TextCanvas>(int(std::lround(110*scale)),int(std::lround(30*scale)));
+            supersampleShown_=supersample;
+            const std::string text=std::to_string(fpsShown_)+" FPS  "+std::to_string(supersample)+"x"+(gpu_->settings.autoQuality?" (auto)":"");
+            const int size=int(std::lround(18*scale));
+            const int textWidth=TextCanvas(1,1).measure(text,size,true);
+            fpsPicture_=std::make_unique<TextCanvas>(textWidth+int(std::lround(20*scale)),int(std::lround(30*scale)));
             fpsPicture_->clear(0xa0000000);
-            fpsPicture_->text(0,int(std::lround(4*scale)),std::to_string(fpsShown_)+" FPS",int(std::lround(18*scale)),
+            fpsPicture_->text(0,int(std::lround(4*scale)),text,size,
                 fpsShown_>=58?0xff8ef08e:fpsShown_>=45?0xfff0d070:0xfff07a6a,true,1,fpsPicture_->width());
             fpsChanged_=false;
         }

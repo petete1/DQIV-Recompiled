@@ -51,6 +51,7 @@ private:
     std::span<const std::uint32_t> recipes_;
     std::uint64_t deadline_=0,fpsStart_=0;
     unsigned fpsFrames_=0,fpsShown_=0;
+    int supersampleShown_=0;
     bool running_=true,stretch_=false,screenshot_=false,hidden_=false,settingsUsed_=false,fpsChanged_=true,suppressInput_=false;
     std::unique_ptr<TextCanvas> fpsPicture_;
     std::unique_ptr<TextCanvas> debugPicture_; // debug menu's position overlay
