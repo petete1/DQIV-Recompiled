@@ -111,9 +111,8 @@ Achievements / Quit, whatever bank 3 holds. The `rootCount()` and
   rows of 26 px from y = 90 inside a frame ending at y = 176; four rows need
   tighter spacing (about 22-24 px) or the title box moved up, to stay inside
   the 192-pixel screen. Checked by screenshot.
-- Leaving the list (cancel) keeps the shown page for the next time it opens
-  within this menu; the menu opens on the session page, or page 1 at the
-  title.
+- The list opens on the session page (page 1 at the title) each time it is
+  entered.
 
 ### Church save (`MaterielMenu_SAVE`)
 
