@@ -228,7 +228,7 @@ int runGame() {
         pc::GameServices services(assets);
         pc::NitroFilesystem filesystem(assets);
         const auto savePath=pc::defaultSavePath();
-        pc::SaveStore save(savePath);
+        pc::SavePages save(savePath,pc::saveDirectory()/L"dqiv_eur-2.sav");
         auto identityPath=savePath;identityPath+=L".identity";
         pc::NitroIdentity identity(identityPath);
         pc::NitroBackup backup(save);

@@ -5,19 +5,19 @@
 #include <vector>
 namespace {
 std::recursive_mutex backupMutex;
-pc::SaveStore* backup=nullptr;
+pc::SavePages* backup=nullptr;
 int result=0;
 thread_local std::vector<unsigned short> lockIds;
 }
 namespace pc {
-NitroBackup::NitroBackup(SaveStore& store) {
+NitroBackup::NitroBackup(SavePages& pages) {
     std::lock_guard lock(backupMutex);
     if(backup) throw std::runtime_error("Backup already mounted");
-    backup=&store; result=0;
+    backup=&pages; result=0; mountSavePages(&pages);
 }
 NitroBackup::~NitroBackup() {
     std::lock_guard lock(backupMutex);
-    backup=nullptr;
+    backup=nullptr; mountSavePages(nullptr);
 }
 }
 extern "C" {
