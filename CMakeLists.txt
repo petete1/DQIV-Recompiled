@@ -119,6 +119,7 @@ add_library(dqiv_core STATIC
     native/NitroGeometry.cpp
     game/libs/NitroSDK/src/gx/g3_util.c
     native/SaveStore.cpp
+    native/SavePages.cpp
     native/Achievements.cpp
     native/AchievementTexts.cpp
     native/SoundWave.cpp
@@ -152,6 +153,10 @@ target_link_libraries(dqiv_audio PUBLIC dqiv_core SDL3::SDL3)
 # Packs the game resources into the executable (dist\DragonQuestIV.exe).
 add_executable(dqiv_pack native/PackMain.cpp)
 target_link_libraries(dqiv_pack PRIVATE dqiv_core)
+
+# Save pages tests: build64/dqiv_save_tests.
+add_executable(dqiv_save_tests EXCLUDE_FROM_ALL tests/save/save_pages_tests.cpp)
+target_link_libraries(dqiv_save_tests PRIVATE dqiv_core)
 
 # The original game (decompiled sources), each DS overlay in its own sections.
 include(cmake/NativeOverlays.cmake)
