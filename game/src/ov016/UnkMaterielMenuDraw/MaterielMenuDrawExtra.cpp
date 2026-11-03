@@ -665,7 +665,16 @@ THUMB void drawCenteredMessage(int* message, int x, int y, int w, int h)
 
 THUMB void drawJournalSlot(int index, char* name, int chapter, int level, int town, int time, int y, int flag)
 {
+    drawJournalSlotNumbered(index, index + 1, name, chapter, level, town, time, y, flag);
+}
+
+THUMB void drawJournalSlotNumbered(int index, int number, char* name, int chapter, int level, int town, int time, int y, int flag)
+{
     MenuPartsEntry* draw = s_partsJournalSlot;
+    // Without a number, parts 0 and 1 (number and colon) draw an empty text
+    // instead, keeping the place of the parts after them.
+    s_partsJournalSlot[0].type_ = s_partsJournalSlotEmpty[0].type_ = number > 0 ? 0x0f : 0x0d;
+    s_partsJournalSlot[1].index_ = s_partsJournalSlotEmpty[1].index_ = number > 0 ? 7 : 0;
     int mode;
     if (flag) {
         mode = 1;
@@ -675,7 +684,7 @@ THUMB void drawJournalSlot(int index, char* name, int chapter, int level, int to
     unsigned int hour = time / 216000;
     unsigned int minute = time % 216000 / 3600;
     int param[13];
-    param[0] = index + 1;
+    param[0] = number > 0 ? number : (int)"";
     param[1] = (int)name;
     param[4] = 0xa000003f;
     param[5] = level;

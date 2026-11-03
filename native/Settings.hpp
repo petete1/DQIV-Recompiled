@@ -135,4 +135,8 @@ bool takeSettingsApply();
 void requestQuit();
 bool takeQuitRequest();
 const char* quitLabel(int language); // the entry in the adventure log menu
+// Adventure log pages: the label under the list, and the fourth line's title.
+const char* savePageLabel(int language,int page);
+const char* quickSaveLabel(int language);
+const char* autosaveLabel(int language);
 }

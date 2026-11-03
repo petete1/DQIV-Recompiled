@@ -23,6 +23,9 @@ namespace MenuTemplate_materiel {
     void MATERIEL_SEXUALITY(menu::MenuItem* menuitem);
 #ifdef DQIV_NATIVE
     void MATERIEL_SETTINGS(menu::MenuItem* menuitem, int num, int step);
+    // The adventure logs of one page, from y 42; a fourth row (the quick save
+    // or the autosave) sits 14 pixels lower, under its label.
+    void MATERIEL_DIARY_PAGE(menu::MenuItem* menuitem, int rows);
     void MATERIEL_CELECT_BUY_TABS(menu::MenuItem* menuitem, int active, int max);
 #endif
     void MATERIEL_PAGE_2x1(menu::MenuItem* menuitem, int active, int x, int y);

@@ -33,6 +33,45 @@ THUMB int profile::SaveLoad::checkbank(int bank)
     return -1;
 }
 
+THUMB void profile::SaveLoad::fillCatalogView(PROFILE_RECORD* record, CatalogView* view)
+{
+    if (record->system.MAGIC == PROFILE_MAGIC && record->system.VER == PROFILE_VERSION) {
+        int town;
+        view->useFlag_ = 1;
+        view->id_ = record->system.BOOKNO;
+        switch (record->system.SAVETYPE) {
+            case SAVETYPE_CHURCH:
+#ifdef DQIV_NATIVE
+            case SAVETYPE_RESUME: // the quick save and the autosave (Continue list)
+#endif
+                town = getPlaceNameNo(record->party.CHAPTER, (char*)record->party.RESTART);
+                break;
+            case SAVETYPE_INTERVAL:
+                town = getPlaceNameByChapter(record->party.CHAPTER);
+                break;
+            default:
+                town = 0x80000032;
+                break;
+        }
+        int sex = 1;
+        if (record->party.SEX != 0) {
+            sex = 2;
+        }
+        dss::strcpy_s(view->name_, sizeof(view->name_), unkfunc_0202bbe0(sex, record->party.NAME));
+        view->savetype_ = record->system.SAVETYPE;
+        view->chapter_ = record->party.CHAPTER;
+        for (int j = 0; j < 14; j++) {
+            if (sex == record->party.PARTY[j]) {
+                view->level_ = record->player[j].LEVEL;
+            }
+        }
+        view->town_ = town;
+        view->time_ = record->party.PLAYTIME;
+    } else {
+        view->useFlag_ = 0;
+    }
+}
+
 THUMB profile::CatalogView* profile::SaveLoad::getCatalogView()
 {
     unsigned char* buff = (unsigned char*)dssAlloc(&g_appHeap, BANK_SIZE * 3, 0x20);
@@ -54,43 +93,30 @@ THUMB profile::CatalogView* profile::SaveLoad::getCatalogView()
     views[1] = &catalogView_[1];
     views[2] = &catalogView_[2];
     for (int i = 0; i < 3; i++) {
-        if (records[i]->system.MAGIC == PROFILE_MAGIC && records[i]->system.VER == PROFILE_VERSION) {
-            int town;
-            views[i]->useFlag_ = 1;
-            views[i]->id_ = records[i]->system.BOOKNO;
-            switch (records[i]->system.SAVETYPE) {
-                case SAVETYPE_CHURCH:
-                    town = getPlaceNameNo(records[i]->party.CHAPTER, (char*)records[i]->party.RESTART);
-                    break;
-                case SAVETYPE_INTERVAL:
-                    town = getPlaceNameByChapter(records[i]->party.CHAPTER);
-                    break;
-                default:
-                    town = 0x80000032;
-                    break;
-            }
-            int sex = 1;
-            if (records[i]->party.SEX != 0) {
-                sex = 2;
-            }
-            dss::strcpy_s(views[i]->name_, sizeof(views[i]->name_), unkfunc_0202bbe0(sex, records[i]->party.NAME));
-            views[i]->savetype_ = records[i]->system.SAVETYPE;
-            views[i]->chapter_ = records[i]->party.CHAPTER;
-            for (int j = 0; j < 14; j++) {
-                if (sex == records[i]->party.PARTY[j]) {
-                    views[i]->level_ = records[i]->player[j].LEVEL;
-                }
-            }
-            views[i]->town_ = town;
-            views[i]->time_ = records[i]->party.PLAYTIME;
-        } else {
-            views[i]->useFlag_ = 0;
-        }
+        fillCatalogView(records[i], views[i]);
     }
     dssFree(&g_appHeap, buff);
     catalogRecent_ = getSaveBank();
     return catalogView_;
 }
+
+#ifdef DQIV_NATIVE
+THUMB bool profile::SaveLoad::getResumeView(CatalogView* view)
+{
+    unsigned char* buff = (unsigned char*)dssAlloc(&g_appHeap, BANK_SIZE, 0x20);
+    if (buff == NULL) {
+        view->useFlag_ = 0;
+        return false;
+    }
+    if (memoryload(BANK_OFFSET(3), buff, BANK_SIZE)) {
+        fillCatalogView((PROFILE_RECORD*)buff, view);
+    } else {
+        view->useFlag_ = 0;
+    }
+    dssFree(&g_appHeap, buff);
+    return view->useFlag_ != 0;
+}
+#endif
 
 THUMB int profile::SaveLoad::getCatalogRecent()
 {

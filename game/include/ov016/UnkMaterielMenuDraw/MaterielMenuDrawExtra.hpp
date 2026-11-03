@@ -16,6 +16,8 @@ void drawFightStadiumCursor(int index);
 void drawFightStadiumBetDigits(int coin, int x, int y, int flag);
 void drawCenteredMessage(int* message, int x, int y, int w, int h);
 void drawJournalSlot(int index, char* name, int chapter, int level, int town, int time, int y, int flag);
+// As drawJournalSlot, row `index` showing `number` (none when 0).
+void drawJournalSlotNumbered(int index, int number, char* name, int chapter, int level, int town, int time, int y, int flag);
 void drawNameEditCharTable(int* name, int type);
 void drawNameEditField(int country, int* name, int count, int max, int mode, int flag);
 void drawNameEditCommentField(int* name, int count);

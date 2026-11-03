@@ -25,8 +25,13 @@ struct profile::SaveLoad {
     static CatalogView catalogView_[3];
 
     static int checkbank(int bank);
+    static void fillCatalogView(PROFILE_RECORD* record, CatalogView* view);
     static CatalogView* getCatalogView();
     static int getCatalogRecent();
+#ifdef DQIV_NATIVE
+    // Bank 3 (quick save or autosave) as a catalog entry; false when empty.
+    static bool getResumeView(CatalogView* view);
+#endif
     static int loadbank(int bank);
     static bool savebank(int bank, SAVETYPE type);
     static void savebankAsync(int bank, SAVETYPE type);

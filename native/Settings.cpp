@@ -456,5 +456,11 @@ namespace {bool quitRequested=false;}
 void requestQuit() {quitRequested=true;}
 bool takeQuitRequest() {const bool requested=quitRequested;quitRequested=false;return requested;}
 const char* quitLabel(int language) {return pick(language,"Quit game","Quitter le jeu","Spiel beenden","Esci dal gioco","Salir del juego");}
+const char* savePageLabel(int language,int page) {
+    return page==0?pick(language,"< L   Page 1/2   R >","< L   Page 1/2   R >","< L   Seite 1/2   R >","< L   Pagina 1/2   R >","< L   Página 1/2   R >")
+                  :pick(language,"< L   Page 2/2   R >","< L   Page 2/2   R >","< L   Seite 2/2   R >","< L   Pagina 2/2   R >","< L   Página 2/2   R >");
+}
+const char* quickSaveLabel(int language) {return pick(language,"Quick save","Sauvegarde rapide","Schnellspeicherung","Salvataggio rapido","Guardado rápido");}
+const char* autosaveLabel(int language) {return pick(language,"Autosave","Sauvegarde auto","Autospeicherung","Salvataggio automatico","Autoguardado");}
 bool takeSettingsApply() {const bool requested=applyRequested;applyRequested=false;return requested;}
 }

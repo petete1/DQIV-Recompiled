@@ -285,6 +285,18 @@ THUMB void MenuTemplate_materiel::MATERIEL_DIARY_LOAD(menu::MenuItem* menuitem)
     menuitem->setMenuItem(menu, 1, 3, 3);
 }
 
+#ifdef DQIV_NATIVE
+THUMB void MenuTemplate_materiel::MATERIEL_DIARY_PAGE(menu::MenuItem* menuitem, int rows)
+{
+    static MENUITEM_DATA menu[5];
+    for (int i = 0; i < rows; i++) {
+        menu[i] = {1, 2, 18, 42 + i * 26 + (i == 3 ? 14 : 0), 224, 12};
+    }
+    menu[rows] = {-1, -1, 0, 0, 0, 0};
+    menuitem->setMenuItem(menu, 1, rows, rows);
+}
+#endif
+
 THUMB void MenuTemplate_materiel::MATERIEL_KEYBOARD_JAP(menu::MenuItem* menuitem)
 {
     static const int keyX[11] = {19, 35, 51, 67, 83, 107, 123, 139, 155, 171, 195};

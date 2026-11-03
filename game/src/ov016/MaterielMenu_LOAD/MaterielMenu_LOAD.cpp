@@ -10,6 +10,7 @@
 #include "main/text/TextAPI.hpp"
 #include "Settings.hpp"
 #include "Achievements.hpp"
+#include "SavePages.hpp"
 #include "main/dss/Pad.hpp"
 #include <nitro/pad.h>
 #include <stdio.h>
@@ -21,6 +22,14 @@ void copyText(char* destination, int size, const char* text)
     strncpy(destination, text, size - 1);
     destination[size - 1] = 0;
 }
+// The fourth line of Continue: bank 3 of the page shown (quick save or autosave).
+profile::CatalogView s_resumeView;
+bool s_resumeUsed = false;
+const int s_listY = 0x2a; // the logs' first row
+
+pc::SavePages* pages() { return pc::mountedSavePages(); }
+int shownPage() { return pages() ? pages()->shownPage() : 0; }
+pc::ResumeSlot resumeSlotShown() { return shownPage() == 0 ? pc::ResumeSlot::quick : pc::ResumeSlot::autosave; }
 }
 
 THUMB int MaterielMenu_LOAD::rootCount() const
@@ -51,9 +60,12 @@ THUMB void MaterielMenu_LOAD::menuSetup()
     killResult_ = 0;
     makeResult_ = 0;
     resume_ = 0;
+#ifndef DQIV_NATIVE
     if (profile::SaveLoad::checkbank(3) == 1) {
         resume_ = 1;
     }
+#endif
+    // The PC version loads the quick save from the Continue list instead.
     frame_ = 0;
 }
 
@@ -64,7 +76,7 @@ THUMB void MaterielMenu_LOAD::menuExecute()
     MenuTemplate_materiel::MATERIEL_DIARY_MENU(&rootItem_, rootCount() + 3);
     settings_.execute(settingsItem_);
     achievements_.execute(achievementsItem_);
-    MenuTemplate_materiel::MATERIEL_DIARY_LOAD(&dataItem_);
+    MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&dataItem_, menuMode_ == 0 ? 4 : 3);
     MenuTemplate_materiel::MATERIEL_SEXUALITY(&sexualityItem_);
     return;
 #endif
@@ -132,6 +144,46 @@ THUMB void MaterielMenu_LOAD::menuDraw()
             rootItem_.drawActive();
         }
     }
+#ifdef DQIV_NATIVE
+    if (status_ == LOAD_DATASELECT) {
+        // Higher than the original, to make room for the fourth line and the page label.
+        int message = rootMessage[menuMode_];
+        int flag = menuMode_ != 1;
+        const int page = shownPage();
+        const int language = pc::gameSettings().language;
+        drawCenteredMessage(&message, 8, 0x08, 0xf0, 0x20);
+        for (int i = 0; i < 3; i++) {
+            if (diary_[i].savetype_ == 4) {
+                drawJournalSlotNumbered(i, page * 3 + i + 1, diary_[i].name_, -1, -1, -1, diary_[i].time_, s_listY, flag);
+            } else {
+                drawJournalSlotNumbered(i, page * 3 + i + 1, diary_[i].name_, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, s_listY, flag);
+            }
+        }
+        MenuPartsEntry entry[] = {
+            { 0x0d, 0x08, (short)0xf000, 0, 0x18, 0x10, 0xd0, 0xe },
+            { 0xff, 0x00, 0, 0, 0, 0, 0, 0 },
+        };
+        static char s_resumeLabel[48];
+        static char s_pageLabel[48];
+        int labelY = s_listY + 3 * 0x1a;
+        if (menuMode_ == 0) {
+            copyText(s_resumeLabel, sizeof(s_resumeLabel), page == 0 ? pc::quickSaveLabel(language) : pc::autosaveLabel(language));
+            int param = (int)s_resumeLabel;
+            drawMenuParts(entry, &param, 0, labelY - 0x10, 1);
+            if (s_resumeUsed) {
+                drawJournalSlotNumbered(3, 0, s_resumeView.name_, s_resumeView.chapter_, s_resumeView.level_, s_resumeView.town_, s_resumeView.time_, s_listY + 14, 1);
+            } else {
+                drawJournalSlotNumbered(3, 0, 0, 0, 0, 0, 0, s_listY + 14, 1);
+            }
+            labelY += 14 + 0x1a;
+        }
+        copyText(s_pageLabel, sizeof(s_pageLabel), pc::savePageLabel(language, page));
+        int param = (int)s_pageLabel;
+        drawMenuParts(entry, &param, 0, labelY - 0x10, 1);
+        drawFrameStyleB(8, 0x08, 0xf0, labelY + 0x10, 0x20);
+        dataItem_.drawActive();
+    }
+#else
     if (status_ == LOAD_DATASELECT) {
         int message = rootMessage[0];
         int flag = 1;
@@ -152,6 +204,7 @@ THUMB void MaterielMenu_LOAD::menuDraw()
         drawFrameStyleB(8, 0x38, 0xf0, 0x78, 0x50);
         dataItem_.drawActive();
     }
+#endif
     if (status_ == LOAD_SEXUALITY) {
         sexualityDraw();
     }
@@ -179,6 +232,11 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         rootUpdate();
         break;
     case LOAD_DATACHECK:
+#ifdef DQIV_NATIVE
+        if (pages()) {
+            pages()->showPage(pages()->sessionPage());
+        }
+#endif
         if (updateActiveDiary()) {
             changeStatus(LOAD_DATASELECT);
             activeDiaryNo_ = 0;
@@ -218,6 +276,11 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
             result = makeDiary();
         }
         if (result) {
+#ifdef DQIV_NATIVE
+            if (pages()) {
+                pages()->setSessionPage(pages()->shownPage());
+            }
+#endif
             changeStatus(LOAD_END);
         } else {
             g_TownMenuMessage.close();
@@ -244,6 +307,11 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         break;
     case LOAD_LOADCHECK:
         if (profile::SaveLoad::loadbank(activeDiaryNo_)) {
+#ifdef DQIV_NATIVE
+            if (pages()) {
+                pages()->setSessionPage(pages()->shownPage());
+            }
+#endif
             changeStatus(LOAD_END);
         } else {
             g_TownMenuMessage.openMessageForMENU();
@@ -260,8 +328,24 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
     case LOAD_END:
         close();
         break;
-    case LOAD_RESUME:
+    case LOAD_RESUME: {
+#ifdef DQIV_NATIVE
+        // The shown page's bank 3, then that save's own page for the adventure.
+        const pc::ResumeSlot slot = resumeSlotShown();
+        if (pages()) {
+            pages()->useResumeSlot(slot);
+        }
+        const int loaded = profile::SaveLoad::loadbank(3);
+        if (pages()) {
+            if (loaded) {
+                pages()->setSessionPage(pages()->resumePage(slot));
+            }
+            pages()->useResumeSlot(pc::ResumeSlot::quick);
+        }
+        if (loaded) {
+#else
         if (profile::SaveLoad::loadbank(3)) {
+#endif
             changeStatus(LOAD_END);
         } else {
             g_TownMenuMessage.openMessageForMENU();
@@ -270,6 +354,7 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
             changeStatus(LOAD_BLANK);
         }
         break;
+    }
     }
 }
 
@@ -431,12 +516,32 @@ THUMB void MaterielMenu_LOAD::rootUpdate()
 
 THUMB void MaterielMenu_LOAD::dataSelectUpdate()
 {
+#ifdef DQIV_NATIVE
+    // L / R: the other page of logs.
+    const int edge = dss::g_Pad.edge();
+    if (pages() && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
+        const int step = edge & PAD_BUTTON_R ? 1 : pc::SavePages::pageCount - 1;
+        pages()->showPage((pages()->shownPage() + step) % pc::SavePages::pageCount);
+        updateActiveDiary();
+        redraw_ = 1;
+        return;
+    }
+#endif
     dataItem_.execInput();
     switch (dataItem_.result_) {
     case 2: {
         dataItem_.result_ = 0;
         dataItem_.lastresult_ = 0;
         int active = dataItem_.active_;
+#ifdef DQIV_NATIVE
+        if (active == 3) {
+            if (s_resumeUsed) {
+                changeStatus(LOAD_RESUME);
+            }
+            redraw_ = 1;
+            break;
+        }
+#endif
         activeDiaryNo_ = active;
         switch (menuMode_) {
         case 0:
@@ -485,7 +590,11 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
         activeDiaryNo_ = dataItem_.active_;
         break;
     case 5:
+#ifdef DQIV_NATIVE
+        dataItem_.active_ = menuMode_ == 0 ? 3 : 2;
+#else
         dataItem_.active_ = 2;
+#endif
         activeDiaryNo_ = dataItem_.active_;
         break;
     case 6:
@@ -562,6 +671,14 @@ THUMB bool MaterielMenu_LOAD::updateActiveDiary()
         }
     }
     dataItem_.active_ = active;
+#ifdef DQIV_NATIVE
+    s_resumeUsed = false;
+    if (pages()) {
+        pages()->useResumeSlot(resumeSlotShown());
+        s_resumeUsed = profile::SaveLoad::getResumeView(&s_resumeView);
+        pages()->useResumeSlot(pc::ResumeSlot::quick);
+    }
+#endif
     return true;
 }
 
