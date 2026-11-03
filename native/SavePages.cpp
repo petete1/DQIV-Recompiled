@@ -1,13 +1,14 @@
 #include "SavePages.hpp"
 #include <algorithm>
 #include <array>
+#include <exception>
 #include <utility>
 
 namespace pc {
 namespace {
 constexpr std::uint32_t resumeStart=0xb800,resumeEnd=0xf400,tagOffset=0x1fc;
 SavePages* mounted=nullptr;
-bool pending=false,arriving=false;
+bool pending=false,arriving=false,playing=false;
 // An empty image the game reads as three empty logs: its header magic, then zeros.
 void createEmpty(SaveStore& store) {
     std::array<std::uint8_t,SaveStore::size> image{};
@@ -46,17 +47,19 @@ int SavePages::resumePage(ResumeSlot slot) const {
     resumeStore(slot).read(tagOffset,tag);
     return tag[0]==2&&!tag[1]&&!tag[2]&&!tag[3]?1:0;
 }
-void SavePages::tagResume(ResumeSlot slot,int page) {
+bool SavePages::tagResume(ResumeSlot slot,int page) {
     const std::array<std::uint8_t,4> tag{std::uint8_t(std::clamp(page,0,pageCount-1)+1),0,0,0};
-    resumeStore(slot).write(tagOffset,tag);
+    // Called from game code, which has no handler: a failed write is reported.
+    try {resumeStore(slot).write(tagOffset,tag);} catch(const std::exception&) {return false;}
+    return true;
 }
 SavePages* mountedSavePages() {return mounted;}
 void mountSavePages(SavePages* pages) {mounted=pages;}
 void autosaveMapChanged() {
     if(arriving) arriving=false;
-    else pending=true;
+    else pending=playing; // the title's own maps ask for nothing
 }
-void autosaveArrived() {pending=false;arriving=true;}
+void autosaveArrived() {pending=false;arriving=true;playing=true;}
 bool autosavePending() {return pending;}
 bool takeAutosave() {return std::exchange(pending,false);}
 }

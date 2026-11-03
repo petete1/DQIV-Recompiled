@@ -108,6 +108,21 @@ void rejectsWrongSize() {
     try {pc::SavePages pages(d/"one.sav",d/"two.sav");} catch(const std::runtime_error&) {threw=true;}
     check(threw,"a page 2 of the wrong size is refused");
 }
+// Runs first: nothing is armed before an adventure is loaded (the title's own maps).
+void noAutosaveBeforeLoading() {
+    pc::autosaveMapChanged();
+    pc::autosaveMapChanged();
+    check(!pc::autosavePending(),"map changes before any load ask for nothing");
+}
+void tagFailureIsReported() {
+    const auto d=freshDirectory("tagfail");
+    pc::SavePages pages(d/"one.sav",d/"two.sav");
+    fs::permissions(d,fs::perms::owner_read|fs::perms::owner_exec);
+    bool ok=true,threw=false;
+    try {ok=pages.tagResume(pc::ResumeSlot::autosave,1);} catch(...) {threw=true;}
+    fs::permissions(d,fs::perms::owner_all);
+    check(!threw&&!ok,"a tag that cannot be written returns false instead of throwing");
+}
 void autosaveTrigger() {
     pc::autosaveArrived();
     pc::autosaveMapChanged();
@@ -123,6 +138,7 @@ void autosaveTrigger() {
 }
 
 int main() {
+    noAutosaveBeforeLoading();
     createsPage2WithMagic();
     keepsExistingPage2();
     logsFollowShownPage();
@@ -131,6 +147,7 @@ int main() {
     tagsRoundTrip();
     rejectsWrongSize();
     autosaveTrigger();
+    tagFailureIsReported();
     std::cout<<(failures?"save pages: FAILED ":"save pages: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

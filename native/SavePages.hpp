@@ -23,9 +23,10 @@ public:
     int sessionPage() const {return session_;}
     void useResumeSlot(ResumeSlot slot) {slot_=slot;}
     ResumeSlot resumeSlot() const {return slot_;}
-    // The page a quick save or autosave was made on, kept beside it (0x1FC).
+    // The page a quick save or autosave was made on, kept beside it (0x1FC);
+    // tagResume returns false when the file cannot be written.
     int resumePage(ResumeSlot slot) const;
-    void tagResume(ResumeSlot slot,int page);
+    bool tagResume(ResumeSlot slot,int page);
 private:
     SaveStore& resumeStore(ResumeSlot slot) {return slot==ResumeSlot::quick?first_:second_;}
     const SaveStore& resumeStore(ResumeSlot slot) const {return slot==ResumeSlot::quick?first_:second_;}
@@ -38,8 +39,8 @@ private:
 // The pages the game uses (NitroBackup), or null.
 SavePages* mountedSavePages();
 void mountSavePages(SavePages* pages);
-// When to autosave: each map change asks for one, except the change that
-// follows loading from the title (the player is already at a save point).
+// When to autosave: each map change once an adventure is loaded asks for one,
+// except the change that follows the load (already at a save point).
 void autosaveMapChanged();
 void autosaveArrived();
 bool autosavePending();

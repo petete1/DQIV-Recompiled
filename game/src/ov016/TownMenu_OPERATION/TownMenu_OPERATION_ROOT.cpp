@@ -148,7 +148,7 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
                 }
                 saveResult_ = profile::SaveLoad::savebank(3, profile::SAVETYPE_RESUME);
                 if (pages && saveResult_) {
-                    pages->tagResume(pc::ResumeSlot::quick, pages->sessionPage());
+                    saveResult_ = pages->tagResume(pc::ResumeSlot::quick, pages->sessionPage());
                 }
 #else
                 saveResult_ = profile::SaveLoad::savebank(3, profile::SAVETYPE_RESUME);

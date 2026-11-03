@@ -10,8 +10,8 @@ void autosaveIfPending() {
     // log used) stays the adventure's page, as for a quick save.
     pages->showPage(pages->sessionPage());
     pages->useResumeSlot(ResumeSlot::autosave);
-    if(profile::SaveLoad::savebank(3,profile::SAVETYPE_RESUME)) pages->tagResume(ResumeSlot::autosave,pages->sessionPage());
-    else std::cout<<"Autosave failed\n";
+    if(!profile::SaveLoad::savebank(3,profile::SAVETYPE_RESUME)||!pages->tagResume(ResumeSlot::autosave,pages->sessionPage()))
+        std::cout<<"Autosave failed\n";
     pages->useResumeSlot(ResumeSlot::quick);
 }
 }
