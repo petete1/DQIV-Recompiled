@@ -289,10 +289,15 @@ THUMB void MenuTemplate_materiel::MATERIEL_DIARY_LOAD(menu::MenuItem* menuitem)
 THUMB void MenuTemplate_materiel::MATERIEL_DIARY_PAGE(menu::MenuItem* menuitem, int rows)
 {
     static MENUITEM_DATA menu[5];
-    for (int i = 0; i < rows; i++) {
-        menu[i] = {1, 2, 18, 42 + i * 26 + (i == 3 ? 14 : 0), 224, 12};
+    for (int i = 0; i <= rows; i++) {
+        const bool end = i == rows; // the list ends with code 0xff
+        menu[i].code = end ? 0xff : 1;
+        menu[i].view = end ? 0xff : 2;
+        menu[i].x = end ? 0 : 18;
+        menu[i].y = end ? 0 : (short)(42 + i * 26 + (i == 3 ? 14 : 0));
+        menu[i].w = end ? 0 : 224;
+        menu[i].h = end ? 0 : 12;
     }
-    menu[rows] = {-1, -1, 0, 0, 0, 0};
     menuitem->setMenuItem(menu, 1, rows, rows);
 }
 #endif
