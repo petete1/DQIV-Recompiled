@@ -42,6 +42,8 @@ extern "C" {
 }
 #include "main/global/GameApplication.hpp"
 #include "main/global/GlobalDQ4.hpp"
+#include "main/global/Global.hpp"
+#include <string>
 #include "main/achievement/AchievementTriggers.hpp"
 #include "Achievements.hpp"
 #include "Version.hpp"
@@ -286,12 +288,14 @@ int runGame() {
         g_GameApplication.unkfunc_02057f8c(0);
         g_GlobalDQ4.nativeStart(g_GameApplication.vf10());
         int scene=-1;
+        std::string map; // the autosave follows the map changes
         for(unsigned frame=0;running;++frame) {
             // The journal keeps the scene changes (battle, town, field...).
             const auto currentScene=int(g_GlobalDQ4.unkfunc_0205810c());
             if(scene!=currentScene) {
                 if(scene==3)window.hideVersion(); // leaving the adventure log menu
                 scene=currentScene;std::cout<<"Scene "<<scene<<", frame "<<frame<<'\n';}
+            if(const char* name=g_Global.getMapName();name&&*name&&map!=name) {map=name;pc::autosaveMapChanged();}
             threads.checkErrors();
             {
                 pc::ProfileScope step("frame");

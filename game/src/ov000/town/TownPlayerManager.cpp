@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "ov000/town/TownPlayerManager.hpp"
+#ifdef DQIV_NATIVE
+#include "SavePages.hpp"
+#endif
 #include "main/dss/Pad.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "main/object/DisplayCharacter.hpp"
@@ -213,6 +216,12 @@ ARM void TownPlayerManager::execute()
     party_.resetFixPos();
     execMapLink();
     if (!isLock()) {
+#ifdef DQIV_NATIVE
+        // Back in control after a map change: the autosave (never mid-action).
+        if (isSaveAndBattleOK()) {
+            pc::autosaveIfPending();
+        }
+#endif
         getPlayerCommand();
     }
     int menuAction = g_cmnPartyInfo.menuAction_;

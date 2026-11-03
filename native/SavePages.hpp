@@ -38,4 +38,13 @@ private:
 // The pages the game uses (NitroBackup), or null.
 SavePages* mountedSavePages();
 void mountSavePages(SavePages* pages);
+// When to autosave: each map change asks for one, except the change that
+// follows loading from the title (the player is already at a save point).
+void autosaveMapChanged();
+void autosaveArrived();
+bool autosavePending();
+bool takeAutosave(); // true once per request
+// Writes the autosave if one is asked for (Autosave.cpp: the game's quick save
+// capture, into page 2's bank 3). Called when the player is back in control.
+void autosaveIfPending();
 }

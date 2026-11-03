@@ -108,6 +108,18 @@ void rejectsWrongSize() {
     try {pc::SavePages pages(d/"one.sav",d/"two.sav");} catch(const std::runtime_error&) {threw=true;}
     check(threw,"a page 2 of the wrong size is refused");
 }
+void autosaveTrigger() {
+    pc::autosaveArrived();
+    pc::autosaveMapChanged();
+    check(!pc::autosavePending(),"the map change of an arrival is absorbed");
+    pc::autosaveMapChanged();
+    check(pc::autosavePending(),"a later map change asks for an autosave");
+    check(pc::takeAutosave(),"taking the pending autosave");
+    check(!pc::takeAutosave(),"taken once only");
+    pc::autosaveMapChanged();
+    pc::autosaveArrived();
+    check(!pc::autosavePending(),"loading from the title drops a pending autosave");
+}
 }
 
 int main() {
@@ -118,6 +130,7 @@ int main() {
     splitsAcrossBank3();
     tagsRoundTrip();
     rejectsWrongSize();
+    autosaveTrigger();
     std::cout<<(failures?"save pages: FAILED ":"save pages: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

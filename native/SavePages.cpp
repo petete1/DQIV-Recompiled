@@ -1,11 +1,13 @@
 #include "SavePages.hpp"
 #include <algorithm>
 #include <array>
+#include <utility>
 
 namespace pc {
 namespace {
 constexpr std::uint32_t resumeStart=0xb800,resumeEnd=0xf400,tagOffset=0x1fc;
 SavePages* mounted=nullptr;
+bool pending=false,arriving=false;
 // An empty image the game reads as three empty logs: its header magic, then zeros.
 void createEmpty(SaveStore& store) {
     std::array<std::uint8_t,SaveStore::size> image{};
@@ -50,4 +52,11 @@ void SavePages::tagResume(ResumeSlot slot,int page) {
 }
 SavePages* mountedSavePages() {return mounted;}
 void mountSavePages(SavePages* pages) {mounted=pages;}
+void autosaveMapChanged() {
+    if(arriving) arriving=false;
+    else pending=true;
+}
+void autosaveArrived() {pending=false;arriving=true;}
+bool autosavePending() {return pending;}
+bool takeAutosave() {return std::exchange(pending,false);}
 }

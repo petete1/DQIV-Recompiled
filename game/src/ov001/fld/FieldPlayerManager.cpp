@@ -1,5 +1,8 @@
 #pragma ipa file
 #include "ov001/fld/FieldPlayerManager.hpp"
+#ifdef DQIV_NATIVE
+#include "SavePages.hpp"
+#endif
 #include "ov001/fld/FieldStage.hpp"
 #include "ov001/fld/FieldSystem.hpp"
 #include "ov001/fld/FieldSymbolManager.hpp"
@@ -209,6 +212,10 @@ ARM void FieldPlayerManager::execute()
     }
     FieldPlayerDoku::getSingleton()->checkDokuDamage(prevPos, position_);
     if (!isLock()) {
+#ifdef DQIV_NATIVE
+        // Back in control after a map change: the autosave.
+        pc::autosaveIfPending();
+#endif
         getPlayerCommand();
     }
     setPlayerCommand(PUSH_NONE);

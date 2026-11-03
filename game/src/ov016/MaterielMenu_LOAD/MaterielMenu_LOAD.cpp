@@ -280,6 +280,7 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
             if (pages()) {
                 pages()->setSessionPage(pages()->shownPage());
             }
+            pc::autosaveArrived();
 #endif
             changeStatus(LOAD_END);
         } else {
@@ -311,6 +312,7 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
             if (pages()) {
                 pages()->setSessionPage(pages()->shownPage());
             }
+            pc::autosaveArrived();
 #endif
             changeStatus(LOAD_END);
         } else {
@@ -339,6 +341,7 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
         if (pages()) {
             if (loaded) {
                 pages()->setSessionPage(pages()->resumePage(slot));
+                pc::autosaveArrived();
             }
             pages()->useResumeSlot(pc::ResumeSlot::quick);
         }
