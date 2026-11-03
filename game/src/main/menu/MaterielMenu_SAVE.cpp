@@ -3,7 +3,10 @@
 #ifdef DQIV_NATIVE
 #include "main/dss/Pad.hpp"
 #include "Settings.hpp"
+#include "SavePages.hpp"
+#include "main/menu/MenuPartsDraw.hpp"
 #include <nitro/pad.h>
+#include <string.h>
 #endif
 #include "main/object/DisplayCharacter.hpp"
 #include "main/menu/MaterielMenuWindowManager.hpp"
@@ -36,6 +39,12 @@ THUMB void MaterielMenu_SAVE::menuSetup()
     startSurechigai_ = 0;
     status_ = MENU_IS_SAVE;
     MenuSoundManager::getSingleton()->initialize();
+#ifdef DQIV_NATIVE
+    // Opens on the page of the adventure being played.
+    if (pc::SavePages* pages = pc::mountedSavePages()) {
+        pages->showPage(pages->sessionPage());
+    }
+#endif
 }
 
 THUMB void MaterielMenu_SAVE::menuExecute()
@@ -51,6 +60,29 @@ THUMB void MaterielMenu_SAVE::menuDraw()
         }
         return;
     }
+#ifdef DQIV_NATIVE
+    // Logs 1-3 or 4-6, and the page label.
+    const int page = pc::mountedSavePages() ? pc::mountedSavePages()->shownPage() : 0;
+    for (int i = 0; i < 3; i++) {
+        int savetype = diary_[i].savetype_;
+        char* name = diary_[i].name_;
+        if (savetype == 4) {
+            drawJournalSlotNumbered(i, page * 3 + i + 1, name, -1, -1, -1, diary_[i].time_, 0x5a, name != 0);
+        } else {
+            drawJournalSlotNumbered(i, page * 3 + i + 1, name, diary_[i].chapter_, diary_[i].level_, diary_[i].town_, diary_[i].time_, 0x22, name != 0);
+        }
+    }
+    static char s_pageLabel[48];
+    strncpy(s_pageLabel, pc::savePageLabel(pc::gameSettings().language, page), sizeof(s_pageLabel) - 1);
+    MenuPartsEntry entry[] = {
+        { 0x0d, 0x08, (short)0xf000, 0, 0x18, 0x10, 0xd0, 0xe },
+        { 0xff, 0x00, 0, 0, 0, 0, 0, 0 },
+    };
+    int param = (int)s_pageLabel;
+    // Above the first log: the message window covers the space under the list.
+    drawMenuParts(entry, &param, 0, 4, 1);
+    drawFrameStyleB(0, 0x10, 0x100, 0x68, 0);
+#else
     for (int i = 0; i < 3; i++) {
         int savetype = diary_[i].savetype_;
         char* name = diary_[i].name_;
@@ -61,6 +93,7 @@ THUMB void MaterielMenu_SAVE::menuDraw()
         }
     }
     drawFrameStyleB(0, 0x10, 0x100, 0x68, 0);
+#endif
     if (saveType_ == TYPE_CHURCH) {
         drawMoneyAndPartyWindows();
     }
@@ -444,6 +477,11 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         if (!playSound) {
             g_TownMenuMessage.SetNoClose(false);
             if (saveResult_ == 1) {
+#ifdef DQIV_NATIVE
+                if (pc::SavePages* pages = pc::mountedSavePages()) {
+                    pages->setSessionPage(pages->shownPage());
+                }
+#endif
                 setMode(MENU_SUCCESS);
                 g_TownMenuMessage.clearMessageWAITPROG();
                 g_TownMenuMessage.close();
@@ -592,6 +630,18 @@ THUMB void MaterielMenu_SAVE::setMode(SAVEMENU_MODE mode)
 
 THUMB void MaterielMenu_SAVE::dataSelectUpdate()
 {
+#ifdef DQIV_NATIVE
+    // L / R: the other page of logs.
+    pc::SavePages* pages = pc::mountedSavePages();
+    const int edge = dss::g_Pad.edge();
+    if (pages && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
+        const int step = edge & PAD_BUTTON_R ? 1 : pc::SavePages::pageCount - 1;
+        pages->showPage((pages->shownPage() + step) % pc::SavePages::pageCount);
+        getSaveData();
+        redraw_ = 1;
+        return;
+    }
+#endif
     menuItem_.execInput();
     switch (menuItem_.result_) {
     case 2:

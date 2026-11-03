@@ -1,4 +1,7 @@
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ROOT.hpp"
+#ifdef DQIV_NATIVE
+#include "SavePages.hpp"
+#endif
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CAREER.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_EQUIP.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_SETTING.hpp"
@@ -136,7 +139,20 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         }
         if (g_TownMenuMessage.isMessageWAITPROG()) {
             if (abort_ == 2) {
+#ifdef DQIV_NATIVE
+                // The quick save (page 1's file), marked with the page of the adventure.
+                pc::SavePages* pages = pc::mountedSavePages();
+                if (pages) {
+                    pages->showPage(pages->sessionPage());
+                    pages->useResumeSlot(pc::ResumeSlot::quick);
+                }
                 saveResult_ = profile::SaveLoad::savebank(3, profile::SAVETYPE_RESUME);
+                if (pages && saveResult_) {
+                    pages->tagResume(pc::ResumeSlot::quick, pages->sessionPage());
+                }
+#else
+                saveResult_ = profile::SaveLoad::savebank(3, profile::SAVETYPE_RESUME);
+#endif
                 abort_ = 3;
             }
             updateAbortSaveMessage();
