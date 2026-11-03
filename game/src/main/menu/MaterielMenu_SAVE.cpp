@@ -80,8 +80,9 @@ THUMB void MaterielMenu_SAVE::menuDraw()
     };
     int param = (int)s_pageLabel;
     // Above the first log: the message window covers the space under the list.
-    drawMenuParts(entry, &param, 0, 4, 1);
-    drawFrameStyleB(0, 0x10, 0x100, 0x68, 0);
+    // The frame starts 8 pixels higher than the original, so the label clears its border.
+    drawMenuParts(entry, &param, 0, 0, 1);
+    drawFrameStyleB(0, 0x08, 0x100, 0x70, 0);
 #else
     for (int i = 0; i < 3; i++) {
         int savetype = diary_[i].savetype_;
