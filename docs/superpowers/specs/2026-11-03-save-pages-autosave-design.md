@@ -97,8 +97,8 @@ Achievements / Quit, whatever bank 3 holds. The `rootCount()` and
 - Slot numbers: `drawJournalSlot` prints `index + 1`; it is given
   `shownPage * 3 + i`, so page 2 shows 4, 5, 6. Positions still use `i`.
 - A native page label, `L ◀ Page 1/2 ▶ R`, is drawn with `drawMenuParts`, the
-  way the Settings entry is, translated in `native/Settings.cpp` (Japanese,
-  English, French, German, Italian, Spanish).
+  way the Settings entry is, translated in `native/Settings.cpp` into every
+  language its own texts have (`pick`).
 - Continue only: a fourth line, "Quick save" (page 1) or "Autosave" (page 2).
   - It shows the same details as a log (name, chapter, level, place, play
     time), read from bank 3 of that page with the same code as
