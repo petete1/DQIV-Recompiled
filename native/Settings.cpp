@@ -46,7 +46,8 @@ void loadSettings() {
         else if(key=="cameraZoom")s.cameraZoom=std::clamp(value,cameraZoomMin,cameraZoomMax);
         else if(key=="mobileSound")s.mobileSound=value!=0;
         else if(key=="centredCamera")s.centredCamera=value!=0;
-        else if(key=="classicBattleMenus")s.classicBattleMenus=value!=0;
+        else if(key=="battleMenus")s.battleMenus=std::clamp(value,0,2);
+        else if(key=="classicBattleMenus")s.battleMenus=value?1:0; // the earlier on/off setting
         else if(key=="cheatBattleInvincible")s.cheats.battleInvincible=value!=0;
         else if(key=="cheatNoRandomEncounters")s.cheats.noRandomEncounters=value!=0;
         else if(key=="cheatGuaranteedCriticals")s.cheats.guaranteedCriticals=value!=0;
@@ -69,7 +70,7 @@ void saveSettings() {
     const auto& s=gameSettings();
     file<<"language="<<s.language<<"\nshowFps="<<s.showFps<<"\nfullscreen="<<s.fullscreen<<"\nwindowSize="<<s.windowSize
         <<"\nwide="<<s.wide<<"\nbattleLayout="<<s.battleLayout<<"\nbattleZoom="<<s.battleZoom<<"\nstretch="<<s.stretch<<"\nvsync="<<s.vsync<<"\nquality="<<s.quality
-        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\nclassicBattleMenus="<<s.classicBattleMenus
+        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\nbattleMenus="<<s.battleMenus
         <<"\ncheatBattleInvincible="<<s.cheats.battleInvincible<<"\ncheatNoRandomEncounters="<<s.cheats.noRandomEncounters
         <<"\ncheatGuaranteedCriticals="<<s.cheats.guaranteedCriticals
         <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier<<"\n";
@@ -117,8 +118,9 @@ const char* japanese(const char* en) {
         {"Battle menus","せんとうメニュー"},
         {"Classic","クラシック"},
         {"Original","オリジナル"},
-        {"Battles: menus as windows along the bottom, like the console games (Original: the DS touch menus).",
-            "せんとう: メニューを がめんの したに まどで ひょうじ (オリジナル: DSの タッチメニュー)。"},
+        {"Overlay","オーバーレイ"},
+        {"Battles: Classic, console-style windows along the bottom; Overlay, the DS menus anywhere on the screen; Original, the DS touch menus.",
+            "せんとう: クラシックは したに まどの メニュー、オーバーレイは DSの メニューを どこにでも、オリジナルは DSの タッチメニュー。"},
         {"Panorama battles: the monsters seen closer.","パノラマの せんとう: モンスターを ちかくに みせる。"},
         {"Large","おおきく"},
         {"Panorama","パノラマ"},
@@ -327,7 +329,8 @@ std::string settingValue(int item,int language) {
     case settingBattleZoom:return std::to_string(s.battleZoom)+"%";
     case settingStretch:return yesNo(s.stretch,language);
     case settingCentredCamera:return yesNo(s.centredCamera,language);
-    case settingBattleMenus:return s.classicBattleMenus?pick(language,"Classic","Classiques","Klassisch","Classici","Clásicos"):
+    case settingBattleMenus:return s.battleMenus==1?pick(language,"Classic","Classiques","Klassisch","Classici","Clásicos"):
+        s.battleMenus==2?pick(language,"Overlay","Superposés","Überlagert","Sovrapposti","Superpuestos"):
         pick(language,"Original","Originaux","Original","Originali","Originales");
     case settingVsync:return yesNo(s.vsync,language);
     case settingQuality:
@@ -362,11 +365,11 @@ const char* settingHint(int item,int language) {
         "Grand : monstres agrandis pour remplir la zone de combat ; Panorama : le zoom ci-dessous.","Groß: Monster vergrößert, um den Kampfbereich zu füllen; Panorama: der Zoom unten.",
         "Grande: mostri ingranditi per riempire l'area di battaglia; Panorama: lo zoom sotto.","Grande: monstruos ampliados para llenar la zona de combate; Panorama: el zoom de abajo.");
     case settingPicture:return pick(language,"Wide fills the screen without stretching; DS screens keeps the original layout.","Large remplit l'écran sans étirer ; Écrans DS garde la disposition d'origine.","Breit füllt den Bildschirm ohne Verzerrung; DS-Bildschirme: Original.","Panoramico riempie lo schermo senza deformare; Schermi DS: originale.","Panorámica llena la pantalla sin estirar; Pantallas DS: disposición original.");
-    case settingBattleMenus:return pick(language,"Battles: menus as windows along the bottom, like the console games (Original: the DS touch menus).",
-        "Combats : menus en fenêtres en bas de l'écran, comme sur console (Originaux : les menus tactiles de la DS).",
-        "Kämpfe: Menüs als Fenster am unteren Rand wie auf Konsolen (Original: die Touch-Menüs der DS).",
-        "Battaglie: menu a finestre in basso, come su console (Originali: i menu touch del DS).",
-        "Combates: menús en ventanas abajo, como en consola (Originales: los menús táctiles de la DS).");
+    case settingBattleMenus:return pick(language,"Battles: Classic, console-style windows along the bottom; Overlay, the DS menus anywhere on the screen; Original, the DS touch menus.",
+        "Combats : Classiques, fenêtres en bas comme sur console ; Superposés, les menus DS n'importe où ; Originaux, les menus tactiles de la DS.",
+        "Kämpfe: Klassisch, Fenster unten wie auf Konsolen; Überlagert, die DS-Menüs überall; Original, die Touch-Menüs der DS.",
+        "Battaglie: Classici, finestre in basso come su console; Sovrapposti, i menu DS ovunque; Originali, i menu touch del DS.",
+        "Combates: Clásicos, ventanas abajo como en consola; Superpuestos, los menús de DS en cualquier lugar; Originales, los menús táctiles de DS.");
     case settingCentredCamera:return pick(language,"Towns and dungeons: the party in the middle of the picture (No: as on the DS).",
         "Villes et donjons : le groupe au milieu de l'image (Non : comme sur la DS).","Städte und Dungeons: die Gruppe in der Bildmitte (Nein: wie auf dem DS).",
         "Città e dungeon: il gruppo al centro dell'immagine (No: come sul DS).","Pueblos y mazmorras: el grupo en el centro de la imagen (No: como en DS).");
@@ -407,7 +410,7 @@ bool changeSetting(int item,int step) {
     case settingBattleZoom:s.battleZoom=cycle(s.battleZoom/25-4,0,3)*25+100;return true;
     case settingStretch:s.stretch=!s.stretch;return true;
     case settingCentredCamera:s.centredCamera=!s.centredCamera;return true;
-    case settingBattleMenus:s.classicBattleMenus=!s.classicBattleMenus;return true;
+    case settingBattleMenus:s.battleMenus=cycle(s.battleMenus,0,2);return true;
     case settingVsync:s.vsync=!s.vsync;return true;
     case settingQuality:s.quality=cycle(s.quality,0,4);return true;
     case settingTextures:s.smoothTextures=!s.smoothTextures;return true;

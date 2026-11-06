@@ -30,7 +30,7 @@ struct GameSettings {
     // middle of the DS bottom screen, the picture's lower half).
     bool centredCamera=true;
     bool mobileSound=true;    // the smartphone version's music and sounds instead of the DS sequences
-    bool classicBattleMenus=false; // battle menus as console windows (false: the DS touch menus)
+    int battleMenus=0;        // battle menus: 0 the DS touch menus, 1 console windows (Classic), 2 the DS menus on the overlay
     // Controls, in the order of controlBits then party chat and fast forward:
     // an SDL keycode and an SDL gamepad button (or padLeftTrigger / padRightTrigger).
     unsigned keys[14]={'z','x','s','a','q','w',0x0d,0x400000e5,0x40000052,0x40000051,0x40000050,0x4000004f,'e','\t'};

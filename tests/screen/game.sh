@@ -6,7 +6,7 @@
 #                                       pack build64 (or build32) into ~/.cache/dq4-screen,
 #                                       with a copy of dist/saves, and start it windowed;
 #                                       KEY=VALUE sets settings.ini lines in the copy
-#                                       (e.g. classicBattleMenus=1), quicker than the menus
+#                                       (e.g. battleMenus=1), quicker than the menus
 #   tests/screen/game.sh keys ACTION... keys, waits and resizes (see xkeys.py)
 #   tests/screen/game.sh shot FILE [WxH] screenshot of the top-left WxH (default 1280x720)
 #   tests/screen/game.sh journal        the game's journal (errors, crashes)

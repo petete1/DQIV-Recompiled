@@ -4,10 +4,12 @@
 #include "main/menu/MenuBase.hpp"
 #include "main/menu/CursorMoveGridLoop.hpp"
 
-// Classic battle menus (pc::gameSettings().classicBattleMenus): each battle
+// Classic battle menus (pc::gameSettings().battleMenus 1): each battle
 // menu describes what it shows (pc::battleMenuState) instead of drawing the
 // DS menu, and reads its input through battleMenuSelect.
 bool classicBattleMenus();
+// Overlay menus (battleMenus 2): the DS menus drawn on the port overlay (MenuLayers.hpp).
+bool overlayMenus();
 // A message value (as drawMenuText takes it) drawn by the game's 12-dot font.
 pc::BattleText battleText(int value);
 // A number, as drawMenuNumber draws it.

@@ -114,7 +114,12 @@ unsigned int rgb(unsigned short c)
 
 bool classicBattleMenus()
 {
-    return pc::gameSettings().classicBattleMenus;
+    return pc::gameSettings().battleMenus == 1;
+}
+
+bool overlayMenus()
+{
+    return pc::gameSettings().battleMenus == 2;
 }
 
 pc::BattleText battleText(int value)

@@ -277,7 +277,7 @@ bool GameWindow::poll() {
 }
 void GameWindow::drawBattleWindows(int width,int height) {
     const auto& state=battleMenuState();
-    if(!gameSettings().classicBattleMenus||state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
+    if(gameSettings().battleMenus!=1||state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
     const auto layout=layoutBattleMenu(state,width,height);
     rememberBattleLayout(layout);
     if(layout.windows.empty())return;

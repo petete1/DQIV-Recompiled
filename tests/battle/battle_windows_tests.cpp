@@ -107,13 +107,14 @@ void pointerOutsideWindows() {
     check(pc::takeBattlePointer().entry==1,"clicking entry 1 points at it again");
     check(pc::battleClickAt(r.x+2,r.y+2)==1,"a click on entry 1 confirms it");
 }
-void settingToggles() {
-    check(!pc::gameSettings().classicBattleMenus,"Original by default");
-    pc::changeSetting(pc::settingBattleMenus,1);
-    check(pc::gameSettings().classicBattleMenus,"the setting turns Classic on");
-    check(pc::settingValue(pc::settingBattleMenus,1)=="Classic","shown as Classic");
-    pc::changeSetting(pc::settingBattleMenus,1);
-    check(!pc::gameSettings().classicBattleMenus,"and back to Original");
+void settingCyclesThree() {
+    check(pc::gameSettings().battleMenus==0,"Original by default");
+    const char* shown[3]={"Classic","Overlay","Original"};
+    for(int i=0;i<3;++i) {
+        pc::changeSetting(pc::settingBattleMenus,1);
+        check(pc::gameSettings().battleMenus==(i+1)%3,"the setting steps through three values");
+        check(pc::settingValue(pc::settingBattleMenus,1)==shown[i],"each value shown by name");
+    }
 }
 void clickConfirmsNextPoll() {
     pc::BattleMouse mouse;
@@ -152,7 +153,7 @@ int main() {
     composesAtDsScale();
     hitTest();
     pointerOutsideWindows();
-    settingToggles();
+    settingCyclesThree();
     clickConfirmsNextPoll();
     heldButtonBlocksTouch();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
