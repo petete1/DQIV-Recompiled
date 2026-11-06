@@ -309,8 +309,8 @@ void barWidths() {
 }
 void messageInsideWindow() {
     pc::BattleMenuState state;state.message.shown=true;state.message.height=40;
-    state.message.lines.push_back({ink(400),4});
-    state.message.lines.push_back({ink(100),20});
+    state.message.lines.push_back({ink(400),4,400});
+    state.message.lines.push_back({ink(100),20,100});
     for(const auto [w,h]:{std::pair{640,480},std::pair{1920,1080}}) {
         const auto layout=pc::layoutBattleMessage(state,w,h);
         const auto& r=layout.picture;const int s=layout.scale;
@@ -321,8 +321,33 @@ void messageInsideWindow() {
         check(pc::composeBattleMessage(state,layout,0).size()==std::size_t(r.w/s)*(r.h/s),"a message picture at DS scale");
     }
     check(pc::layoutBattleMessage(pc::BattleMenuState{},1280,720).picture.w==0,"no message, no window");
-    pc::BattleMenuState small;small.message.shown=true;small.message.lines.push_back({ink(50),4});
+    pc::BattleMenuState small;small.message.shown=true;small.message.lines.push_back({ink(50),4,50});
     check(pc::layoutBattleMessage(small,1920,1080).picture.w==240*4,"240 DS pixels for short lines");
+}
+bool overlap(const pc::BattleRect& a,const pc::BattleRect& b) {return a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;}
+void messageClearOfParty() {
+    auto state=partyOf(4);state.message.shown=true;state.message.height=40;state.message.lines.push_back({ink(250),4,250});
+    for(const auto [w,h]:{std::pair{1920,1080},std::pair{3840,2160},std::pair{1280,720}}) {
+        const auto party=pc::layoutBattleParty(state,w,h),message=pc::layoutBattleMessage(state,w,h);
+        check(message.picture.w>0&&!overlap(party.picture,message.picture),"the message window keeps clear of the party panel");
+    }
+}
+void messageWidthFromFullLine() {
+    pc::BattleMenuState state;state.message.shown=true;state.message.height=40;
+    state.message.lines.push_back({ink(10),4,300});  // typing: 10 shown of 300
+    check(pc::layoutBattleMessage(state,1920,1080).picture.w==(300+16)*4,"the window is as wide as the whole line from its first letter");
+}
+void messageShakes() {
+    pc::BattleMenuState state;state.message.shown=true;state.message.height=40;state.message.lines.push_back({ink(50),4,50});
+    const auto still=pc::layoutBattleMessage(state,1920,1080);
+    state.message.shakeX=2;state.message.shakeY=-1;
+    const auto shaken=pc::layoutBattleMessage(state,1920,1080);
+    check(shaken.picture.x==still.picture.x+8&&shaken.picture.y==still.picture.y-4,"the window shakes with the game's offset, scaled");
+}
+void messageInTinyWindow() {
+    pc::BattleMenuState state;state.message.shown=true;state.message.height=40;state.message.lines.push_back({ink(50),4,50});
+    const auto layout=pc::layoutBattleMessage(state,25,480);
+    check(pc::composeBattleMessage(state,layout,0).size()==std::size_t(layout.picture.w/layout.scale)*(layout.picture.h/layout.scale),"a tiny window does not break the message window");
 }
 }
 
@@ -353,6 +378,10 @@ int main() {
     partyInsideWindow();
     barWidths();
     messageInsideWindow();
+    messageClearOfParty();
+    messageWidthFromFullLine();
+    messageShakes();
+    messageInTinyWindow();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
     placedPicturesInColour();

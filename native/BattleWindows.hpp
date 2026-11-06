@@ -25,12 +25,13 @@ struct BattlePartyRow {
     bool active=false;                                 // choosing a command now
 };
 // A line of the battle message window: the game's own rendered text.
-struct BattleMessageLine {BattleText text;int y=0;};  // y: DS pixels from the window's top
+struct BattleMessageLine {BattleText text;int y=0,fullWidth=0;};  // y: DS pixels from the window's top; fullWidth: the whole line, typed or not
 struct BattleMessage {
     bool shown=false,waiting=false;   // waiting: for a button (the ▼ blinks)
     std::vector<BattleMessageLine> lines;
     BattleText name;                  // the speaker, on the top border (may be empty)
     int height=0;                     // the game's window height, DS pixels
+    int shakeX=0,shakeY=0;            // the game shakes the window when the party is hit (DS pixels)
 };
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
@@ -44,7 +45,6 @@ struct BattleMenuState {
     std::uint32_t revision=0;         // changes whenever anything above changes
     std::vector<BattlePartyRow> party;               // empty: no party panel
     std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the portraits' palette
-    std::uint32_t partyRevision=0;                   // changes whenever the party panel changes
     BattleMessage message;                           // the battle message window (Classic)
 };
 // Filled by the game each frame (kind none when no battle menu draws).
@@ -62,9 +62,9 @@ struct BattleGroupLayout {int scale=1;BattleRect picture;};
 // The party panel: right edge and bottom, 8 DS pixels in; picture.w 0 without a party.
 BattleGroupLayout layoutBattleParty(const BattleMenuState&,int windowWidth,int windowHeight);
 std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&);
-// The message window: bottom centre, as wide as its widest line and 240 DS
-// pixels at least (the window less 8 on each side at most), as tall as the
-// game's; picture.w 0 when not shown.
+// The message window: bottom centre of the room left of the party panel, as
+// wide as its widest line and 240 DS pixels at least (that room at most), as
+// tall as the game's, moved by its shake; picture.w 0 when not shown.
 BattleGroupLayout layoutBattleMessage(const BattleMenuState&,int windowWidth,int windowHeight);
 std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState&,const BattleGroupLayout&,int blinkFrame);
 // A bar's filled width: clamped to 0..width, 0 when max <= 0, at least 1 when value > 0.

@@ -286,10 +286,17 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
 BattleGroupLayout layoutBattleMessage(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
     if(!state.message.shown)return layout;
+    const int s=layout.scale;
+    // The room: the window less its margins, and left of the party panel when there is one.
+    const int right=state.party.empty()?windowWidth/s-margin:windowWidth/s-margin-partyWidth-gap;
+    const int room=right-margin;
     int widest=0;
-    for(const auto& line:state.message.lines)widest=std::max(widest,line.text.width);
-    const int s=layout.scale,w=std::min(std::max(240,widest+2*pad),windowWidth/s-2*margin),h=std::max(state.message.height,2*pad+row);
-    layout.picture={(windowWidth-w*s)/2,windowHeight-(margin+h)*s,w*s,h*s};
+    for(const auto& line:state.message.lines)widest=std::max({widest,line.fullWidth,line.text.width});
+    const int w=std::min(std::max(240,widest+2*pad),room),h=std::max(state.message.height,2*pad+row);
+    if(w<2*pad+row)return layout;   // no room for it
+    // Centred in the room (the whole window without a party panel).
+    const int x=state.party.empty()?(windowWidth-w*s)/2:(margin*s+right*s-w*s)/2;
+    layout.picture={x+state.message.shakeX*s,windowHeight-(margin+h)*s+state.message.shakeY*s,w*s,h*s};
     return layout;
 }
 std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState& state,const BattleGroupLayout& layout,int blinkFrame) {
@@ -303,7 +310,7 @@ std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState& state,con
     for(const auto& line:state.message.lines) {
         const int y=line.y;
         if(y+line.text.height<=border||y>=height-border-1)continue;
-        const int inner=width-2*pad;
+        const int inner=std::max(0,width-2*pad);
         BattleText text=line.text;
         if(text.width>inner) {  // a hard cut, no "…": the game wraps its own lines
             BattleText cut;cut.width=inner;cut.height=text.height;cut.ink.resize(std::size_t(inner)*text.height);

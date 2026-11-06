@@ -259,6 +259,10 @@ void endBattleMenu()
 {
     pc::BattleMenuState& state = pc::battleMenuState();
     const unsigned int revision = state.revision + (s_keys != s_lastKeys || state.kind == pc::BattleMenuKind::none ? 1 : 0);
+    // The party panel and the message window are published by others (any order of the menus).
+    s_building.party.swap(state.party);
+    s_building.portraitPalette = state.portraitPalette;
+    s_building.message = state.message;
     state = s_building;
     state.revision = revision;
     s_lastKeys = s_keys;
@@ -480,11 +484,14 @@ bool publishBattleMessage(MessageWindow* window)
     message.shown = true;
     message.waiting = window->isWaitTrigger() != 0;
     message.height = window->height_;
+    message.shakeX = window->shakeX_;
+    message.shakeY = window->shakeY_;
     for (int i = 0; i < window->lineCount_ && i < 4; i++) {
         MenuTextDisplay* line = window->lines_[i];
         if (line) {
             pc::BattleMessageLine out;
             out.text = lineText(line);
+            out.fullWidth = line->width_ < 256 ? line->width_ : 256;
             out.y = window->config_->margin_ + i * window->lineHeight_ - window->scroll_;
             message.lines.push_back(out);
         }
