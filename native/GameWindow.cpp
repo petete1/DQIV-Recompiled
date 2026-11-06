@@ -285,6 +285,7 @@ bool GameWindow::poll() {
     } else setTouch(down&&!battleMouse_.touchBlocked(shown),static_cast<int>(x),static_cast<int>(y)-192);
     setButtons(buttons);return running_;
 }
+static int gapPixels(int scale) {return 4*scale;}
 void GameWindow::drawBattleWindows(int width,int height) {
     const auto& state=battleMenuState();
     if(gameSettings().battleMenus!=1) {rememberBattleLayout({});return;}
@@ -295,6 +296,18 @@ void GameWindow::drawBattleWindows(int width,int height) {
         const int s=party.scale;
         gpu_->drawOverlay(overlayBattleParty,pixels,party.picture.w/s,party.picture.h/s,true,
             party.picture.x,party.picture.y,width,height,party.picture.w,party.picture.h);
+    }
+    // The message window, above the command panel when both show.
+    auto message=layoutBattleMessage(state,width,height);
+    if(message.picture.w>0) {
+        if(state.kind!=BattleMenuKind::none) {
+            const auto menu=layoutBattleMenu(state,width,height);
+            if(!menu.windows.empty())message.picture.y=std::min(message.picture.y,menu.picture.y-message.picture.h-gapPixels(message.scale));
+        }
+        const auto pixels=composeBattleMessage(state,message,int(SDL_GetTicks()*60/1000));
+        const int s=message.scale;
+        gpu_->drawOverlay(overlayBattleMessage,pixels,message.picture.w/s,message.picture.h/s,true,
+            message.picture.x,message.picture.y,width,height,message.picture.w,message.picture.h);
     }
     if(state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
     const auto layout=layoutBattleMenu(state,width,height);

@@ -1,6 +1,9 @@
 #pragma ipa file
 #include "main/menu/MessageWindow.hpp"
 #ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
+#ifdef DQIV_NATIVE
 #include "Settings.hpp"
 #endif
 #include "main/dss/Display.hpp"
@@ -61,6 +64,12 @@ THUMB void MessageWindow::draw(OamBuffer* main, OamBuffer* sub)
     if (!isDrawable(main, sub) || state_ == 0) {
         return;
     }
+#ifdef DQIV_NATIVE
+    // Classic battles: the port draws the window (BattleWindows.hpp), the DS not.
+    if (publishBattleMessage(this)) {
+        return;
+    }
+#endif
     frame_->setPosition(x_ + shakeX_, y_ + shakeY_);
     frame_->setEnable(1);
     if (namePlate_) {

@@ -81,6 +81,7 @@ THUMB void MenuManager::execute()
     // Classic battle menus: the open battle menu describes itself again below.
     pc::battleMenuState().kind = pc::BattleMenuKind::none;
     pc::battleMenuState().party.clear();
+    pc::battleMenuState().message.shown = false;
 #endif
     if (g_DebugMenu.unkfunc_02058380() == 1) {
         s_redraw = 1;

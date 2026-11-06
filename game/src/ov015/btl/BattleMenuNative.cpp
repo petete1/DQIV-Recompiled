@@ -12,6 +12,10 @@
 #include "main/dss/VramRequest.hpp"
 #include "main/menu/MenuCommonDraw.hpp"
 #include "main/menu/MenuIconData.hpp"
+#include "main/menu/MessageWindow.hpp"
+#include "main/menu/MenuTextDisplay.hpp"
+#include "main/global/GlobalDQ4.hpp"
+#include "main/global/GlobalGamePart.hpp"
 #include "main/dss/UnkMemory.hpp"
 #include "main/menu/MenuUpdateAssist.hpp"
 #include "main/status/UseAction.hpp"
@@ -438,6 +442,57 @@ void publishBattleParty()
         row.portrait = found->second;
         state.party.push_back(row);
     }
+}
+
+namespace {
+// A text display's rendered line (its 4-bit buffer, 256x16), up to what is revealed.
+pc::BattleText lineText(MenuTextDisplay* line)
+{
+    pc::BattleText text;
+    int width = line->visibleWidth_ < line->width_ ? line->visibleWidth_ : line->width_;
+    if (width > 256) {
+        width = 256;
+    }
+    if (width <= 0) {
+        return text;
+    }
+    text.width = width;
+    text.height = 16;
+    text.ink.resize(width * 16);
+    const unsigned char* tiles = (const unsigned char*)line->charData_;
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < width; x++) {
+            const unsigned char pair = tiles[((y >> 3) * 32 + (x >> 3)) * 0x20 + (y & 7) * 4 + (x & 7) / 2];
+            text.ink[y * width + x] = (x & 1) ? pair >> 4 : pair & 15;
+        }
+    }
+    return text;
+}
+}
+
+bool publishBattleMessage(MessageWindow* window)
+{
+    if (!classicBattleMenus() || !g_GlobalDQ4.unkfunc_02058114(BATTLE_PART)) {
+        return false;
+    }
+    pc::BattleMessage& message = pc::battleMenuState().message;
+    message = pc::BattleMessage();
+    message.shown = true;
+    message.waiting = window->isWaitTrigger() != 0;
+    message.height = window->height_;
+    for (int i = 0; i < window->lineCount_ && i < 4; i++) {
+        MenuTextDisplay* line = window->lines_[i];
+        if (line) {
+            pc::BattleMessageLine out;
+            out.text = lineText(line);
+            out.y = window->config_->margin_ + i * window->lineHeight_ - window->scroll_;
+            message.lines.push_back(out);
+        }
+    }
+    if (window->namePlate_ && window->namePlate_->enable_) {
+        message.name = lineText(window->namePlate_);
+    }
+    return true;
 }
 
 void clearBattleMenu()

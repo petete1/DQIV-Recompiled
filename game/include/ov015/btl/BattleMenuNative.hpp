@@ -45,6 +45,10 @@ void drawBattleUseOrEquip(int item, int active);
 // The party panel (Classic): the members' portraits, names, HP, MP and level,
 // as the DS status windows show them (BattleMenuSub_HISTORY draws this instead).
 void publishBattleParty();
+// The battle message window (Classic): its lines as the game rendered them.
+// True when published: the DS window is then not drawn.
+struct MessageWindow;
+bool publishBattleMessage(MessageWindow* window);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

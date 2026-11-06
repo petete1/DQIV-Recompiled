@@ -6,6 +6,7 @@
 #include "NitroVideo.hpp"
 #include "HdPictures.hpp"
 #include <array>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -306,6 +307,23 @@ void barWidths() {
     check(pc::battleBarWidth(-5,100,64)==0,"below zero: an empty bar");
     check(pc::battleBarWidth(1,1000,64)==1,"a little HP still shows");
 }
+void messageInsideWindow() {
+    pc::BattleMenuState state;state.message.shown=true;state.message.height=40;
+    state.message.lines.push_back({ink(400),4});
+    state.message.lines.push_back({ink(100),20});
+    for(const auto [w,h]:{std::pair{640,480},std::pair{1920,1080}}) {
+        const auto layout=pc::layoutBattleMessage(state,w,h);
+        const auto& r=layout.picture;const int s=layout.scale;
+        check(r.x>=0&&r.y>=0&&r.x+r.w<=w&&r.y+r.h<=h,"the message window stays inside the window");
+        check(std::abs(r.x-(w-r.x-r.w))<=s,"the message window is centred");
+        check(r.w==std::min((400+16)*s,w-16*s),"as wide as its widest line (240 at least), or the window less its margins");
+        check(r.y+r.h==h-8*s,"8 DS pixels from the bottom");
+        check(pc::composeBattleMessage(state,layout,0).size()==std::size_t(r.w/s)*(r.h/s),"a message picture at DS scale");
+    }
+    check(pc::layoutBattleMessage(pc::BattleMenuState{},1280,720).picture.w==0,"no message, no window");
+    pc::BattleMenuState small;small.message.shown=true;small.message.lines.push_back({ink(50),4});
+    check(pc::layoutBattleMessage(small,1920,1080).picture.w==240*4,"240 DS pixels for short lines");
+}
 }
 
 int main() {
@@ -334,6 +352,7 @@ int main() {
     panelLook();
     partyInsideWindow();
     barWidths();
+    messageInsideWindow();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
     placedPicturesInColour();

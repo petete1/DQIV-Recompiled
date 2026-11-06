@@ -283,4 +283,49 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
     }
     return out;
 }
+BattleGroupLayout layoutBattleMessage(const BattleMenuState& state,int windowWidth,int windowHeight) {
+    BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
+    if(!state.message.shown)return layout;
+    int widest=0;
+    for(const auto& line:state.message.lines)widest=std::max(widest,line.text.width);
+    const int s=layout.scale,w=std::min(std::max(240,widest+2*pad),windowWidth/s-2*margin),h=std::max(state.message.height,2*pad+row);
+    layout.picture={(windowWidth-w*s)/2,windowHeight-(margin+h)*s,w*s,h*s};
+    return layout;
+}
+std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState& state,const BattleGroupLayout& layout,int blinkFrame) {
+    if(layout.picture.w<=0)return {};
+    const int width=layout.picture.w/layout.scale,height=layout.picture.h/layout.scale;
+    std::vector<std::uint32_t> out(std::size_t(width)*height,0);
+    frame(out,width,{0,0,width,height});
+    std::array<std::uint32_t,16> white;white.fill(0xffffffff);
+    const auto& palette=state.palette[1]?state.palette:white;
+    // The game's lines, cut at the panel's inner width (scrolling lines are cut at its border).
+    for(const auto& line:state.message.lines) {
+        const int y=line.y;
+        if(y+line.text.height<=border||y>=height-border-1)continue;
+        const int inner=width-2*pad;
+        BattleText text=line.text;
+        if(text.width>inner) {  // a hard cut, no "…": the game wraps its own lines
+            BattleText cut;cut.width=inner;cut.height=text.height;cut.ink.resize(std::size_t(inner)*text.height);
+            for(int ty=0;ty<text.height;++ty)std::copy_n(text.ink.data()+std::size_t(ty)*text.width,inner,cut.ink.data()+std::size_t(ty)*inner);
+            text=cut;
+        }
+        // Rows above or below the inside are left out, so lines scroll under the border.
+        for(int ty=0;ty<text.height;++ty) {
+            if(y+ty<border+1||y+ty>=height-border-1)std::fill_n(text.ink.data()+std::size_t(ty)*text.width,text.width,0);
+        }
+        blit(out,width,height,text,pad,y,inner,palette,false);
+    }
+    if(state.message.name.width>0) {
+        const auto& name=state.message.name;
+        for(int y=0;y<std::min(height,name.height);++y)for(int x=pad-2;x<std::min(width,pad+name.width+2);++x)out[std::size_t(y)*width+x]=fill;
+        blit(out,width,height,name,pad,0,width-2*pad,palette,false);
+    }
+    // ▼ while it waits for a button.
+    if(state.message.waiting&&blinkFrame%30<20) {
+        const int x=width-pad-7,y=height-pad-3;
+        for(int ty=0;ty<4;++ty)for(int tx=ty;tx<7-ty;++tx)if(y+ty<height)out[std::size_t(y+ty)*width+x+tx]=tan;
+    }
+    return out;
+}
 }
