@@ -69,6 +69,7 @@ private:
     std::vector<std::uint32_t> battlePicture_;
     std::uint32_t battleRevision_=0;int battleWidth_=0,battleHeight_=0;bool battleBlink_=false;
     std::uint32_t mouseButtons_=0; // the mouse buttons down at the last poll (SDL_MouseButtonFlags)
+    unsigned battlePress_=0;int battlePressPolls_=0; // a click on the battle windows, as A (1) or B (2)
     void setFullscreen(bool);
     // An unlocked achievement, announced in the window's bottom right corner for a few seconds.
     int toast_=-1;

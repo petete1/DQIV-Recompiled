@@ -258,8 +258,14 @@ bool GameWindow::poll() {
     // screen gets nothing while they show, not even over the battle scene.
     int pixelWidth=0,pixelHeight=0;drawableSize(pixelWidth,pixelHeight);
     const std::uint32_t pressed=focus?mouse&~mouseButtons_:0;mouseButtons_=mouse;
-    setBattlePointer(int(mouseX*pixelWidth/std::max(width,1)),int(mouseY*pixelHeight/std::max(height,1)),
-        (pressed&SDL_BUTTON_LMASK)!=0,(pressed&SDL_BUTTON_RMASK)!=0);
+    const int pointerX=int(mouseX*pixelWidth/std::max(width,1)),pointerY=int(mouseY*pixelHeight/std::max(height,1));
+    setBattlePointer(pointerX,pointerY,(pressed&SDL_BUTTON_LMASK)!=0,(pressed&SDL_BUTTON_RMASK)!=0);
+    // A click on an entry is A, a right click B, held a few polls so the game's frame sees it.
+    if(battleWindowsShown()) {
+        if((pressed&SDL_BUTTON_LMASK)&&battleClickAt(pointerX,pointerY)>=0) {battlePress_=1u;battlePressPolls_=3;}
+        if(pressed&SDL_BUTTON_RMASK) {battlePress_=2u;battlePressPolls_=3;}
+    }
+    if(battlePressPolls_>0) {buttons|=battlePress_;--battlePressPolls_;}
     setTouch(down&&!battleWindowsShown(),static_cast<int>(x),static_cast<int>(y)-192);
     setButtons(buttons);return running_;
 }

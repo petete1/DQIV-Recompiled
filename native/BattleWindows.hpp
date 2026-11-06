@@ -48,9 +48,11 @@ int battleEntryAt(const BattleMenuLayout&,int x,int y);
 void rememberBattleLayout(const BattleMenuLayout&);
 // True while classic battle windows are on screen (the window sends no DS touch then).
 bool battleWindowsShown();
-struct BattlePointer {int entry=-1;bool confirm=false,cancel=false;};
+struct BattlePointer {int entry=-1;};
 // The window: the mouse this frame (window pixels, buttons pressed this frame).
 void setBattlePointer(int x,int y,bool leftPressed,bool rightPressed);
-// The game: the pointer against the last drawn layout; a press is taken once.
+// The game: the entry the mouse moved onto or clicked since the last call, or -1.
 BattlePointer takeBattlePointer();
+// The window: the entry a click at this point confirms (pressed as A), or -1.
+int battleClickAt(int x,int y);
 }

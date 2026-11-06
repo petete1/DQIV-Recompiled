@@ -91,10 +91,11 @@ void frame(std::vector<std::uint32_t>& out,int width,const Box& box) {
         out[std::size_t(box.y+y)*width+box.x+x]=dx<border||dy<border||dx+dy==border?white:navy;
     }
 }
+// ▶ (or ◀): 5 wide, 9 tall.
 void triangle(std::vector<std::uint32_t>& out,int width,int x,int y,bool right) {
-    for(int ty=0;ty<7;++ty) {
-        const int span=4-std::abs(ty-3);
-        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+3-tx)]=white;
+    for(int ty=0;ty<9;++ty) {
+        const int span=5-std::abs(ty-4);
+        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+4-tx)]=white;
     }
 }
 }
@@ -152,7 +153,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
         blit(out,width,height,e.label,b.x+cursorWidth,textY,p.labelWidth,state.palette,!e.enabled);
         if(e.right.width>0)
             blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
-        if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))triangle(out,width,b.x+2,b.y+dy+(row-7)/2,true);
+        if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))triangle(out,width,b.x+2,b.y+dy+(row-9)/2,true);
     }
     if(p.footerY>=0) {
         const auto& list=p.windows.back();
@@ -161,34 +162,35 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
             list.w-2*pad-cursorWidth,state.palette,false);
         if(state.pages>1) {
             // ◀ one dot per page (the current one larger) ▶, at the right.
-            int x=list.x+list.w-pad-(state.pages*4+12);
-            triangle(out,width,x,y+(row-7)/2,false);x+=6;
+            int x=list.x+list.w-pad-(state.pages*4+14);
+            triangle(out,width,x,y+(row-9)/2,false);x+=7;
             for(int i=0;i<state.pages;++i,x+=4) {
                 const int size=i==state.page?3:1,cy=y+row/2-size/2;
                 for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx)out[std::size_t(cy+yy)*width+x+xx]=white;
             }
-            triangle(out,width,x+1,y+(row-7)/2,true);
+            triangle(out,width,x+1,y+(row-9)/2,true);
         }
     }
     return out;
 }
 namespace {
 BattleMenuLayout lastLayout;
-int pointerX=-1,pointerY=-1;bool leftPress=false,rightPress=false;
+int pointerX=-1,pointerY=-1,pointedEntry=-1;bool clicked=false;
 }
 void rememberBattleLayout(const BattleMenuLayout& layout) {lastLayout=layout;}
 bool battleWindowsShown() {return !lastLayout.windows.empty();}
-void setBattlePointer(int x,int y,bool leftPressed,bool rightPressed) {
-    pointerX=x;pointerY=y;leftPress=leftPress||leftPressed;rightPress=rightPress||rightPressed;
+void setBattlePointer(int x,int y,bool leftPressed,bool) {
+    pointerX=x;pointerY=y;clicked=clicked||leftPressed;
 }
 BattlePointer takeBattlePointer() {
+    // Resting on an entry points at it once: the keys may move the cursor away.
+    const int entry=battleEntryAt(lastLayout,pointerX,pointerY);
     BattlePointer pointer;
-    pointer.entry=battleEntryAt(lastLayout,pointerX,pointerY);
-    pointer.confirm=leftPress&&pointer.entry>=0;
-    pointer.cancel=rightPress;
-    leftPress=rightPress=false;
+    if(entry!=pointedEntry||clicked)pointer.entry=entry;
+    pointedEntry=entry;clicked=false;
     return pointer;
 }
+int battleClickAt(int x,int y) {return battleEntryAt(lastLayout,x,y);}
 int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     for(std::size_t i=0;i<layout.entries.size();++i) {
         const auto& r=layout.entries[i];

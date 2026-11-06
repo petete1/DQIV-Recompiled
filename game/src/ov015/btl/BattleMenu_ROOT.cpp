@@ -7,6 +7,7 @@
 #include "main/status/PlayerStatus.hpp"
 #include "main/status/StoryStatus.hpp"
 #include "main/status/GameFlag.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 
 THUMB void BattleMenu_ROOT::menuSetup()
 {
@@ -51,6 +52,24 @@ THUMB void BattleMenu_ROOT::menuExecute()
 
 THUMB void BattleMenu_ROOT::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        if (isCancelWait_ == 0) {
+            // drawBattleRootMenu's commands, in its order: Fight, Flee; or
+            // Fight, Formation, Tactics, Flee.
+            beginBattleMenu(pc::BattleMenuKind::root, 1);
+            addBattleEntry(0x80000000, 0, true);
+            if (!isSimpleMenu_) {
+                addBattleEntry(0x80000002, 1, true);
+                addBattleEntry(0x80000001, 2, true);
+            }
+            addBattleEntry(0x80000003, isSimpleMenu_ ? 1 : 3, true);
+            setBattleCursor(menuItem_.active_);
+            endBattleMenu();
+        }
+        return;
+    }
+#endif
     if (isCancelWait_ == 0) {
         drawBattleRootMenu(isSimpleMenu_);
         menuItem_.drawActive();
@@ -76,7 +95,11 @@ THUMB void BattleMenu_ROOT::menuUpdate()
                 redraw_ = 1;
                 return;
             }
+#ifdef DQIV_NATIVE
+            int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
             int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
             if (result == 0) {
                 return;
             }

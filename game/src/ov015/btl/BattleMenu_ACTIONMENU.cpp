@@ -6,6 +6,7 @@
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "main/status/UseAction.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 
 THUMB void BattleMenu_ACTIONMENU::menuSetup()
 {
@@ -31,6 +32,23 @@ THUMB void BattleMenu_ACTIONMENU::menuExecute()
 
 THUMB void BattleMenu_ACTIONMENU::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        // drawBattleActionMenu(0xf0)'s commands under the member's name; the
+        // monster name plates stay the game's.
+        beginBattleMenu(pc::BattleMenuKind::commands, 1);
+        const int chara = btl::BattleMenuPlayerControl::getSingleton()->activeChara_;
+        setBattleTitle(status::g_Party.getPlayerStatus(chara)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000);
+        addBattleEntry(0x80000004, 0, true);
+        addBattleEntry(0x80000005, 1, true);
+        addBattleEntry(0x80000006, 2, true);
+        addBattleEntry(0x80000007, 3, true);
+        setBattleCursor(pageItem_.active_);
+        endBattleMenu();
+        drawMonsterNamePlates(-1);
+        return;
+    }
+#endif
     drawBattleActionMenu(0xf0);
     pageItem_.drawActive();
 }
@@ -56,7 +74,11 @@ THUMB void BattleMenu_ACTIONMENU::menuUpdate()
         }
         return;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(pageItem_, navigator_) : MenuUpdate_Assist::menuSelect(pageItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(pageItem_, navigator_);
+#endif
     if (result == 0) {
         return;
     }

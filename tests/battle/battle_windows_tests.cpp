@@ -96,16 +96,16 @@ void pointerOutsideWindows() {
     const auto layout=pc::layoutBattleMenu(menu(pc::BattleMenuKind::commands,4),1920,1080);
     pc::rememberBattleLayout(layout);
     pc::setBattlePointer(5,5,true,false);
-    auto pointer=pc::takeBattlePointer();
-    check(pointer.entry==-1&&!pointer.confirm,"a click outside a window is no confirm");
+    check(pc::takeBattlePointer().entry==-1,"a click outside a window points at nothing");
+    check(pc::battleClickAt(5,5)==-1,"a click outside a window is no confirm");
     if(layout.entries.size()<2)return;
     const auto& r=layout.entries[1];
+    pc::setBattlePointer(r.x+2,r.y+2,false,false);
+    check(pc::takeBattlePointer().entry==1,"moving onto entry 1 points at it");
+    check(pc::takeBattlePointer().entry==-1,"resting there points at it only once");
     pc::setBattlePointer(r.x+2,r.y+2,true,false);
-    pointer=pc::takeBattlePointer();
-    check(pointer.entry==1&&pointer.confirm,"a click on entry 1 confirms it");
-    check(!pc::takeBattlePointer().confirm,"a click is taken once");
-    pc::setBattlePointer(r.x+2,r.y+2,false,true);
-    check(pc::takeBattlePointer().cancel,"a right click cancels");
+    check(pc::takeBattlePointer().entry==1,"clicking entry 1 points at it again");
+    check(pc::battleClickAt(r.x+2,r.y+2)==1,"a click on entry 1 confirms it");
 }
 void settingToggles() {
     check(!pc::gameSettings().classicBattleMenus,"Original by default");
