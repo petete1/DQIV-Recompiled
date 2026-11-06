@@ -25,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6,overlayBattleParty=30,overlayBattleMessage=31}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -287,7 +287,16 @@ bool GameWindow::poll() {
 }
 void GameWindow::drawBattleWindows(int width,int height) {
     const auto& state=battleMenuState();
-    if(gameSettings().battleMenus!=1||state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
+    if(gameSettings().battleMenus!=1) {rememberBattleLayout({});return;}
+    // The party panel, whenever the battle shows its status (small: drawn anew each time).
+    const auto party=layoutBattleParty(state,width,height);
+    if(party.picture.w>0) {
+        const auto pixels=composeBattleParty(state,party);
+        const int s=party.scale;
+        gpu_->drawOverlay(overlayBattleParty,pixels,party.picture.w/s,party.picture.h/s,true,
+            party.picture.x,party.picture.y,width,height,party.picture.w,party.picture.h);
+    }
+    if(state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
     const auto layout=layoutBattleMenu(state,width,height);
     rememberBattleLayout(layout);
     if(layout.windows.empty())return;

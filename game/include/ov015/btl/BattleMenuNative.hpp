@@ -42,6 +42,9 @@ void battleListInput(menu::MenuItem& item);
 void drawBattleSpells(const int* actions, int count, int page, int active);
 void drawBattleItems(const int* items, int count, int page, int active);
 void drawBattleUseOrEquip(int item, int active);
+// The party panel (Classic): the members' portraits, names, HP, MP and level,
+// as the DS status windows show them (BattleMenuSub_HISTORY draws this instead).
+void publishBattleParty();
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

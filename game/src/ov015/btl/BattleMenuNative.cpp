@@ -11,6 +11,8 @@
 #include "main/dss/TextConvert.hpp"
 #include "main/dss/VramRequest.hpp"
 #include "main/menu/MenuCommonDraw.hpp"
+#include "main/menu/MenuIconData.hpp"
+#include "main/dss/UnkMemory.hpp"
 #include "main/menu/MenuUpdateAssist.hpp"
 #include "main/status/UseAction.hpp"
 #include "main/status/PartyStatus.hpp"
@@ -383,6 +385,59 @@ void drawBattleUseOrEquip(int item, int active)
     addBattleEntry(0x8000006b, 1, true);
     setBattleCursor((short)active);
     endBattleMenu();
+}
+
+void publishBattleParty()
+{
+    pc::BattleMenuState& state = pc::battleMenuState();
+    state.party.clear();
+    btl::BattleMenuPlayerControl* control = btl::BattleMenuPlayerControl::getSingleton();
+    // The portraits: the game's menu faces (32x32, 8-bit), with the main BG palette.
+    static std::map<int, std::vector<std::uint8_t> > s_portraits;
+    const PaletteBuffer* palette = getBgPaletteBuffer(0);
+    for (int i = 0; i < 256; i++) {
+        state.portraitPalette[i] = rgb(palette->color_[i]);
+    }
+    const int count = status::g_Party.getCarriageOutCount();
+    for (int i = 0; i < count && i < 4; i++) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
+        pc::BattlePartyRow row;
+        row.name = battleText(info->haveStatus_.playerIndex_ + 0x50000000);
+        row.label = battleText(control->getCondition(i));   // "Lv.", or the member's condition
+        if (!control->isConditionChange(i)) {
+            row.level = battleNumber(info->haveStatus_.isBattleNpc_ ? 0 : info->haveStatus_.level_);
+        }
+        row.hpValue = control->memberHP_[i];
+        row.hpMax = info->getHpMax();
+        row.mpValue = control->memberMP_[i];
+        row.mpMax = info->getMpMax();
+        row.hp = battleNumber(row.hpValue);
+        row.mp = battleNumber(row.mpValue);
+        row.hpLabel = battleText(0xa0000001);
+        row.mpLabel = battleText(0xa0000002);
+        row.colour = control->getHPColor(i);
+        row.active = control->activeChara_ == i;
+        const int icon = info->haveStatus_.iconIndex_;
+        auto found = s_portraits.find(icon);
+        if (found == s_portraits.end()) {
+            std::vector<std::uint8_t> pixels;
+            void* data = getMenuIconData(0xf1000000, icon);
+            if (data != NULL && getUncompressedSize(data) == 32 * 32) {
+                unsigned char* picture = (unsigned char*)uncompressAlloc(data);
+                // 4x4 tiles of 8x8 to rows (as HdPictures' linear()).
+                pixels.resize(32 * 32);
+                for (int y = 0; y < 32; y++) {
+                    for (int x = 0; x < 32; x++) {
+                        pixels[y * 32 + x] = picture[((y / 8) * 4 + x / 8) * 64 + (y % 8) * 8 + x % 8];
+                    }
+                }
+                dssFree(&g_appHeap, picture);
+            }
+            found = s_portraits.insert(std::make_pair(icon, pixels)).first;
+        }
+        row.portrait = found->second;
+        state.party.push_back(row);
+    }
 }
 
 void clearBattleMenu()

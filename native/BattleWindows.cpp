@@ -68,7 +68,7 @@ Plan plan(const BattleMenuState& state,int width) {
     return p;
 }
 void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText& text,int x,int y,int maxWidth,
-    const std::array<std::uint32_t,16>& palette,bool dim) {
+    const std::array<std::uint32_t,16>& palette,bool dim,std::uint32_t tone=cream) {
     const bool cut=text.width>maxWidth;
     const int shown=cut?std::max(0,maxWidth-7):text.width;
     for(int ty=0;ty<text.height;++ty)for(int tx=0;tx<shown;++tx) {
@@ -77,7 +77,7 @@ void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText&
         if(!index||px<0||py<0||px>=width||py>=height)continue;
         auto colour=palette[index&15];
         // The game's white letters in cream (its dark edges stay dark).
-        auto tint=[&](unsigned shift){return (((colour>>shift)&255)*((cream>>shift)&255)/255)<<shift;};
+        auto tint=[&](unsigned shift){return (((colour>>shift)&255)*((tone>>shift)&255)/255)<<shift;};
         colour=(colour&0xff000000)|tint(16)|tint(8)|tint(0);
         if(dim)colour=(colour&0xff000000)|((colour>>1)&0x007f7f7f);
         out[std::size_t(py)*width+px]=colour;
@@ -224,5 +224,63 @@ int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
         if(x>=r.x&&y>=r.y&&x<r.x+r.w&&y<r.y+r.h)return int(i);
     }
     return -1;
+}
+namespace {
+// The party panel (DS pixels): rows of 46, 140 wide: a 24-pixel fade, the
+// portrait with the level under it, then the name, HP and MP at the right.
+constexpr int partyRow=46,partyWidth=140,partyFade=24,partyInfo=partyFade+38,partyRight=partyWidth-4;
+constexpr std::uint32_t green=0xff90e070,yellow=0xfff0d050,red=0xfff06050,hpBar=0xff60d040,mpBar=0xff4090f0,barBack=0xff202020;
+}
+int battleBarWidth(int value,int max,int width) {
+    if(max<=0||value<=0)return 0;
+    if(value>=max)return width;
+    return std::max(1,int((long long)value*width/max));
+}
+BattleGroupLayout layoutBattleParty(const BattleMenuState& state,int windowWidth,int windowHeight) {
+    BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
+    if(state.party.empty())return layout;
+    const int s=layout.scale,h=int(state.party.size())*partyRow;
+    layout.picture={windowWidth-(margin+partyWidth)*s,windowHeight-(margin+h)*s,partyWidth*s,h*s};
+    return layout;
+}
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout) {
+    if(layout.picture.w<=0)return {};
+    const int width=partyWidth,height=int(state.party.size())*partyRow;
+    std::vector<std::uint32_t> out(std::size_t(width)*height,0);
+    std::array<std::uint32_t,16> white;white.fill(0xffffffff);
+    // The palette the text inks map through: the menu text palette of the state.
+    const auto& palette=state.palette[1]?state.palette:white;
+    auto rect=[&](int x,int y,int w,int h,std::uint32_t colour) {
+        for(int yy=std::max(0,y);yy<std::min(height,y+h);++yy)for(int xx=std::max(0,x);xx<std::min(width,x+w);++xx)
+            out[std::size_t(yy)*width+xx]=colour;
+    };
+    for(std::size_t r=0;r<state.party.size();++r) {
+        const auto& row=state.party[r];
+        const int top=int(r)*partyRow;
+        // The strip: dark (lighter brown for the member choosing), fading in over its left part.
+        const std::uint32_t strip=row.active?0x403020:0x000000;
+        for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
+            const unsigned alpha=x<partyFade?0xa0u*unsigned(x)/partyFade:0xa0u;
+            auto part=[&](unsigned shift){return (((strip>>shift)&255)*alpha/255)<<shift;};
+            out[std::size_t(y)*width+x]=(alpha<<24)|part(16)|part(8)|part(0);
+        }
+        if(row.portrait.size()==32*32)
+            for(int y=0;y<32;++y)for(int x=0;x<32;++x)
+                if(const auto index=row.portrait[std::size_t(y)*32+x])out[std::size_t(top+1+y)*width+partyFade+x]=state.portraitPalette[index];
+        const std::uint32_t tone=row.colour==2?red:row.colour==1?yellow:cream;
+        blit(out,width,height,row.label,partyFade,top+33,36,palette,false,tone);
+        blit(out,width,height,row.level,partyFade+36-row.level.width,top+33,36,palette,false,tone);
+        blit(out,width,height,row.name,partyRight-row.name.width,top-1,partyRight-partyInfo,palette,false,row.colour?tone:green);
+        const int barWidth=partyRight-partyInfo;
+        for(int k=0;k<2;++k) {
+            const int y=top+14+k*16;
+            rect(partyInfo,y+11,barWidth,3,barBack);
+            rect(partyInfo,y+11,battleBarWidth(k?row.mpValue:row.hpValue,k?row.mpMax:row.hpMax,barWidth),3,k?mpBar:(row.colour?tone:hpBar));
+            blit(out,width,height,k?row.mpLabel:row.hpLabel,partyInfo,y-2,barWidth,palette,false,tone);
+            const auto& number=k?row.mp:row.hp;
+            blit(out,width,height,number,partyRight-number.width,y-2,barWidth,palette,false,tone);
+        }
+    }
+    return out;
 }
 }

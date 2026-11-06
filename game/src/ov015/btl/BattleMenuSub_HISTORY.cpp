@@ -1,6 +1,7 @@
 #include "ov015/btl/BattleMenu.hpp"
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "main/status/PartyStatus.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 
 THUMB void BattleMenuSub_HISTORY::menuSetup()
 {
@@ -18,6 +19,14 @@ THUMB void BattleMenuSub_HISTORY::menuExecute()
 
 THUMB void BattleMenuSub_HISTORY::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    // Classic: the party panel at the right instead of the DS status windows.
+    if (classicBattleMenus()) {
+        status::g_Party.setBattleMode();
+        publishBattleParty();
+        return;
+    }
+#endif
     if (history_ != 0) {
         status::g_Party.setBattleMode();
         drawBattleHistory(commandChara_);

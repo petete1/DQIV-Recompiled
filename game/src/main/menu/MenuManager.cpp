@@ -80,6 +80,7 @@ THUMB void MenuManager::execute()
 #ifdef DQIV_NATIVE
     // Classic battle menus: the open battle menu describes itself again below.
     pc::battleMenuState().kind = pc::BattleMenuKind::none;
+    pc::battleMenuState().party.clear();
 #endif
     if (g_DebugMenu.unkfunc_02058380() == 1) {
         s_redraw = 1;

@@ -280,6 +280,32 @@ void panelLook() {
     for(std::uint32_t p:pixels)hand=hand||p==0xfff0c040u;
     check(hand,"the golden hand cursor");
 }
+pc::BattleMenuState partyOf(int members) {
+    pc::BattleMenuState state;
+    for(int i=0;i<members;++i) {
+        pc::BattlePartyRow row;row.name=ink(40);row.hpValue=50;row.hpMax=100;row.mpValue=10;row.mpMax=20;
+        row.portrait.assign(32*32,1);state.party.push_back(row);
+    }
+    return state;
+}
+void partyInsideWindow() {
+    for(const auto [w,h]:{std::pair{640,480},std::pair{1280,720}}) {
+        const auto layout=pc::layoutBattleParty(partyOf(4),w,h);
+        const auto& r=layout.picture;
+        check(r.x>=0&&r.y>=0&&r.x+r.w<=w&&r.y+r.h<=h,"the party panel stays inside the window");
+        check(r.x+r.w==w-8*layout.scale,"the party panel 8 DS pixels from the right edge");
+        check(r.y+r.h==h-8*layout.scale,"the party panel 8 DS pixels from the bottom");
+        check(pc::composeBattleParty(partyOf(4),layout).size()==std::size_t(r.w/layout.scale)*(r.h/layout.scale),"a party picture at DS scale");
+    }
+    check(pc::layoutBattleParty(pc::BattleMenuState{},1280,720).picture.w==0,"no party, no panel");
+}
+void barWidths() {
+    check(pc::battleBarWidth(50,100,64)==32,"half HP, half the bar");
+    check(pc::battleBarWidth(0,0,64)==0,"no maximum: an empty bar");
+    check(pc::battleBarWidth(150,100,64)==64,"over the maximum: a full bar");
+    check(pc::battleBarWidth(-5,100,64)==0,"below zero: an empty bar");
+    check(pc::battleBarWidth(1,1000,64)==1,"a little HP still shows");
+}
 }
 
 int main() {
@@ -306,6 +332,8 @@ int main() {
     noRuleFollowsSmallerTopScreen();
     touchesOnlyWhatShows();
     panelLook();
+    partyInsideWindow();
+    barWidths();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
     placedPicturesInColour();

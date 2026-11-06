@@ -16,6 +16,14 @@ struct BattleMenuEntry {
     short index=0;           // the game's MenuItem::active_ for this entry
     bool enabled=true;
 };
+// One member of the party panel (Classic, at the right of the window).
+struct BattlePartyRow {
+    BattleText name,label,level,hp,mp,hpLabel,mpLabel; // label: "Lv." or the member's condition; level empty then
+    std::vector<std::uint8_t> portrait;                // 32x32 palette indices (0 transparent), may be empty
+    int hpValue=0,hpMax=0,mpValue=0,mpMax=0;
+    int colour=0;                                      // the game's HP colour: 0 normal, 1 low, 2 down
+    bool active=false;                                 // choosing a command now
+};
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
     BattleText title,footer;          // member name (or a message); "MP left" line (may be empty)
@@ -26,6 +34,9 @@ struct BattleMenuState {
     bool waiting=true;
     std::array<std::uint32_t,16> palette{};  // ARGB of BG palette 15
     std::uint32_t revision=0;         // changes whenever anything above changes
+    std::vector<BattlePartyRow> party;               // empty: no party panel
+    std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the portraits' palette
+    std::uint32_t partyRevision=0;                   // changes whenever the party panel changes
 };
 // Filled by the game each frame (kind none when no battle menu draws).
 BattleMenuState& battleMenuState();
@@ -37,6 +48,13 @@ struct BattleMenuLayout {
     BattleRect picture;                   // where the composed picture goes
 };
 int battleScale(int windowHeight);
+// A group drawn on its own (the party panel, the message window): where its picture goes.
+struct BattleGroupLayout {int scale=1;BattleRect picture;};
+// The party panel: right edge and bottom, 8 DS pixels in; picture.w 0 without a party.
+BattleGroupLayout layoutBattleParty(const BattleMenuState&,int windowWidth,int windowHeight);
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&);
+// A bar's filled width: clamped to 0..width, 0 when max <= 0, at least 1 when value > 0.
+int battleBarWidth(int value,int max,int width);
 BattleMenuLayout layoutBattleMenu(const BattleMenuState&,int windowWidth,int windowHeight);
 // The entry index after a direction (0 up, 1 down, 2 left, 3 right), or -1 to pass it to the game (page turn).
 int moveBattleCursor(const BattleMenuState&,int cursor,int direction);
