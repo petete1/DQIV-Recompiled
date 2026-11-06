@@ -142,6 +142,7 @@ add_library(dqiv_core STATIC
     native/Texture.cpp
     native/DualScreen.cpp
     native/Settings.cpp
+    native/BattleWindows.cpp
     native/MobileSound.cpp
     native/Profile.cpp)
 target_include_directories(dqiv_core PUBLIC native native/compat game/include game/libs/NitroSDK/include game/libs/NitroSystem/include)
@@ -157,6 +158,10 @@ target_link_libraries(dqiv_pack PRIVATE dqiv_core)
 # Save pages tests: build64/dqiv_save_tests.
 add_executable(dqiv_save_tests EXCLUDE_FROM_ALL tests/save/save_pages_tests.cpp)
 target_link_libraries(dqiv_save_tests PRIVATE dqiv_core)
+
+# Classic battle windows tests: build64/dqiv_battle_tests.
+add_executable(dqiv_battle_tests EXCLUDE_FROM_ALL tests/battle/battle_windows_tests.cpp)
+target_link_libraries(dqiv_battle_tests PRIVATE dqiv_core)
 
 # The original game (decompiled sources), each DS overlay in its own sections.
 include(cmake/NativeOverlays.cmake)
