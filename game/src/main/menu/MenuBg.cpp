@@ -9,6 +9,13 @@
 #ifdef DQIV_NATIVE
 #include "main/dss/UnkMemory.hpp"
 #include "HdPictures.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuLayers.hpp"
+// Overlay menus: the layer that asked for each icon, and blank maps for the DS.
+static int s_requestLayer[56];
+static unsigned short s_blankScreen[0x300];
+static unsigned short s_blankIcons[0x300];
+#endif
 
 namespace {
 // Gives the renderer the 32 x 32 picture an icon's tiles show (the icon itself,
@@ -247,6 +254,9 @@ THUMB void MenuIconBg::drawIcon(int x, int y, int w, int h, int type, int index)
 
 THUMB void MenuIconBg::requestIcon(int x, int y, int w, int h, int type, int index)
 {
+#ifdef DQIV_NATIVE
+    s_requestLayer[requestCount_] = currentMenuLayer();
+#endif
     requests_[requestCount_].set(x, y, w, h, type, index);
     requestCount_++;
 }
@@ -279,9 +289,23 @@ THUMB void MenuIconBg::drawRequestsOfType(int type)
 THUMB void MenuIconBg::flush(int frame)
 {
     if (enable_) {
+#ifdef DQIV_NATIVE
+        if (overlayMenusOn()) {
+            // Overlay menus: each request's cells to its layer, nothing to the DS.
+            drawRequests();
+            for (int i = 0; i < requestCount_; i++) {
+                keepMenuLayerIcon(s_requestLayer[i], requests_[i].x_, requests_[i].y_, requests_[i].w_, requests_[i].h_, screenData_);
+            }
+            if (frame == 1) {
+                requestVramCopy(getBgScreenVramType(3), 0, s_blankIcons, 0x600);
+            }
+        } else
+#endif
+        {
         drawRequests();
         if (frame == 1) {
             requestVramCopy(getBgScreenVramType(3), 0, screenData_, 0x600);
+        }
         }
         for (int i = 0; i < 28; i++) {
             if (slots_[i].getState() == 1) {
@@ -319,6 +343,29 @@ THUMB void transferMenuBg()
     int frame = getDisplayFrame() & 1;
     int line = frame * 192;
     int index = getTextBgAtY(line);
+#ifdef DQIV_NATIVE
+    // Overlay menus: their cells leave the text BG (the message text's stay), the back BG gets a blank map.
+    if (overlayMenusOn()) {
+        if (index != -1) {
+            unsigned short* dst = getScreenBufferCell(getDebugScreenBuffer(), 0, frame * 24);
+            for (int i = 0; i < 0x300; i++, dst++) {
+                if (*dst < 0xf020 || *dst == 0xf07f || *dst >= 0xf080) {
+                    *dst = 0xf000;
+                }
+            }
+        }
+        index = unkfunc_02081608(line);
+        if (index != -1) {
+            for (int i = 0; i < 0x300; i++) {
+                s_blankScreen[i] = 0xf000;
+            }
+            requestVramCopy(getBgScreenVramType(index), 0, s_blankScreen, 0x600);
+        }
+        bg->icon_.flush(frame);
+        bg->transferCount_--;
+        return;
+    }
+#endif
     if (index != -1) {
         int y = frame * 24;
         void* chr = getCharBufferTile(bg->window_.getCharBuffer(), 0, y);

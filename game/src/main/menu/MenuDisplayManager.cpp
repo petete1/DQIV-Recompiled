@@ -1,6 +1,9 @@
 #include "main/menu/MenuDisplays.hpp"
 #include "main/dss/Display.hpp"
 #include "main/menu/MenuSystem.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuLayers.hpp"
+#endif
 
 MenuDisplays g_MenuDisplays;
 
@@ -46,6 +49,13 @@ THUMB void updateMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
+#ifdef DQIV_NATIVE
+    // Overlay menus: the sprites of both screens, every frame, for the overlay only.
+    if (overlayMenusOn()) {
+        main = overlayMenuOam(0);
+        sub = overlayMenuOam(1);
+    }
+#endif
     g_MenuDisplays.message_.update(main, sub);
     g_MenuDisplays.yesNo_.update(main, sub);
     g_MenuDisplays.face_.update(main, sub);
@@ -67,6 +77,12 @@ THUMB void executeMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
+#ifdef DQIV_NATIVE
+    if (overlayMenusOn()) {
+        main = overlayMenuOam(0);
+        sub = overlayMenuOam(1);
+    }
+#endif
     g_MenuDisplays.message_.execute(main, sub);
     g_MenuDisplays.yesNo_.execute(main, sub);
     g_MenuDisplays.face_.execute(main, sub);
@@ -88,6 +104,12 @@ THUMB void drawMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
+#ifdef DQIV_NATIVE
+    if (overlayMenusOn()) {
+        main = overlayMenuOam(0);
+        sub = overlayMenuOam(1);
+    }
+#endif
     g_MenuDisplays.face_.draw(main, sub);
     g_MenuDisplays.icon_.draw(main, sub);
     g_MenuDisplays.sprite_.draw(main, sub);

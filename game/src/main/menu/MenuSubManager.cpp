@@ -1,5 +1,8 @@
 #include "main/menu/MenuManager.hpp"
 #include "main/menu/MenuPartsDraw.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuLayers.hpp"
+#endif
 
 THUMB void MenuSubManager::setup()
 {
@@ -29,7 +32,19 @@ THUMB void MenuSubManager::draw(int x, int y)
         menu::MenuBase* menu = m_menu[i];
         if (menu) {
             setMenuDrawOffset(x, y);
+#ifdef DQIV_NATIVE
+            // Overlay menus: each menu into buffers of its own (MenuLayers.hpp).
+            const bool layer = overlayMenusOn();
+            if (layer) {
+                beginMenuLayer(menu);
+            }
             menu->menuBaseDraw();
+            if (layer) {
+                endMenuLayer();
+            }
+#else
+            menu->menuBaseDraw();
+#endif
         }
     }
 }

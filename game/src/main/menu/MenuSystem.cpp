@@ -1,4 +1,7 @@
 #include "main/menu/MenuSystem.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuLayers.hpp"
+#endif
 #include "main/menu/MenuIconData.hpp"
 #include "main/menu/MenuManager.hpp"
 
@@ -40,4 +43,7 @@ ARM void drawMenuSystem()
 {
     drawMenuDisplays();
     transferMenuBg();
+#ifdef DQIV_NATIVE
+    publishMenuLayers();
+#endif
 }
