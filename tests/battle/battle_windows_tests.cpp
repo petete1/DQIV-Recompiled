@@ -4,6 +4,7 @@
 #include "OverlayMenus.hpp"
 #include "Display.hpp"
 #include "NitroVideo.hpp"
+#include "HdPictures.hpp"
 #include <array>
 #include <iostream>
 #include <string>
@@ -152,6 +153,15 @@ struct TestLayer {
     void cell(int x,int y) {window[y*32+x]=0x0081;}
     void box(int x0,int y0,int x1,int y1) {for(int y=y0;y<=y1;++y)for(int x=x0;x<=x1;++x)cell(x,y);}
 };
+// Both DS screens stacked at window x, the top one's corner at y 0.
+std::array<pc::ScreenPlace,2> screensAt(float x,float scale) {return {pc::ScreenPlace{x,0,scale},pc::ScreenPlace{x,192*scale,scale}};}
+void noRuleFollowsSmallerTopScreen() {
+    TestLayer status;status.box(0,1,31,22);  // a top-screen menu {0,8,256,176}
+    const auto maps=status.maps(pc::OverlayMenu::other);
+    const std::array<pc::ScreenPlace,2> screens{pc::ScreenPlace{700,0,1.5f},pc::ScreenPlace{640,384,2}};
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,screens,2);
+    check(p.size()==1&&p[0].x==700&&p[0].y==12&&p[0].w==384&&p[0].h==264,"a top-screen menu follows the top screen's own place and scale");
+}
 void areaOfCells() {
     TestLayer layer;layer.cell(3,26);layer.cell(10,30);
     const auto a=pc::drawnArea(layer.maps(pc::OverlayMenu::other));
@@ -162,19 +172,19 @@ void areaOfCells() {
 void ruleAnchorsBottomLeft() {
     TestLayer root;root.box(2,34,13,39);  // DS pixels {16,272,96,48}
     const auto maps=root.maps(pc::OverlayMenu::battleRoot);
-    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,4);
-    check(p.size()==1&&p[0].x==32&&p[0].y==1080-32-48*4&&p[0].scale==4,"Root at the bottom left, 8 DS pixels in");
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,screensAt(640,4),4);
+    check(p.size()==1&&p[0].x==32&&p[0].y==1080-32-48*4&&p[0].w==96*4&&p[0].h==48*4,"Root at the bottom left, 8 DS pixels in");
 }
 void noRuleStaysOnDs() {
     TestLayer other;other.box(5,25,14,28);  // {40,200,80,32}
     const auto maps=other.maps(pc::OverlayMenu::other);
-    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,2);
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,screensAt(640,2),2);
     check(p.size()==1&&p[0].x==640+80&&p[0].y==400,"a menu without a rule stays where the DS shows it");
 }
 void pointerMapsBackToLayer() {
     TestLayer root;root.box(2,34,13,39);
     const auto maps=root.maps(pc::OverlayMenu::battleRoot);
-    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,4);
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,screensAt(640,4),4);
     int dsX=0,dsY=0;
     check(pc::pointerOnLayer(p,p[0].x+40,p[0].y+20,dsX,dsY)&&dsX==26&&dsY==277,"a point on a moved layer maps to its DS place");
     check(!pc::pointerOnLayer(p,5,5,dsX,dsY),"a point off every layer is on none");
@@ -182,17 +192,17 @@ void pointerMapsBackToLayer() {
 void layersKeepTheirOwnCells() {
     TestLayer commands,spells;commands.box(2,34,13,45);spells.box(10,30,29,40);  // overlapping on the DS
     const std::array<pc::MenuLayerMaps,2> maps{commands.maps(pc::OverlayMenu::battleCommands),spells.maps(pc::OverlayMenu::battleSpells)};
-    const auto p=pc::placeLayers(maps,1920,1080,640,0,4);
+    const auto p=pc::placeLayers(maps,1920,1080,screensAt(640,4),4);
     check(p.size()==2,"two placements");
     if(p.size()<2)return;
-    const bool apart=p[1].x>=p[0].x+p[0].area.w*4;
+    const bool apart=p[1].x>=p[0].x+p[0].w;
     check(apart,"the spell list goes beside the commands, not over them");
     check(p[0].area.w==96&&p[1].area.x==80&&p[1].area.w==160,"each area is its own map's box");
 }
 void spriteGoesToContainingLayer() {
     TestLayer a,b;a.box(0,24,15,35);b.box(8,30,23,40);
     const std::array<pc::MenuLayerMaps,2> maps{a.maps(pc::OverlayMenu::other),b.maps(pc::OverlayMenu::other)};
-    const auto p=pc::placeLayers(maps,1920,1080,640,0,2);
+    const auto p=pc::placeLayers(maps,1920,1080,screensAt(640,2),2);
     check(pc::spriteLayer(p,100,260)==1,"a sprite where two layers overlap goes to the upper one");
     check(pc::spriteLayer(p,20,200)==0,"a sprite on the first layer only goes to it");
     check(pc::spriteLayer(p,250,10)==-1,"a sprite on no layer goes to none");
@@ -227,6 +237,19 @@ void rendersRamAndVramTiles() {
     check(picture[8]==picture[0],"a character from the layer's own buffer");
     check(picture[16]==0,"no character: transparent");
 }
+void placedPicturesInColour() {
+    std::array<std::uint8_t,32*32> source;source.fill(1);
+    pc::placeHdPicture(0,10,20,20,20,source);
+    std::array<std::uint8_t,0x200> palette{};palette[2]=0x1f;   // colour 1: red
+    const auto pictures=pc::placedHdPictures(0,palette);
+    check(pictures.size()==1,"one placed picture");
+    if(pictures.size()!=1)return;
+    const auto& p=pictures[0];
+    check(p.x==10&&p.y==20&&p.width==20&&p.height==20&&p.size==32,"its place and size");
+    check(p.pixels.size()==32*32&&p.pixels[0]==0xffff0000u,"its pixels in the palette's colours");
+    pc::clearHdPictures(0);
+    check(pc::placedHdPictures(0,palette).empty(),"none once cleared");
+}
 }
 
 int main() {
@@ -250,8 +273,10 @@ int main() {
     pointerMapsBackToLayer();
     layersKeepTheirOwnCells();
     spriteGoesToContainingLayer();
+    noRuleFollowsSmallerTopScreen();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
+    placedPicturesInColour();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

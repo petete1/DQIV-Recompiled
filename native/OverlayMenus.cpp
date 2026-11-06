@@ -1,5 +1,6 @@
 #include "OverlayMenus.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace pc {
 namespace {
@@ -29,18 +30,22 @@ const OverlayRule* overlayRule(OverlayMenu menu) {
     }
 }
 std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps> layers,int windowWidth,int windowHeight,
-    int dsOriginX,int dsOriginY,int dsScale) {
+    const std::array<ScreenPlace,2>& screens,int ruleScale) {
     std::vector<LayerPlacement> out;
-    const int s=std::max(1,dsScale);
+    const int s=std::max(1,ruleScale);
     // The commands' width: the lists open beside them.
     int besideCommands=0;
     for(const auto& layer:layers)if(layer.menu==OverlayMenu::battleCommands)besideCommands=drawnArea(layer).w+gap;
     for(const auto& layer:layers) {
-        LayerPlacement p;p.area=drawnArea(layer);p.scale=s;
+        LayerPlacement p;p.area=drawnArea(layer);
         const OverlayRule* rule=overlayRule(layer.menu);
         if(!rule) {
-            p.x=dsOriginX+p.area.x*s;p.y=dsOriginY+p.area.y*s;
+            const ScreenPlace& screen=screens[p.area.y>=192?1:0];
+            const int top=p.area.y>=192?192:0;
+            p.x=int(std::lround(screen.x+p.area.x*screen.scale));p.y=int(std::lround(screen.y+(p.area.y-top)*screen.scale));
+            p.w=int(std::lround(p.area.w*screen.scale));p.h=int(std::lround(p.area.h*screen.scale));
         } else {
+            p.w=p.area.w*s;p.h=p.area.h*s;
             const bool list=layer.menu==OverlayMenu::battleSpells||layer.menu==OverlayMenu::battleItems||
                 layer.menu==OverlayMenu::battleUseOrEquip;
             const int offsetX=rule->offsetX+(list?besideCommands:0),w=p.area.w*s,h=p.area.h*s;
@@ -53,9 +58,9 @@ std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps> layers,in
 }
 bool pointerOnLayer(std::span<const LayerPlacement> placements,int x,int y,int& dsX,int& dsY) {
     for(auto p=placements.rbegin();p!=placements.rend();++p) {
-        const DsRect onWindow{p->x,p->y,p->area.w*p->scale,p->area.h*p->scale};
+        const DsRect onWindow{p->x,p->y,p->w,p->h};
         if(!inside(onWindow,x,y))continue;
-        dsX=p->area.x+(x-p->x)/p->scale;dsY=p->area.y+(y-p->y)/p->scale;
+        dsX=p->area.x+(x-p->x)*p->area.w/p->w;dsY=p->area.y+(y-p->y)*p->area.h/p->h;
         return true;
     }
     return false;

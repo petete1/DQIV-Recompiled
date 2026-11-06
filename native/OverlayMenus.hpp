@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <span>
 #include <vector>
@@ -23,12 +24,15 @@ DsRect drawnArea(const MenuLayerMaps&);
 struct OverlayRule {int anchorX=0,anchorY=0;int offsetX=0,offsetY=0;};
 // nullptr: the menu stays where the DS screens show it.
 const OverlayRule* overlayRule(OverlayMenu);
-struct LayerPlacement {DsRect area;int x=0,y=0;int scale=1;}; // window pixels of the area's top-left
+// Where the presented picture shows a DS screen: the window pixel of its
+// corner and window pixels per DS pixel (the top screen can be smaller).
+struct ScreenPlace {float x=0,y=0,scale=1;};
+struct LayerPlacement {DsRect area;int x=0,y=0,w=0,h=0;}; // window pixels: the area's top-left and drawn size
 // All layers at once (a rule can depend on another layer's area), in the
-// layers' order. dsOrigin: window pixels of DS pixel (0,0) as presented;
-// dsScale: window pixels per DS pixel.
+// layers' order. A menu with a rule is drawn at `ruleScale` window pixels per
+// DS pixel; one without stays on its screen (the area's top row's), as presented.
 std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps>,int windowWidth,int windowHeight,
-    int dsOriginX,int dsOriginY,int dsScale);
+    const std::array<ScreenPlace,2>& screens,int ruleScale);
 // The topmost placement under a window point (later ones are drawn above), and that point's DS coordinates.
 bool pointerOnLayer(std::span<const LayerPlacement>,int x,int y,int& dsX,int& dsY);
 // The layer a sprite (its DS centre) belongs to: the topmost whose area contains it, or -1.

@@ -146,6 +146,20 @@ void placeHdPicture(int screen,int x,int y,int width,int height,std::uint64_t ke
 void clearHdPictures(int screen) {
     if(screen>=0&&screen<=1)placed()[screen].clear();
 }
+std::vector<HdPlacedPicture> placedHdPictures(int screen,std::span<const std::uint8_t> palette) {
+    std::vector<HdPlacedPicture> out;
+    if(screen<0||screen>1)return out;
+    for(const auto& picture:placed()[screen]) {
+        HdPlacedPicture p{picture.x,picture.y,picture.width,picture.height};
+        if(picture.argb) {p.size=hdCellSize;p.pixels=*picture.argb;}
+        else {
+            p.size=hdSourceSize;p.pixels.resize(hdSourceSize*hdSourceSize);
+            for(std::size_t i=0;i<p.pixels.size();++i)p.pixels[i]=picture.indices[i]?colour(palette,picture.indices[i]):0;
+        }
+        out.push_back(std::move(p));
+    }
+    return out;
+}
 void hdScreenTags(int screen,std::span<const std::uint8_t> palette,std::span<std::uint32_t> tags) {
     for(const auto& picture:placed()[screen]) {
         const int cell=picture.argb?cellFor(picture.key,*picture.argb):cellFor(picture.indices,palette);

@@ -33,6 +33,10 @@ void placeHdPicture(int screen,int x,int y,int width,int height,std::span<const 
 void placeHdPicture(int screen,int x,int y,int width,int height,std::uint64_t key,
     std::shared_ptr<const std::vector<std::uint32_t>> argb);
 void clearHdPictures(int screen);
+// The placed pictures of `screen` in colour (overlay menus draw them themselves):
+// straight ARGB, size x size (hdSourceSize, or hdCellSize for full-colour ones), 0 transparent.
+struct HdPlacedPicture {int x=0,y=0,width=0,height=0,size=0;std::vector<std::uint32_t> pixels;};
+std::vector<HdPlacedPicture> placedHdPictures(int screen,std::span<const std::uint8_t> palette);
 // Adds the placed pictures of `screen` to its recipe plane 3 (256 x 192),
 // where it has no tag yet. `palette`: the main engine's standard palette.
 void hdScreenTags(int screen,std::span<const std::uint8_t> palette,std::span<std::uint32_t> tags);

@@ -25,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+8: menu layers
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+7: menu layers, +8 and +9: the sprites of no layer
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -277,9 +277,11 @@ bool GameWindow::poll() {
     if(gameSettings().battleMenus==2&&overlayMenuState().active) {
         // Overlay menus: the touch goes through the layer under the pointer, at
         // its DS place (the game's touch areas), and nowhere else.
+        // A tap acts where it is released: the last place on a layer stays.
         int dsX=0,dsY=0;
         const bool on=pointerOnLayer(menuPlacements_,pointerX,pointerY,dsX,dsY)&&dsY>=192;
-        setTouch(focus&&(mouse&SDL_BUTTON_LMASK)&&on,on?dsX:0,on?dsY-192:0);
+        if(on) {menuTouchX_=dsX;menuTouchY_=dsY-192;}
+        setTouch(focus&&(mouse&SDL_BUTTON_LMASK)&&on,menuTouchX_,menuTouchY_);
     } else setTouch(down&&!battleMouse_.touchBlocked(shown),static_cast<int>(x),static_cast<int>(y)-192);
     setButtons(buttons);return running_;
 }
@@ -304,12 +306,19 @@ void GameWindow::drawBattleWindows(int width,int height) {
 void GameWindow::drawOverlayMenus(int width,int height) {
     const auto& state=overlayMenuState();
     if(gameSettings().battleMenus!=2||!state.active) {menuPlacements_.clear();return;}
-    // Where the presented picture shows DS pixel (0,0), and how large a DS pixel is.
+    // Where the presented picture shows each DS screen (as the presenter
+    // draws them: stacked in the canvas centre, placed, or the top one smaller).
     float canvasWidth=0,canvasHeight=0;canvasPixels(layout_,canvasWidth,canvasHeight);
-    const int scale=std::max(1,int(std::lround(canvasHeight/layout_.canvasHeight)));
-    const int originX=int(std::lround((width-canvasWidth)/2+(layout_.canvasWidth-256)/2*canvasWidth/layout_.canvasWidth));
-    const int originY=int(std::lround((height-canvasHeight)/2));
-    menuPlacements_=placeLayers(std::span(state.layers,state.count),width,height,originX,originY,scale);
+    const float k=canvasHeight/layout_.canvasHeight,cx=(width-canvasWidth)/2,cy=(height-canvasHeight)/2;
+    std::array<ScreenPlace,2> screens;
+    for(int screen=0;screen<2;++screen) {
+        const auto& r=layout_.screens[screen];
+        screens[screen]=layout_.placed&&r[2]>0?ScreenPlace{cx+r[0]*k,cy+r[1]*k,r[2]/256*k}:
+            ScreenPlace{cx+(layout_.canvasWidth-256)/2*k,cy+screen*192*k,k};
+    }
+    if(!layout_.placed&&layout_.topScale<1)
+        screens[0]={cx+(layout_.canvasWidth-256*layout_.topScale)/2*k,cy,layout_.topScale*k};
+    menuPlacements_=placeLayers(std::span(state.layers,state.count),width,height,screens,std::max(1,int(std::lround(k))));
     // Each sprite with the layer whose drawn area holds it; the rest at the DS place.
     std::vector<std::vector<MenuSprite>> sprites(state.count+1);
     for(const auto& sprite:menuSprites(state.oam[0],state.oam[1])) {
@@ -318,18 +327,41 @@ void GameWindow::drawOverlayMenus(int width,int height) {
     }
     const std::span<const std::uint16_t> top(state.oam[0],state.oam[0]?512:0),bottom(state.oam[1],state.oam[1]?512:0);
     auto& video=activeVideo();
+    // The port's HD portraits (placed over the DS screens, no DS pixels of their own), likewise.
+    std::vector<std::vector<HdPlacedPicture>> portraits(state.count+1);
+    for(int screen=0;screen<2;++screen)for(auto& p:placedHdPictures(screen,video.palette().subspan(0,0x200))) {
+        const int layer=spriteLayer(menuPlacements_,p.x+p.width/2,screen*192+p.y+p.height/2);
+        p.y+=screen*192;
+        portraits[layer<0?state.count:layer].push_back(std::move(p));
+    }
     std::vector<std::uint32_t> crop;
+    auto draw=[&](unsigned id,const std::vector<std::uint32_t>& picture,const DsRect& area,int x,int y,int w,int h) {
+        if(area.w<=0||area.h<=0)return;
+        crop.resize(std::size_t(area.w)*area.h);
+        for(int row=0;row<area.h;++row)std::copy_n(picture.data()+(area.y+row)*256+area.x,area.w,crop.data()+std::size_t(row)*area.w);
+        gpu_->drawOverlay(id,crop,area.w,area.h,true,x,y,width,height,w,h);
+    };
     for(int i=0;i<=state.count;++i) {
         const bool loose=i==state.count;
-        if(loose&&sprites[i].empty())break;
+        if(loose&&sprites[i].empty()&&portraits[i].empty())break;
         const MenuLayerMaps maps=loose?MenuLayerMaps{}:state.layers[i];
-        const auto picture=Display::menuLayerPicture(video,maps,state.windowBg,state.backBg,state.iconBg,top,bottom,sprites[i]);
-        const DsRect area=loose?DsRect{0,0,256,384}:menuPlacements_[i].area;
-        if(area.w<=0)continue;
-        crop.resize(std::size_t(area.w)*area.h);
-        for(int y=0;y<area.h;++y)std::copy_n(picture.data()+(area.y+y)*256+area.x,area.w,crop.data()+std::size_t(y)*area.w);
-        const int x=loose?originX:menuPlacements_[i].x,y=loose?originY:menuPlacements_[i].y;
-        gpu_->drawOverlay(overlayMenu0+i,crop,area.w,area.h,true,x,y,width,height,area.w*scale,area.h*scale);
+        auto picture=Display::menuLayerPicture(video,maps,state.windowBg,state.backBg,state.iconBg,top,bottom,sprites[i]);
+        for(const auto& p:portraits[i])
+            for(int y=std::max(0,p.y);y<std::min(384,p.y+p.height);++y)for(int x=std::max(0,p.x);x<std::min(256,p.x+p.width);++x) {
+                const auto colour=p.pixels[std::size_t((y-p.y)*p.size/p.height)*p.size+(x-p.x)*p.size/p.width];
+                if(colour>>24)picture[std::size_t(y)*256+x]=colour;
+            }
+        if(!loose) {
+            const auto& p=menuPlacements_[i];
+            draw(overlayMenu0+i,picture,p.area,p.x,p.y,p.w,p.h);
+            continue;
+        }
+        // What no layer holds: each screen's part where the presenter shows that screen.
+        for(int screen=0;screen<2;++screen) {
+            const auto& place=screens[screen];
+            draw(overlayMenu0+8+screen,picture,DsRect{0,screen*192,256,192},int(std::lround(place.x)),int(std::lround(place.y)),
+                int(std::lround(256*place.scale)),int(std::lround(192*place.scale)));
+        }
     }
 }
 void GameWindow::drawInterface(int width,int height) {
