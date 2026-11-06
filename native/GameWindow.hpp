@@ -42,6 +42,7 @@ public:
 private:
     // The wide picture takes the window's shape (4:3 to 2.4:1, the ultrawides); see DualScreen.hpp.
     void updatePictureWidth();
+    void fitWindowToPicture(int height);
     SDL_Window* window_=nullptr;
     void* context_=nullptr;
     SDL_Gamepad* gamepad_=nullptr;

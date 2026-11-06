@@ -86,7 +86,7 @@ void GameWindow::applySettings() {
     settingsUsed_=true;
     if(!s.fullscreen) {
         setFullscreen(false);
-        SDL_SetWindowSize(window_,windowSizes[s.windowSize][0],windowSizes[s.windowSize][1]);
+        fitWindowToPicture(windowSizes[s.windowSize][1]);
         SDL_SetWindowPosition(window_,SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED);
     } else setFullscreen(true);
     // Strict vertical sync: the adaptive one (-1) shows a frame that misses
@@ -112,6 +112,13 @@ void GameWindow::canvasPixels(const GpuLayout& layout,float& width,float& height
     if(stretch_) {width=float(w);height=float(h);return;}
     const float scale=std::min(w/layout.canvasWidth,h/layout.canvasHeight);
     width=layout.canvasWidth*scale;height=layout.canvasHeight*scale;
+}
+// Windowed: the window takes the picture's shape at this height (16:9 wide,
+// the DS screens' 2:3), so there are no bars beside it. A maximized window
+// keeps the size the desktop gave it.
+void GameWindow::fitWindowToPicture(int height) {
+    if(gameSettings().fullscreen||(SDL_GetWindowFlags(window_)&SDL_WINDOW_MAXIMIZED))return;
+    SDL_SetWindowSize(window_,gameSettings().wide?height*16/9:height*2/3,height);
 }
 void GameWindow::updatePictureWidth() {
     // The two DS screens are 384 pixels tall: the wide picture takes the
@@ -182,13 +189,15 @@ bool GameWindow::poll() {
             if(key==SDLK_F8) {
                 // The wide picture, or the DS screens' own width.
                 s.wide=!s.wide;
+                int w=0,h=0;SDL_GetWindowSize(window_,&w,&h);
+                fitWindowToPicture(h);
                 updatePictureWidth();
                 if(settingsUsed_)saveSettings();
             }
             if(key==SDLK_F9) {
                 s.windowSize=(s.windowSize+1)%windowSizeCount;s.fullscreen=false;
                 setFullscreen(false);
-                SDL_SetWindowSize(window_,windowSizes[s.windowSize][0],windowSizes[s.windowSize][1]);
+                fitWindowToPicture(windowSizes[s.windowSize][1]);
                 if(settingsUsed_)saveSettings();
             }
         }
