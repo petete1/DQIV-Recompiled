@@ -419,4 +419,58 @@ void Display::frame(NitroVideo& video,std::span<const std::uint32_t> three,bool 
     ProfileScope timing("display-capture");
     capture(video,three);
 }
+std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const MenuLayerMaps& maps,int windowBg,int backBg,int iconBg,
+    std::span<const std::uint16_t> oamTop,std::span<const std::uint16_t> oamBottom,std::span<const MenuSprite> sprites) {
+    std::vector<std::uint32_t> out(256*384,0u);
+    std::vector<std::uint8_t> vram;
+    auto drawMap=[&](const std::uint16_t* map,int number,bool window) {
+        if(!map||number<0)return;
+        const bool sub=number>=4;const unsigned layer=number&3,base=0x04000000+(sub?0x1000:0);
+        const unsigned cnt=r16(video,base+8+layer*2),control=r32(video,base);
+        const unsigned chars=((cnt>>2)&15)*0x4000+(sub?0:((control>>24)&7)*0x10000),mask=sub?0x1ffff:0x7ffff;
+        vram.resize(mask+1);video.readDisplay(sub?0x06200000:0x06000000,vram);
+        for(int row=0;row<48;++row)for(int column=0;column<32;++column) {
+            const unsigned entry=map[row*32+column],c=entry&1023;
+            if(!c)continue;
+            // The layer's own text characters (MenuWindowBg, VRAM offset 0x1000 = character 0x80).
+            const bool own=window&&maps.chars&&c>=0x80;
+            const std::uint8_t* tile=own?maps.chars+((c-0x80)+(row>=24?24*32:0))*32:nullptr;
+            for(int y=0;y<8;++y)for(int x=0;x<8;++x) {
+                const int tx=(entry&0x400)?7-x:x,ty=(entry&0x800)?7-y:y;
+                const unsigned pair=own?tile[ty*4+tx/2]:vram[(chars+c*32+ty*4+tx/2)&mask];
+                const unsigned index=(tx&1)?pair>>4:pair&15;
+                if(!index)continue;
+                out[(row*8+y)*256+column*8+x]=rgb(word(video.palette(),(sub?0x400:0)+((entry>>12)*16+index)*2));
+            }
+        }
+    };
+    drawMap(maps.back,backBg,false);
+    drawMap(maps.window,windowBg,true);
+    drawMap(maps.icon,iconBg,false);
+    if(sprites.empty())return out;
+    constexpr int widths[3][4]={{8,16,32,64},{16,32,32,64},{8,8,16,32}};
+    constexpr int heights[3][4]={{8,16,32,64},{8,8,16,32},{16,32,32,64}};
+    std::vector<std::uint8_t> obj(0x40000);video.readDisplay(0x06400000,obj);
+    const unsigned control=r32(video,0x04000000);
+    for(const auto& s:sprites) {
+        const auto oam=s.screen?oamBottom:oamTop;
+        if(oam.size()<std::size_t(s.entry*4+3))continue;
+        const unsigned a=oam[s.entry*4],b=oam[s.entry*4+1],c=oam[s.entry*4+2];
+        const int w=widths[a>>14][b>>14],h=heights[a>>14][b>>14];
+        const int left=(b&511)>=256?int(b&511)-512:int(b&511),top=((a&255)>=192?int(a&255)-256:int(a&255))+s.screen*192;
+        const bool eight=(a&0x2000)!=0,flipX=!(a&256)&&(b&0x1000),flipY=!(a&256)&&(b&0x2000);
+        const unsigned bytes=eight?64:32,start=(c&(eight?1022:1023))*(32u<<((control&16)?((control>>20)&3):0));
+        for(int v=0;v<h;++v)for(int u=0;u<w;++u) {
+            const int x=left+u,y=top+v;
+            if(x<0||x>=256||y<0||y>=384)continue;
+            const int su=flipX?w-1-u:u,sv=flipY?h-1-v:v;
+            const unsigned tileOffset=(sv/8)*((control&16)?(w/8)*bytes:1024)+(su/8)*bytes,pixel=(sv&7)*8+(su&7);
+            unsigned index=obj[(start+tileOffset+(eight?pixel:pixel/2))&0x3ffff];
+            if(!eight)index=(index>>((pixel&1)*4))&15;
+            if(!index)continue;
+            out[y*256+x]=rgb(word(video.palette(),0x200+(index+(!eight?(c>>12)*16:0))*2));
+        }
+    }
+    return out;
+}
 }

@@ -16,7 +16,8 @@ struct MenuLayerMaps {
     const std::uint8_t* chars=nullptr;   // 32x48 tiles of 0x20 bytes
 };
 struct DsRect {int x=0,y=0,w=0,h=0;};    // DS pixels, y 0..383 (top screen first)
-// The bounding box of the non-empty cells of the three maps; w 0 when empty.
+// The bounding box of the cells with a character (blank cells are character 0,
+// 0xf000 in the window and back maps) of the three maps; w 0 when empty.
 DsRect drawnArea(const MenuLayerMaps&);
 // Anchor -1 left/top, 0 centre, 1 right/bottom of the game window; offsets in DS pixels.
 struct OverlayRule {int anchorX=0,anchorY=0;int offsetX=0,offsetY=0;};
@@ -32,6 +33,9 @@ std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps>,int windo
 bool pointerOnLayer(std::span<const LayerPlacement>,int x,int y,int& dsX,int& dsY);
 // The layer a sprite (its DS centre) belongs to: the topmost whose area contains it, or -1.
 int spriteLayer(std::span<const LayerPlacement>,int dsX,int dsY);
+// A shown sprite of the two full-screen buffers (128 entries of 4 halfwords each).
+struct MenuSprite {int screen=0,entry=0,centreX=0,centreY=0;}; // centre in DS pixels, y 0..383
+std::vector<MenuSprite> menuSprites(const std::uint16_t* oamTop,const std::uint16_t* oamBottom);
 // The menu system's frame, filled by the game, read by the window.
 struct OverlayMenuState {
     bool active=false;                    // Overlay and the menu system drew this frame

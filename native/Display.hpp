@@ -1,4 +1,5 @@
 #pragma once
+#include "OverlayMenus.hpp"
 #include "NitroVideo.hpp"
 namespace pc {
 // Original display-engine composition and frame capture. Output is top then
@@ -38,6 +39,13 @@ public:
     // it (an untransformed direct-colour BG2 bitmap on the main engine) and
     // through the sub engine's bare backdrop.
     void setWorldBackground(bool on) {world_=on;}
+    // Overlay menus: one menu layer's 256x384 picture (ARGB, 0 transparent):
+    // its back, window and icon maps (BG numbers 0-3 main, 4-7 sub; -1 none;
+    // window characters from 0x80 come from the layer's own buffer), then the
+    // given sprites of the two full-screen buffers, with this frame's VRAM and
+    // palettes. Affine sprites are drawn unscaled.
+    std::vector<std::uint32_t> menuLayerPicture(NitroVideo&,const MenuLayerMaps&,int windowBg,int backBg,int iconBg,
+        std::span<const std::uint16_t> oamTop,std::span<const std::uint16_t> oamBottom,std::span<const MenuSprite> sprites);
     // The main engine shows such a copy: BG2 as a direct-colour bitmap, enabled
     // and untransformed, and BG0 not showing 3D.
     static bool showsBitmapBackdrop(NitroVideo&);

@@ -2,6 +2,8 @@
 #include "BattleWindows.hpp"
 #include "Settings.hpp"
 #include "OverlayMenus.hpp"
+#include "Display.hpp"
+#include "NitroVideo.hpp"
 #include <array>
 #include <iostream>
 #include <string>
@@ -195,6 +197,35 @@ void spriteGoesToContainingLayer() {
     check(pc::spriteLayer(p,20,200)==0,"a sprite on the first layer only goes to it");
     check(pc::spriteLayer(p,250,10)==-1,"a sprite on no layer goes to none");
 }
+void menuSpritesHaveCentres() {
+    std::array<std::uint16_t,512> top{},bottom{};
+    top.fill(0xc0c0);bottom.fill(0xc0c0);              // OamBuffer::clear: hidden below the screen
+    top[0]=10;top[1]=0x4000|20;top[2]=5;                // 16x16 at (20,10)
+    bottom[8]=5;bottom[9]=0;bottom[10]=7;               // entry 2: 8x8 at (0,5)
+    const auto sprites=pc::menuSprites(top.data(),bottom.data());
+    check(sprites.size()==2,"two sprites shown, hidden ones left out");
+    if(sprites.size()<2)return;
+    check(sprites[0].screen==0&&sprites[0].entry==0&&sprites[0].centreX==28&&sprites[0].centreY==18,"a top sprite's centre");
+    check(sprites[1].screen==1&&sprites[1].entry==2&&sprites[1].centreX==4&&sprites[1].centreY==192+9,"a bottom sprite's centre, below the top screen");
+}
+void rendersRamAndVramTiles() {
+    pc::NitroVideo video;
+    *static_cast<std::uint8_t*>(video.reg(0x04000240,1))=0x81;           // VRAM A: main BG
+    const std::uint8_t red[]={0x1f,0x00};video.write(0x05000002,red);   // BG palette colour 1
+    std::array<std::uint8_t,32> tile;tile.fill(0x11);
+    video.write(0x06000020,tile);                                        // VRAM character 1
+    TestLayer layer;
+    std::array<std::uint8_t,0xc000> chars{};std::fill_n(chars.begin(),32,std::uint8_t(0x11)); // RAM character 0x80
+    layer.window[0]=0x0001;layer.window[1]=0x0080;
+    auto maps=layer.maps(pc::OverlayMenu::other);maps.chars=chars.data();
+    pc::Display display;
+    const auto picture=display.menuLayerPicture(video,maps,0,-1,-1,{},{},{});
+    check(picture.size()==256*384,"a 256x384 picture");
+    if(picture.size()!=256*384)return;
+    check(picture[0]!=0&&((picture[0]>>16)&255)>200&&(picture[0]&0xffff)==0,"a VRAM character in the BG palette's colour");
+    check(picture[8]==picture[0],"a character from the layer's own buffer");
+    check(picture[16]==0,"no character: transparent");
+}
 }
 
 int main() {
@@ -218,6 +249,8 @@ int main() {
     pointerMapsBackToLayer();
     layersKeepTheirOwnCells();
     spriteGoesToContainingLayer();
+    menuSpritesHaveCentres();
+    rendersRamAndVramTiles();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

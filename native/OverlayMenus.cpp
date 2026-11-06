@@ -14,7 +14,7 @@ DsRect drawnArea(const MenuLayerMaps& maps) {
     for(const std::uint16_t* map:{maps.window,maps.back,maps.icon}) {
         if(!map)continue;
         for(int y=0;y<rows;++y)for(int x=0;x<columns;++x) {
-            if(!map[y*columns+x])continue;
+            if(!(map[y*columns+x]&1023))continue;
             left=std::min(left,x);top=std::min(top,y);right=std::max(right,x);bottom=std::max(bottom,y);
         }
     }
@@ -63,6 +63,26 @@ bool pointerOnLayer(std::span<const LayerPlacement> placements,int x,int y,int& 
 int spriteLayer(std::span<const LayerPlacement> placements,int dsX,int dsY) {
     for(int i=int(placements.size())-1;i>=0;--i)if(inside(placements[i].area,dsX,dsY))return i;
     return -1;
+}
+std::vector<MenuSprite> menuSprites(const std::uint16_t* oamTop,const std::uint16_t* oamBottom) {
+    static constexpr int widths[3][4]={{8,16,32,64},{16,32,32,64},{8,8,16,32}};
+    static constexpr int heights[3][4]={{8,16,32,64},{8,8,16,32},{16,32,32,64}};
+    std::vector<MenuSprite> out;
+    const std::uint16_t* screens[2]={oamTop,oamBottom};
+    for(int screen=0;screen<2;++screen) {
+        const std::uint16_t* oam=screens[screen];
+        if(!oam)continue;
+        for(int entry=0;entry<128;++entry) {
+            const unsigned a=oam[entry*4],b=oam[entry*4+1];
+            const bool affine=(a&256)!=0;
+            if((!affine&&(a&512))||(a>>14)==3)continue;
+            const int w=widths[a>>14][b>>14],h=heights[a>>14][b>>14];
+            const int y=(a&255)>=192?int(a&255)-256:int(a&255),x=(b&511)>=256?int(b&511)-512:int(b&511);
+            if(y+h<=0||y>=192||x+w<=0||x>=256)continue;
+            out.push_back({screen,entry,x+w/2,screen*192+y+h/2});
+        }
+    }
+    return out;
 }
 OverlayMenuState& overlayMenuState() {static OverlayMenuState state;return state;}
 }
