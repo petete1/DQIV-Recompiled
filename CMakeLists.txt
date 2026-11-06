@@ -143,6 +143,7 @@ add_library(dqiv_core STATIC
     native/DualScreen.cpp
     native/Settings.cpp
     native/BattleWindows.cpp
+    native/OverlayMenus.cpp
     native/MobileSound.cpp
     native/Profile.cpp)
 target_include_directories(dqiv_core PUBLIC native native/compat game/include game/libs/NitroSDK/include game/libs/NitroSystem/include)

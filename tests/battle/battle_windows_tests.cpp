@@ -1,6 +1,8 @@
 // Classic battle windows: layout, cursor and picture (build target dqiv_battle_tests).
 #include "BattleWindows.hpp"
 #include "Settings.hpp"
+#include "OverlayMenus.hpp"
+#include <array>
 #include <iostream>
 #include <string>
 
@@ -139,6 +141,60 @@ void heldButtonBlocksTouch() {
     mouse.poll(false,false,false,false,false);
     check(!mouse.touchBlocked(false),"touch again once released");
 }
+// A layer whose window map has the given cells (column, row) set.
+struct TestLayer {
+    std::array<std::uint16_t,0x600> window{},back{},icon{};
+    pc::MenuLayerMaps maps(pc::OverlayMenu menu) {
+        pc::MenuLayerMaps m;m.menu=menu;m.window=window.data();m.back=back.data();m.icon=icon.data();return m;
+    }
+    void cell(int x,int y) {window[y*32+x]=0x0081;}
+    void box(int x0,int y0,int x1,int y1) {for(int y=y0;y<=y1;++y)for(int x=x0;x<=x1;++x)cell(x,y);}
+};
+void areaOfCells() {
+    TestLayer layer;layer.cell(3,26);layer.cell(10,30);
+    const auto a=pc::drawnArea(layer.maps(pc::OverlayMenu::other));
+    check(a.x==24&&a.y==208&&a.w==64&&a.h==40,"the area is the cells' box in DS pixels");
+    TestLayer empty;
+    check(pc::drawnArea(empty.maps(pc::OverlayMenu::other)).w==0,"an empty layer has no area");
+}
+void ruleAnchorsBottomLeft() {
+    TestLayer root;root.box(2,34,13,39);  // DS pixels {16,272,96,48}
+    const auto maps=root.maps(pc::OverlayMenu::battleRoot);
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,4);
+    check(p.size()==1&&p[0].x==32&&p[0].y==1080-32-48*4&&p[0].scale==4,"Root at the bottom left, 8 DS pixels in");
+}
+void noRuleStaysOnDs() {
+    TestLayer other;other.box(5,25,14,28);  // {40,200,80,32}
+    const auto maps=other.maps(pc::OverlayMenu::other);
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,2);
+    check(p.size()==1&&p[0].x==640+80&&p[0].y==400,"a menu without a rule stays where the DS shows it");
+}
+void pointerMapsBackToLayer() {
+    TestLayer root;root.box(2,34,13,39);
+    const auto maps=root.maps(pc::OverlayMenu::battleRoot);
+    const auto p=pc::placeLayers(std::span(&maps,1),1920,1080,640,0,4);
+    int dsX=0,dsY=0;
+    check(pc::pointerOnLayer(p,p[0].x+40,p[0].y+20,dsX,dsY)&&dsX==26&&dsY==277,"a point on a moved layer maps to its DS place");
+    check(!pc::pointerOnLayer(p,5,5,dsX,dsY),"a point off every layer is on none");
+}
+void layersKeepTheirOwnCells() {
+    TestLayer commands,spells;commands.box(2,34,13,45);spells.box(10,30,29,40);  // overlapping on the DS
+    const std::array<pc::MenuLayerMaps,2> maps{commands.maps(pc::OverlayMenu::battleCommands),spells.maps(pc::OverlayMenu::battleSpells)};
+    const auto p=pc::placeLayers(maps,1920,1080,640,0,4);
+    check(p.size()==2,"two placements");
+    if(p.size()<2)return;
+    const bool apart=p[1].x>=p[0].x+p[0].area.w*4;
+    check(apart,"the spell list goes beside the commands, not over them");
+    check(p[0].area.w==96&&p[1].area.x==80&&p[1].area.w==160,"each area is its own map's box");
+}
+void spriteGoesToContainingLayer() {
+    TestLayer a,b;a.box(0,24,15,35);b.box(8,30,23,40);
+    const std::array<pc::MenuLayerMaps,2> maps{a.maps(pc::OverlayMenu::other),b.maps(pc::OverlayMenu::other)};
+    const auto p=pc::placeLayers(maps,1920,1080,640,0,2);
+    check(pc::spriteLayer(p,100,260)==1,"a sprite where two layers overlap goes to the upper one");
+    check(pc::spriteLayer(p,20,200)==0,"a sprite on the first layer only goes to it");
+    check(pc::spriteLayer(p,250,10)==-1,"a sprite on no layer goes to none");
+}
 }
 
 int main() {
@@ -156,6 +212,12 @@ int main() {
     settingCyclesThree();
     clickConfirmsNextPoll();
     heldButtonBlocksTouch();
+    areaOfCells();
+    ruleAnchorsBottomLeft();
+    noRuleStaysOnDs();
+    pointerMapsBackToLayer();
+    layersKeepTheirOwnCells();
+    spriteGoesToContainingLayer();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
     return failures?1:0;
 }
