@@ -1,4 +1,5 @@
 #include "ov015/btl/BattleMenu.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "ov003/btl/BattleMonsterMask.hpp"
@@ -52,6 +53,14 @@ THUMB void BattleMenu_MAGIC::menuExecute()
 
 THUMB void BattleMenu_MAGIC::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        if (!g_TownMenuMessage.isOpen()) {
+            drawBattleSpells(haveAction_, count_, navigator_.getPageNo(), menuItem_.active_);
+        }
+        return;
+    }
+#endif
     if (!g_TownMenuMessage.isOpen()) {
         drawMagicMenu(haveAction_, count_, navigator_.getPageNo());
         menuItem_.drawActive();
@@ -82,7 +91,11 @@ THUMB void BattleMenu_MAGIC::menuUpdate()
             redraw_ = 1;
             return;
         }
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
         if (result != 0) {
             redraw_ = 1;
             if (result == 2) {

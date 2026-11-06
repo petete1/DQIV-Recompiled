@@ -30,10 +30,16 @@ struct TOUCHRECT;
 // the windows show the active member's name beside them.
 void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active);
 void drawBattlePartyTargets(int count, int active);
-// After a target menu's MenuItem::execInput: the pointer and the direction
-// keys choose a group in the list; the menu's own "changed" code then
-// switches the target as its touches and edges do.
-void battleTargetInput(menu::MenuItem& item);
+// After MenuItem::execInput in a menu that reads it directly (targets, use or
+// equip): the pointer and the direction keys choose an entry of the list,
+// reported as the item's own "changed" result (a target menu then switches
+// the target as its touches and edges do).
+void battleListInput(menu::MenuItem& item);
+// Spells and items: the current page, two columns, as drawMagicMenu and
+// drawItemList show it; and the use-or-equip choice of an item.
+void drawBattleSpells(const int* actions, int count, int page, int active);
+void drawBattleItems(const int* items, int count, int page, int active);
+void drawBattleUseOrEquip(int item, int active);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

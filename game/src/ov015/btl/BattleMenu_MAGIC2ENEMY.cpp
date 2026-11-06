@@ -56,7 +56,7 @@ THUMB void BattleMenu_MAGIC2ENEMY::menuUpdate()
     int old = menuItem_.active_;
     menuItem_.execInput();
 #ifdef DQIV_NATIVE
-    battleTargetInput(menuItem_);
+    battleListInput(menuItem_);
 #endif
     int i = menuItem_.active_;
     if (MenuUpdate_Assist::isCancel(cancelItem_)) {

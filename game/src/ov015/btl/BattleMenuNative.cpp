@@ -10,7 +10,9 @@
 #include "main/dss/DssUtils.hpp"
 #include "main/dss/TextConvert.hpp"
 #include "main/dss/VramRequest.hpp"
+#include "main/menu/MenuCommonDraw.hpp"
 #include "main/menu/MenuUpdateAssist.hpp"
+#include "main/status/UseAction.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "ov003/status/MonsterPartyWithDraw.hpp"
@@ -294,7 +296,7 @@ void drawBattlePartyTargets(int count, int active)
     endBattleMenu();
 }
 
-void battleTargetInput(menu::MenuItem& item)
+void battleListInput(menu::MenuItem& item)
 {
     if (!classicBattleMenus()) {
         return;
@@ -320,6 +322,61 @@ void battleTargetInput(menu::MenuItem& item)
         item.result_ = menu::MenuItem::MENUITEM_RESULT_CHANGE;
         item.reason_ = menu::MenuItem::MENUITEM_REASON_PAD;
     }
+}
+
+namespace {
+// The page of a 2×3 list (drawMagicMenu, drawItemList): its first entry and how many.
+int pageEntries(int count, int page, int& top)
+{
+    const int pageMax = (count - 1) / 6;
+    top = page * 6;
+    return pageMax > page ? 6 : (count - 1) % 6 + 1;
+}
+}
+
+void drawBattleSpells(const int* actions, int count, int page, int active)
+{
+    beginBattleMenu(pc::BattleMenuKind::spells, 2);
+    activeMemberTitle();
+    status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
+    int top;
+    const int num = pageEntries(count, page, top);
+    for (int i = 0; i < num; i++) {
+        // The MP cost, unless it takes all the MP (0xff, 1000: drawMagicCommandHeader).
+        const int mp = status::UseAction::getUseMp(actions[top + i]);
+        const bool shown = mp > 0 && mp != 0xff && mp != 1000;
+        addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true, shown ? mp : 0, shown ? 1 : 0);
+    }
+    setBattlePage(page, (count - 1) / 6 + 1);
+    setBattleFooter(0xa000003e, info->getMp());
+    setBattleCursor((short)active);
+    endBattleMenu();
+}
+
+void drawBattleItems(const int* items, int count, int page, int active)
+{
+    beginBattleMenu(pc::BattleMenuKind::items, 2);
+    activeMemberTitle();
+    status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
+    int top;
+    const int num = count > 0 ? pageEntries(count, page, top) : 0;
+    for (int i = 0; i < num; i++) {
+        // The equipped mark where drawBattleItemEntry puts it.
+        addBattleEntry(items[top + i] + 0x40000000, (short)i, true, info->haveItem_.isEquipment(i + top) ? 0xa0000041 : 0);
+    }
+    setBattlePage(page, count > 0 ? (count - 1) / 6 + 1 : 1);
+    setBattleCursor((short)active);
+    endBattleMenu();
+}
+
+void drawBattleUseOrEquip(int item, int active)
+{
+    beginBattleMenu(pc::BattleMenuKind::items, 1);
+    setBattleTitle(item + 0x40000000);
+    addBattleEntry(0x80000069, 0, true);
+    addBattleEntry(0x8000006b, 1, true);
+    setBattleCursor((short)active);
+    endBattleMenu();
 }
 
 void clearBattleMenu()

@@ -113,7 +113,7 @@ THUMB void BattleMenu_ITEMUSE2ENEMY::unkfunc_0216ce00()
 {
     menuItem_.execInput();
 #ifdef DQIV_NATIVE
-    battleTargetInput(menuItem_);
+    battleListInput(menuItem_);
 #endif
     switch (menuItem_.result_) {
     case 1:

@@ -1,5 +1,6 @@
 #pragma ipa file
 #include "ov015/btl/BattleMenu.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "ov003/btl/BattleMonsterMask.hpp"
@@ -48,6 +49,12 @@ THUMB void BattleMenu_ITEMUSEEQUIP::menuDraw()
         for (int i = 0; i < count; i++) {
             items[i] = info->haveItem_.getItem(i);
         }
+#ifdef DQIV_NATIVE
+        if (classicBattleMenus()) {
+            drawBattleUseOrEquip(items[btl::BattleMenuPlayerControl::getSingleton()->activeItem_], useEquipItem_.active_);
+            return;
+        }
+#endif
         drawItemUseEquipMenu(items, count, btl::BattleMenuPlayerControl::getSingleton()->activeItem_ / 6);
         useEquipItem_.drawActive();
     }
@@ -95,6 +102,9 @@ THUMB void BattleMenu_ITEMUSEEQUIP::unkfunc_0216d0f0()
         return;
     }
     useEquipItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleListInput(useEquipItem_);
+#endif
     switch (useEquipItem_.result_) {
     case menu::MenuItem::MENUITEM_RESULT_CHANGE:
         redraw_ = 1;

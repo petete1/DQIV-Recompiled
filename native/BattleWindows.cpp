@@ -4,7 +4,7 @@
 namespace pc {
 namespace {
 // DS pixels.
-constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=12,columnGap=8,border=2,rightGap=8;
+constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=12,columnGap=16,border=2,rightGap=8;
 constexpr std::uint32_t navy=0xff101830,white=0xffffffff;
 // What a window shows, in DS pixels relative to the picture.
 struct Box {int x=0,y=0,w=0,h=0;};

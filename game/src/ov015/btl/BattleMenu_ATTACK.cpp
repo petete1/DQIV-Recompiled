@@ -61,7 +61,7 @@ THUMB void BattleMenu_ATTACK::menuUpdate()
     int old = menuItem_.active_;
     menuItem_.execInput();
 #ifdef DQIV_NATIVE
-    battleTargetInput(menuItem_);
+    battleListInput(menuItem_);
 #endif
     int i = menuItem_.active_;
     switch (menuItem_.result_) {
