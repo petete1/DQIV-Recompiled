@@ -30,18 +30,27 @@ struct BattleMenuState {
 // Filled by the game each frame (kind none when no battle menu draws).
 BattleMenuState& battleMenuState();
 struct BattleRect {int x=0,y=0,w=0,h=0;}; // game window pixels
-struct BattleLayout {
+struct BattleMenuLayout {
     int scale=1;
     std::vector<BattleRect> windows;      // frames, in drawing order
     std::vector<BattleRect> entries;      // one per state entry (hit areas)
     BattleRect picture;                   // where the composed picture goes
 };
 int battleScale(int windowHeight);
-BattleLayout layoutBattleMenu(const BattleMenuState&,int windowWidth,int windowHeight);
+BattleMenuLayout layoutBattleMenu(const BattleMenuState&,int windowWidth,int windowHeight);
 // The entry index after a direction (0 up, 1 down, 2 left, 3 right), or -1 to pass it to the game (page turn).
 int moveBattleCursor(const BattleMenuState&,int cursor,int direction);
 // Composed at DS scale (picture.w / scale × picture.h / scale), premultiplied ARGB; empty when kind is none.
-std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState&,const BattleLayout&,int blinkFrame);
+std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState&,const BattleMenuLayout&,int blinkFrame);
 // The entry under a window-pixel point, or -1.
-int battleEntryAt(const BattleLayout&,int x,int y);
+int battleEntryAt(const BattleMenuLayout&,int x,int y);
+// The layout the pointer is resolved against (the window sets it each frame it draws).
+void rememberBattleLayout(const BattleMenuLayout&);
+// True while classic battle windows are on screen (the window sends no DS touch then).
+bool battleWindowsShown();
+struct BattlePointer {int entry=-1;bool confirm=false,cancel=false;};
+// The window: the mouse this frame (window pixels, buttons pressed this frame).
+void setBattlePointer(int x,int y,bool leftPressed,bool rightPressed);
+// The game: the pointer against the last drawn layout; a press is taken once.
+BattlePointer takeBattlePointer();
 }

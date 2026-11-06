@@ -1,4 +1,5 @@
 #include "GameWindow.hpp"
+#include "BattleWindows.hpp"
 #include "DebugTools.hpp"
 #include "AudioOutput.hpp"
 #include "GlLoader.hpp"
@@ -22,7 +23,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4};
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5};
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -253,10 +254,35 @@ bool GameWindow::poll() {
         x=r[2]>0?(cx-r[0])/r[2]*256:-1;y=r[3]>0?(y-r[1])/r[3]*192+192:-1;
     }
     const bool down=focus&&(mouse&SDL_BUTTON_LMASK)&&x>=0&&x<256&&y>=192&&y<384;
-    setTouch(down,static_cast<int>(x),static_cast<int>(y)-192);
+    // Classic battle windows take the mouse (window pixels); the DS touch
+    // screen gets nothing while they show, not even over the battle scene.
+    int pixelWidth=0,pixelHeight=0;drawableSize(pixelWidth,pixelHeight);
+    const std::uint32_t pressed=focus?mouse&~mouseButtons_:0;mouseButtons_=mouse;
+    setBattlePointer(int(mouseX*pixelWidth/std::max(width,1)),int(mouseY*pixelHeight/std::max(height,1)),
+        (pressed&SDL_BUTTON_LMASK)!=0,(pressed&SDL_BUTTON_RMASK)!=0);
+    setTouch(down&&!battleWindowsShown(),static_cast<int>(x),static_cast<int>(y)-192);
     setButtons(buttons);return running_;
 }
+void GameWindow::drawBattleWindows(int width,int height) {
+    const auto& state=battleMenuState();
+    if(!gameSettings().classicBattleMenus||state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
+    const auto layout=layoutBattleMenu(state,width,height);
+    rememberBattleLayout(layout);
+    if(layout.windows.empty())return;
+    // The cursor blinks at the game's 60 frames per second: on 20, off 10.
+    const int blinkFrame=int(SDL_GetTicks()*60/1000);
+    const bool blink=blinkFrame%30<20;
+    const bool changed=battlePicture_.empty()||state.revision!=battleRevision_||width!=battleWidth_||height!=battleHeight_||blink!=battleBlink_;
+    if(changed) {
+        battlePicture_=composeBattleMenu(state,layout,blinkFrame);
+        battleRevision_=state.revision;battleWidth_=width;battleHeight_=height;battleBlink_=blink;
+    }
+    const int s=layout.scale;
+    gpu_->drawOverlay(overlayBattle,battlePicture_,layout.picture.w/s,layout.picture.h/s,changed,
+        layout.picture.x,layout.picture.y,width,height,layout.picture.w,layout.picture.h);
+}
 void GameWindow::drawInterface(int width,int height) {
+    drawBattleWindows(width,height);
     const float scale=std::max(0.6f,height/720.f);
     if(gameSettings().showFps&&settingsUsed_) {
         const int supersample=gpu_->supersample();

@@ -469,7 +469,7 @@ GpuRenderer::~GpuRenderer() {
     for(auto& [id,picture]:overlays_)gl::DeleteTextures(1,&picture.name);
 }
 void GpuRenderer::drawOverlay(unsigned id,std::span<const std::uint32_t> pixels,int width,int height,bool changed,
-    int x,int y,int windowWidth,int windowHeight) {
+    int x,int y,int windowWidth,int windowHeight,int drawWidth,int drawHeight) {
     auto& picture=overlays_[id];
     if(!picture.name) {
         gl::GenTextures(1,&picture.name);gl::BindTexture(GL_TEXTURE_2D,picture.name);
@@ -486,7 +486,8 @@ void GpuRenderer::drawOverlay(unsigned id,std::span<const std::uint32_t> pixels,
     gl::BindFramebuffer(GL_FRAMEBUFFER,0);gl::Viewport(0,0,windowWidth,windowHeight);
     gl::UseProgram(overlayProgram_);gl::BindVertexArray(emptyArray_);
     gl::Uniform1i(uniform(overlayProgram_,"uPicture"),0);
-    const float x0=2.f*x/windowWidth-1,x1=2.f*(x+width)/windowWidth-1,y0=1-2.f*(y+height)/windowHeight,y1=1-2.f*y/windowHeight;
+    const int w=drawWidth<0?width:drawWidth,h=drawHeight<0?height:drawHeight;
+    const float x0=2.f*x/windowWidth-1,x1=2.f*(x+w)/windowWidth-1,y0=1-2.f*(y+h)/windowHeight,y1=1-2.f*y/windowHeight;
     gl::Uniform4f(uniform(overlayProgram_,"uRect"),x0,y0,x1,y1);
     gl::Enable(GL_BLEND);gl::BlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
     gl::DrawArrays(GL_TRIANGLE_STRIP,0,4);

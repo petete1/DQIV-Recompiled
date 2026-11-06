@@ -64,6 +64,11 @@ private:
     std::uint64_t betweenCost_=4'000'000; // nanoseconds an interpolated frame takes
     std::uint64_t nextShown_=0; // when the next interpolated frame is due (a steady cadence across the game's frames)
     void drawInterface(int width,int height);
+    // Classic battle menus: the game's battle menu as windows along the bottom.
+    void drawBattleWindows(int width,int height);
+    std::vector<std::uint32_t> battlePicture_;
+    std::uint32_t battleRevision_=0;int battleWidth_=0,battleHeight_=0;bool battleBlink_=false;
+    std::uint32_t mouseButtons_=0; // the mouse buttons down at the last poll (SDL_MouseButtonFlags)
     void setFullscreen(bool);
     // An unlocked achievement, announced in the window's bottom right corner for a few seconds.
     int toast_=-1;

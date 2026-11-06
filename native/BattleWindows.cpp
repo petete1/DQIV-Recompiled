@@ -101,8 +101,8 @@ void triangle(std::vector<std::uint32_t>& out,int width,int x,int y,bool right) 
 
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
 int battleScale(int windowHeight) {return std::max(1,windowHeight/270);}
-BattleLayout layoutBattleMenu(const BattleMenuState& state,int windowWidth,int windowHeight) {
-    BattleLayout layout;layout.scale=battleScale(windowHeight);
+BattleMenuLayout layoutBattleMenu(const BattleMenuState& state,int windowWidth,int windowHeight) {
+    BattleMenuLayout layout;layout.scale=battleScale(windowHeight);
     const int s=layout.scale;
     const auto p=plan(state,windowWidth/s);
     if(p.windows.empty())return layout;
@@ -129,7 +129,7 @@ int moveBattleCursor(const BattleMenuState& state,int cursor,int direction) {
     }
     return cursor;
 }
-std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const BattleLayout& layout,int blinkFrame) {
+std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const BattleMenuLayout& layout,int blinkFrame) {
     if(layout.windows.empty())return {};
     const int s=layout.scale,width=layout.picture.w/s,height=layout.picture.h/s;
     // The same plan as the layout: labels already cut to the picture fit it again.
@@ -172,7 +172,24 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     }
     return out;
 }
-int battleEntryAt(const BattleLayout& layout,int x,int y) {
+namespace {
+BattleMenuLayout lastLayout;
+int pointerX=-1,pointerY=-1;bool leftPress=false,rightPress=false;
+}
+void rememberBattleLayout(const BattleMenuLayout& layout) {lastLayout=layout;}
+bool battleWindowsShown() {return !lastLayout.windows.empty();}
+void setBattlePointer(int x,int y,bool leftPressed,bool rightPressed) {
+    pointerX=x;pointerY=y;leftPress=leftPress||leftPressed;rightPress=rightPress||rightPressed;
+}
+BattlePointer takeBattlePointer() {
+    BattlePointer pointer;
+    pointer.entry=battleEntryAt(lastLayout,pointerX,pointerY);
+    pointer.confirm=leftPress&&pointer.entry>=0;
+    pointer.cancel=rightPress;
+    leftPress=rightPress=false;
+    return pointer;
+}
+int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     for(std::size_t i=0;i<layout.entries.size();++i) {
         const auto& r=layout.entries[i];
         if(x>=r.x&&y>=r.y&&x<r.x+r.w&&y<r.y+r.h)return int(i);

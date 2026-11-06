@@ -113,9 +113,10 @@ public:
     // shown would read as a slow GPU, so automatic quality skips their timings.
     void ignoreFrameTiming();
     // Draws an interface picture (premultiplied ARGB, top-down) at window pixel
-    // (x, y) over the presented frame; `changed` uploads it again.
+    // (x, y) over the presented frame; `changed` uploads it again. A draw size
+    // stretches it (sharp pixels); -1 keeps the picture's own size.
     void drawOverlay(unsigned id,std::span<const std::uint32_t> pixels,int width,int height,bool changed,
-        int x,int y,int windowWidth,int windowHeight);
+        int x,int y,int windowWidth,int windowHeight,int drawWidth=-1,int drawHeight=-1);
 private:
     bool uploadedSides_=false; // the side columns uploaded with the recipes
     struct Target {unsigned framebuffer=0,color=0,attributes=0,depth=0;int width=0,height=0;};

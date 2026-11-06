@@ -83,6 +83,7 @@ void SettingsPanel::buildRows()
     case pc::pageGame:
         rows_[rowCount_++] = pc::settingTextSpeed;
         rows_[rowCount_++] = pc::settingBattleBoost;
+        rows_[rowCount_++] = pc::settingBattleMenus;
         if (inGame_) {
             rows_[rowCount_++] = ROW_BATTLE_SPEED;
             rows_[rowCount_++] = ROW_MUSIC;

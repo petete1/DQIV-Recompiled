@@ -30,6 +30,7 @@ struct GameSettings {
     // middle of the DS bottom screen, the picture's lower half).
     bool centredCamera=true;
     bool mobileSound=true;    // the smartphone version's music and sounds instead of the DS sequences
+    bool classicBattleMenus=false; // battle menus as console windows (false: the DS touch menus)
     // Controls, in the order of controlBits then party chat and fast forward:
     // an SDL keycode and an SDL gamepad button (or padLeftTrigger / padRightTrigger).
     unsigned keys[14]={'z','x','s','a','q','w',0x0d,0x400000e5,0x40000052,0x40000051,0x40000050,0x4000004f,'e','\t'};
@@ -101,7 +102,7 @@ void saveSettings();
 // The settings, as the game's menus list them.
 enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize,settingPicture,settingStretch,
     settingVsync,settingQuality,settingTextures,settingVolume,settingTextSpeed,settingFrameRate,settingBattleBoost,
-    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,
+    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,settingBattleMenus,
     settingCheatInvincible,settingCheatNoEncounters,settingCheatCriticals,settingCheatExp,settingCheatGold,settingCount};
 inline constexpr int cameraZoomMin=50,cameraZoomMax=200;
 // Changes the camera zoom by `step` (percent); for the mouse wheel and the right stick.

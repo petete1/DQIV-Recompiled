@@ -1,6 +1,8 @@
 // Classic battle windows: layout, cursor and picture (build target dqiv_battle_tests).
 #include "BattleWindows.hpp"
+#include "Settings.hpp"
 #include <iostream>
+#include <string>
 
 namespace {
 int failures=0;
@@ -90,6 +92,29 @@ void hitTest() {
     check(pc::battleEntryAt(layout,r.x+r.w/2,r.y+r.h/2)==2,"a point on entry 2");
     check(pc::battleEntryAt(layout,1900,10)==-1,"a point outside every window");
 }
+void pointerOutsideWindows() {
+    const auto layout=pc::layoutBattleMenu(menu(pc::BattleMenuKind::commands,4),1920,1080);
+    pc::rememberBattleLayout(layout);
+    pc::setBattlePointer(5,5,true,false);
+    auto pointer=pc::takeBattlePointer();
+    check(pointer.entry==-1&&!pointer.confirm,"a click outside a window is no confirm");
+    if(layout.entries.size()<2)return;
+    const auto& r=layout.entries[1];
+    pc::setBattlePointer(r.x+2,r.y+2,true,false);
+    pointer=pc::takeBattlePointer();
+    check(pointer.entry==1&&pointer.confirm,"a click on entry 1 confirms it");
+    check(!pc::takeBattlePointer().confirm,"a click is taken once");
+    pc::setBattlePointer(r.x+2,r.y+2,false,true);
+    check(pc::takeBattlePointer().cancel,"a right click cancels");
+}
+void settingToggles() {
+    check(!pc::gameSettings().classicBattleMenus,"Original by default");
+    pc::changeSetting(pc::settingBattleMenus,1);
+    check(pc::gameSettings().classicBattleMenus,"the setting turns Classic on");
+    check(pc::settingValue(pc::settingBattleMenus,1)=="Classic","shown as Classic");
+    pc::changeSetting(pc::settingBattleMenus,1);
+    check(!pc::gameSettings().classicBattleMenus,"and back to Original");
+}
 }
 
 int main() {
@@ -103,6 +128,8 @@ int main() {
     noneHidesPicture();
     composesAtDsScale();
     hitTest();
+    pointerOutsideWindows();
+    settingToggles();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
     return failures?1:0;
 }
