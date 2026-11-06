@@ -76,7 +76,8 @@ private:
     // Overlay menus: the game's menu layers placed on the window (OverlayMenus.hpp).
     void drawOverlayMenus(int width,int height);
     std::vector<LayerPlacement> menuPlacements_;
-    int menuTouchX_=0,menuTouchY_=0; // the last bottom-screen place touched through a layer
+    std::array<ScreenPlace,2> menuScreens_{}; // where the presenter showed each DS screen
+    int menuTouchX_=0,menuTouchY_=0; // the last bottom-screen place touched
     void setFullscreen(bool);
     // An unlocked achievement, announced in the window's bottom right corner for a few seconds.
     int toast_=-1;

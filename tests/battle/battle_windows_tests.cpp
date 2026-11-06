@@ -250,6 +250,21 @@ void placedPicturesInColour() {
     pc::clearHdPictures(0);
     check(pc::placedHdPictures(0,palette).empty(),"none once cleared");
 }
+void touchesOnlyWhatShows() {
+    TestLayer commands,spells;commands.box(2,34,13,45);spells.box(10,30,29,40);  // overlapping on the DS
+    const std::array<pc::MenuLayerMaps,2> maps{commands.maps(pc::OverlayMenu::battleCommands),spells.maps(pc::OverlayMenu::battleSpells)};
+    const auto screens=screensAt(640,2);   // the DS screens at x2, the moved menus at x4
+    const auto p=pc::placeLayers(maps,1920,1080,screens,4);
+    int dsX=0,dsY=0;
+    // Commands' DS cell (12,35) lies under the spell list there: not a touch of either.
+    check(!pc::overlayTouch(p,screens,p[0].x+(12*8-16)*4+2,p[0].y+(35*8-272)*4+2,dsX,dsY),"a moved window's spot another menu covers on the DS takes no touch");
+    // Commands' cell (3,44), clear of the list.
+    check(pc::overlayTouch(p,screens,p[0].x+(3*8-16)*4+2,p[0].y+(44*8-272)*4+2,dsX,dsY)&&dsX==24&&dsY==352,"a moved window takes touches where it shows");
+    // Off every window, on the bottom screen clear of the menus' DS areas: passed through.
+    check(pc::overlayTouch(p,screens,640+250*2,192*2+2*2,dsX,dsY)&&dsX==250&&dsY==194,"the scene takes touches as on the DS");
+    // Off every window, where a moved menu sits on the DS: none.
+    check(!pc::overlayTouch(p,screens,640+100*2,192*2+108*2,dsX,dsY),"the DS spot a menu left takes no touch");
+}
 }
 
 int main() {
@@ -274,6 +289,7 @@ int main() {
     layersKeepTheirOwnCells();
     spriteGoesToContainingLayer();
     noRuleFollowsSmallerTopScreen();
+    touchesOnlyWhatShows();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
     placedPicturesInColour();

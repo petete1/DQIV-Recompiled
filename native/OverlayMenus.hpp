@@ -27,7 +27,7 @@ const OverlayRule* overlayRule(OverlayMenu);
 // Where the presented picture shows a DS screen: the window pixel of its
 // corner and window pixels per DS pixel (the top screen can be smaller).
 struct ScreenPlace {float x=0,y=0,scale=1;};
-struct LayerPlacement {DsRect area;int x=0,y=0,w=0,h=0;}; // window pixels: the area's top-left and drawn size
+struct LayerPlacement {DsRect area;int x=0,y=0,w=0,h=0;bool moved=false;}; // window pixels: the area's top-left and drawn size; moved: placed by a rule
 // All layers at once (a rule can depend on another layer's area), in the
 // layers' order. A menu with a rule is drawn at `ruleScale` window pixels per
 // DS pixel; one without stays on its screen (the area's top row's), as presented.
@@ -35,6 +35,11 @@ std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps>,int windo
     const std::array<ScreenPlace,2>& screens,int ruleScale);
 // The topmost placement under a window point (later ones are drawn above), and that point's DS coordinates.
 bool pointerOnLayer(std::span<const LayerPlacement>,int x,int y,int& dsX,int& dsY);
+// The bottom-screen DS point a window point touches: through a moved layer
+// where that layer is the top one on the DS (a spot another menu covers there
+// takes no touch); off them, where the presenter shows the screen, unless a
+// moved layer's DS area covers that spot (the menu is elsewhere now).
+bool overlayTouch(std::span<const LayerPlacement>,const std::array<ScreenPlace,2>&,int x,int y,int& dsX,int& dsY);
 // The layer a sprite (its DS centre) belongs to: the topmost whose area contains it, or -1.
 int spriteLayer(std::span<const LayerPlacement>,int dsX,int dsY);
 // A shown sprite of the two full-screen buffers (128 entries of 4 halfwords each).

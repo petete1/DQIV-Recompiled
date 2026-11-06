@@ -347,6 +347,9 @@ THUMB void transferMenuBg()
     // Overlay menus: their cells leave the text BG (the message text's stay), the back BG gets a blank map.
     if (overlayMenusOn()) {
         if (index != -1) {
+            // Its characters too, as the shared buffer's upload would: no earlier menu text is left in VRAM.
+            static const char s_blankChars[0x6000] = {};
+            requestVramCopy(getBgCharVramType(index), 0x1000, s_blankChars, 0x6000);
             unsigned short* dst = getScreenBufferCell(getDebugScreenBuffer(), 0, frame * 24);
             for (int i = 0; i < 0x300; i++, dst++) {
                 if (*dst < 0xf020 || *dst == 0xf07f || *dst >= 0xf080) {

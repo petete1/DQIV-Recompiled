@@ -25,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+7: menu layers, +8 and +9: the sprites of no layer
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -277,9 +277,9 @@ bool GameWindow::poll() {
     if(gameSettings().battleMenus==2&&overlayMenuState().active) {
         // Overlay menus: the touch goes through the layer under the pointer, at
         // its DS place (the game's touch areas), and nowhere else.
-        // A tap acts where it is released: the last place on a layer stays.
+        // A tap acts where it is released: the last place touched stays.
         int dsX=0,dsY=0;
-        const bool on=pointerOnLayer(menuPlacements_,pointerX,pointerY,dsX,dsY)&&dsY>=192;
+        const bool on=overlayTouch(menuPlacements_,menuScreens_,pointerX,pointerY,dsX,dsY);
         if(on) {menuTouchX_=dsX;menuTouchY_=dsY-192;}
         setTouch(focus&&(mouse&SDL_BUTTON_LMASK)&&on,menuTouchX_,menuTouchY_);
     } else setTouch(down&&!battleMouse_.touchBlocked(shown),static_cast<int>(x),static_cast<int>(y)-192);
@@ -318,6 +318,7 @@ void GameWindow::drawOverlayMenus(int width,int height) {
     }
     if(!layout_.placed&&layout_.topScale<1)
         screens[0]={cx+(layout_.canvasWidth-256*layout_.topScale)/2*k,cy,layout_.topScale*k};
+    menuScreens_=screens;
     menuPlacements_=placeLayers(std::span(state.layers,state.count),width,height,screens,std::max(1,int(std::lround(k))));
     // Each sprite with the layer whose drawn area holds it; the rest at the DS place.
     std::vector<std::vector<MenuSprite>> sprites(state.count+1);
@@ -351,16 +352,21 @@ void GameWindow::drawOverlayMenus(int width,int height) {
                 const auto colour=p.pixels[std::size_t((y-p.y)*p.size/p.height)*p.size+(x-p.x)*p.size/p.width];
                 if(colour>>24)picture[std::size_t(y)*256+x]=colour;
             }
-        if(!loose) {
+        if(!loose&&menuPlacements_[i].moved) {
             const auto& p=menuPlacements_[i];
-            draw(overlayMenu0+i,picture,p.area,p.x,p.y,p.w,p.h);
+            draw(overlayMenu0+i*2,picture,p.area,p.x,p.y,p.w,p.h);
             continue;
         }
-        // What no layer holds: each screen's part where the presenter shows that screen.
+        // A menu left at its DS place, and what no layer holds: each screen's
+        // part where the presenter shows that screen.
+        const DsRect area=loose?DsRect{0,0,256,384}:menuPlacements_[i].area;
         for(int screen=0;screen<2;++screen) {
+            const int top=std::max(area.y,screen*192),bottom=std::min(area.y+area.h,screen*192+192);
+            if(bottom<=top)continue;
             const auto& place=screens[screen];
-            draw(overlayMenu0+8+screen,picture,DsRect{0,screen*192,256,192},int(std::lround(place.x)),int(std::lround(place.y)),
-                int(std::lround(256*place.scale)),int(std::lround(192*place.scale)));
+            const DsRect part{area.x,top,area.w,bottom-top};
+            draw(overlayMenu0+(loose?16:i*2)+screen,picture,part,int(std::lround(place.x+part.x*place.scale)),
+                int(std::lround(place.y+(part.y-screen*192)*place.scale)),int(std::lround(part.w*place.scale)),int(std::lround(part.h*place.scale)));
         }
     }
 }

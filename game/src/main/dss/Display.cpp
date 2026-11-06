@@ -1,4 +1,7 @@
 #include <nitro/native_video.h>
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuLayers.hpp"
+#endif
 #include "main/dss/Display.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "main/dss/VramManager.hpp"
@@ -64,6 +67,9 @@ ARM void clearOamBuffers()
 {
     g_Display.oam_[0].clear();
     g_Display.oam_[1].clear();
+#ifdef DQIV_NATIVE
+    clearOverlayMenuOam();
+#endif
 }
 
 ARM void updateDisplay()

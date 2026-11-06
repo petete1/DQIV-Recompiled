@@ -45,7 +45,7 @@ std::vector<LayerPlacement> placeLayers(std::span<const MenuLayerMaps> layers,in
             p.x=int(std::lround(screen.x+p.area.x*screen.scale));p.y=int(std::lround(screen.y+(p.area.y-top)*screen.scale));
             p.w=int(std::lround(p.area.w*screen.scale));p.h=int(std::lround(p.area.h*screen.scale));
         } else {
-            p.w=p.area.w*s;p.h=p.area.h*s;
+            p.moved=true;p.w=p.area.w*s;p.h=p.area.h*s;
             const bool list=layer.menu==OverlayMenu::battleSpells||layer.menu==OverlayMenu::battleItems||
                 layer.menu==OverlayMenu::battleUseOrEquip;
             const int offsetX=rule->offsetX+(list?besideCommands:0),w=p.area.w*s,h=p.area.h*s;
@@ -64,6 +64,20 @@ bool pointerOnLayer(std::span<const LayerPlacement> placements,int x,int y,int& 
         return true;
     }
     return false;
+}
+bool overlayTouch(std::span<const LayerPlacement> placements,const std::array<ScreenPlace,2>& screens,int x,int y,int& dsX,int& dsY) {
+    for(int i=int(placements.size())-1;i>=0;--i) {
+        const auto& p=placements[i];
+        if(!p.moved||!inside(DsRect{p.x,p.y,p.w,p.h},x,y))continue;
+        dsX=p.area.x+(x-p.x)*p.area.w/p.w;dsY=p.area.y+(y-p.y)*p.area.h/p.h;
+        return dsY>=192&&spriteLayer(placements,dsX,dsY)==i;
+    }
+    const auto& bottom=screens[1];
+    if(bottom.scale<=0)return false;
+    dsX=int(std::floor((x-bottom.x)/bottom.scale));dsY=192+int(std::floor((y-bottom.y)/bottom.scale));
+    if(dsX<0||dsX>=256||dsY<192||dsY>=384)return false;
+    for(const auto& p:placements)if(p.moved&&inside(p.area,dsX,dsY))return false;
+    return true;
 }
 int spriteLayer(std::span<const LayerPlacement> placements,int dsX,int dsY) {
     for(int i=int(placements.size())-1;i>=0;--i)if(inside(placements[i].area,dsX,dsY))return i;

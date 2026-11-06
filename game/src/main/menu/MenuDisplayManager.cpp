@@ -45,11 +45,33 @@ THUMB void disableMenuDisplays()
     g_MenuDisplays.hopping_.setEnable(0);
 }
 
+// The text displays are the message window's lines and name, or the battle's
+// monster plates: overlay menus draw the first with their window (on its
+// layer), the plates stay on the DS with the battle scene.
+static OamBuffer* textMain(int index, OamBuffer* overlay, OamBuffer* scene)
+{
+#ifdef DQIV_NATIVE
+    const MessageWindow* window = &g_MenuDisplays.message_;
+    MenuTextDisplay* text = &g_MenuDisplays.texts_[index];
+    if (window->enable_ && window->state_ != 0) {
+        if (window->namePlate_ == text) {
+            return overlay;
+        }
+        for (int i = 0; i < 4; i++) {
+            if (window->lines_[i] == text) {
+                return overlay;
+            }
+        }
+    }
+#endif
+    return scene;
+}
+
 THUMB void updateMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
-    // The battle scene's plates and damage numbers and the message window stay on the DS.
+    // The battle scene's plates and damage numbers stay on the DS (the message window goes with its layer: textMain).
     OamBuffer* sceneMain = main;
     OamBuffer* sceneSub = sub;
 #ifdef DQIV_NATIVE
@@ -59,7 +81,7 @@ THUMB void updateMenuDisplays()
         sub = overlayMenuOam(1);
     }
 #endif
-    g_MenuDisplays.message_.update(sceneMain, sceneSub);
+    g_MenuDisplays.message_.update(main, sub);
     g_MenuDisplays.yesNo_.update(main, sub);
     g_MenuDisplays.face_.update(main, sub);
     g_MenuDisplays.icon_.update(main, sub);
@@ -68,10 +90,10 @@ THUMB void updateMenuDisplays()
     g_MenuDisplays.windowFrame2_.update(main, sub);
     g_MenuDisplays.arrow_.update(main, sub);
     g_MenuDisplays.dummy_.update(main, sub);
-    g_MenuDisplays.texts_[0].update(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[1].update(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[2].update(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[3].update(sceneMain, sceneSub);
+    g_MenuDisplays.texts_[0].update(textMain(0, main, sceneMain), textMain(0, sub, sceneSub));
+    g_MenuDisplays.texts_[1].update(textMain(1, main, sceneMain), textMain(1, sub, sceneSub));
+    g_MenuDisplays.texts_[2].update(textMain(2, main, sceneMain), textMain(2, sub, sceneSub));
+    g_MenuDisplays.texts_[3].update(textMain(3, main, sceneMain), textMain(3, sub, sceneSub));
     g_MenuDisplays.frames_.update(main, sub);
     g_MenuDisplays.hopping_.update(sceneMain, sceneSub);
 }
@@ -80,7 +102,7 @@ THUMB void executeMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
-    // The battle scene's plates and damage numbers and the message window stay on the DS.
+    // The battle scene's plates and damage numbers stay on the DS (the message window goes with its layer: textMain).
     OamBuffer* sceneMain = main;
     OamBuffer* sceneSub = sub;
 #ifdef DQIV_NATIVE
@@ -89,7 +111,7 @@ THUMB void executeMenuDisplays()
         sub = overlayMenuOam(1);
     }
 #endif
-    g_MenuDisplays.message_.execute(sceneMain, sceneSub);
+    g_MenuDisplays.message_.execute(main, sub);
     g_MenuDisplays.yesNo_.execute(main, sub);
     g_MenuDisplays.face_.execute(main, sub);
     g_MenuDisplays.icon_.execute(main, sub);
@@ -98,10 +120,10 @@ THUMB void executeMenuDisplays()
     g_MenuDisplays.windowFrame2_.execute(main, sub);
     g_MenuDisplays.arrow_.execute(main, sub);
     g_MenuDisplays.dummy_.execute(main, sub);
-    g_MenuDisplays.texts_[0].execute(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[1].execute(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[2].execute(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[3].execute(sceneMain, sceneSub);
+    g_MenuDisplays.texts_[0].execute(textMain(0, main, sceneMain), textMain(0, sub, sceneSub));
+    g_MenuDisplays.texts_[1].execute(textMain(1, main, sceneMain), textMain(1, sub, sceneSub));
+    g_MenuDisplays.texts_[2].execute(textMain(2, main, sceneMain), textMain(2, sub, sceneSub));
+    g_MenuDisplays.texts_[3].execute(textMain(3, main, sceneMain), textMain(3, sub, sceneSub));
     g_MenuDisplays.frames_.execute(main, sub);
     g_MenuDisplays.hopping_.execute(sceneMain, sceneSub);
 }
@@ -110,7 +132,7 @@ THUMB void drawMenuDisplays()
 {
     OamBuffer* main = getOamBufferAtY(0);
     OamBuffer* sub = getOamBufferAtY(192);
-    // The battle scene's plates and damage numbers and the message window stay on the DS.
+    // The battle scene's plates and damage numbers stay on the DS (the message window goes with its layer: textMain).
     OamBuffer* sceneMain = main;
     OamBuffer* sceneSub = sub;
 #ifdef DQIV_NATIVE
@@ -123,14 +145,14 @@ THUMB void drawMenuDisplays()
     g_MenuDisplays.icon_.draw(main, sub);
     g_MenuDisplays.sprite_.draw(main, sub);
     g_MenuDisplays.dummy_.draw(main, sub);
-    g_MenuDisplays.message_.draw(sceneMain, sceneSub);
+    g_MenuDisplays.message_.draw(main, sub);
     g_MenuDisplays.yesNo_.draw(main, sub);
     g_MenuDisplays.windowFrame1_.draw(main, sub);
     g_MenuDisplays.windowFrame2_.draw(main, sub);
-    g_MenuDisplays.texts_[0].draw(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[1].draw(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[2].draw(sceneMain, sceneSub);
-    g_MenuDisplays.texts_[3].draw(sceneMain, sceneSub);
+    g_MenuDisplays.texts_[0].draw(textMain(0, main, sceneMain), textMain(0, sub, sceneSub));
+    g_MenuDisplays.texts_[1].draw(textMain(1, main, sceneMain), textMain(1, sub, sceneSub));
+    g_MenuDisplays.texts_[2].draw(textMain(2, main, sceneMain), textMain(2, sub, sceneSub));
+    g_MenuDisplays.texts_[3].draw(textMain(3, main, sceneMain), textMain(3, sub, sceneSub));
     g_MenuDisplays.yesNo_.unkfunc_02052a24(main, sub);
     g_MenuDisplays.frames_.draw(main, sub);
     g_MenuDisplays.arrow_.draw(main, sub);

@@ -26,6 +26,8 @@ void endMenuLayer();
 int currentMenuLayer();
 // drawMenuDisplays: the two full-screen sprite buffers (top, bottom), cleared each frame.
 OamBuffer* overlayMenuOam(int screen);
+// Cleared when the DS ones are (clearOamBuffers).
+void clearOverlayMenuOam();
 // MenuIconBg::flush, after its requests are drawn: the request's cells go to its layer.
 void keepMenuLayerIcon(int layer, int x, int y, int w, int h, const unsigned short* screen);
 // End of drawMenuSystem: frees the layers of menus that did not draw and

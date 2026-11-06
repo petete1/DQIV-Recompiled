@@ -18,7 +18,6 @@ BgCharBuffer* s_savedChars;
 BgScreenBuffer* s_savedWindow;
 BgScreenBuffer* s_savedBack;
 OamBuffer s_oam[2];
-int s_oamFrame = -1;
 
 pc::OverlayMenu kindOf(menu::MenuBase* menu)
 {
@@ -121,12 +120,13 @@ int currentMenuLayer()
 
 OamBuffer* overlayMenuOam(int screen)
 {
-    if (s_oamFrame != getDisplayFrame()) {
-        s_oamFrame = getDisplayFrame();
-        s_oam[0].clear();
-        s_oam[1].clear();
-    }
     return &s_oam[screen];
+}
+
+void clearOverlayMenuOam()
+{
+    s_oam[0].clear();
+    s_oam[1].clear();
 }
 
 void keepMenuLayerIcon(int layer, int x, int y, int w, int h, const unsigned short* screen)

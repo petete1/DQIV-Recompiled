@@ -447,7 +447,7 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
             if(!c)continue;
             // The layer's own text characters (MenuWindowBg, VRAM offset 0x1000 = character 0x80).
             // An empty one there is a character the game wrote to VRAM itself (the battle faces).
-            const std::uint8_t* tile=window&&maps.chars&&c>=0x80&&!eight?maps.chars+((c-0x80)+(row>=24?24*32:0))*32:nullptr;
+            const std::uint8_t* tile=window&&maps.chars&&c>=0x80&&c<0x380&&!eight?maps.chars+((c-0x80)+(row>=24?24*32:0))*32:nullptr;
             const bool own=tile&&std::any_of(tile,tile+32,[](std::uint8_t b){return b!=0;});
             for(int y=0;y<8;++y)for(int x=0;x<8;++x) {
                 const int tx=(entry&0x400)?7-x:x,ty=(entry&0x800)?7-y:y;
@@ -490,13 +490,17 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
         e.control=r32(video,sub?0x04001000:0x04000000);e.palette=sub?0x600:0x200;
         if(e.control&0x80000000) {e.extended.resize(0x2000);video.readExtendedPalette(sub,true,e.extended);}
     }
-    for(const auto& s:sprites) {
+    // The lowest entry is on top (as objects()): drawn last.
+    for(auto it=sprites.rbegin();it!=sprites.rend();++it) {
+        const auto& s=*it;
         const auto oam=s.screen?oamBottom:oamTop;
         if(oam.size()<std::size_t(s.entry*4+3))continue;
         const unsigned a=oam[s.entry*4],b=oam[s.entry*4+1],c=oam[s.entry*4+2];
         const int w=widths[a>>14][b>>14],h=heights[a>>14][b>>14];
         const int left=(b&511)>=256?int(b&511)-512:int(b&511),top=((a&255)>=192?int(a&255)-256:int(a&255))+s.screen*192;
         const Engine& engine=engines[s.screen];const unsigned control=engine.control;
+        // Semi-transparent sprites (the message window's dark back) blend with BLDALPHA's first weight.
+        const unsigned alpha=((a>>10)&3)==1?std::min(16u,r16(video,(engine.palette==0x600?0x04001000:0x04000000)+0x52)&31u):16u;
         const bool eight=(a&0x2000)!=0,flipX=!(a&256)&&(b&0x1000),flipY=!(a&256)&&(b&0x2000);
         const unsigned bytes=eight?64:32,start=(c&(eight?1022:1023))*(32u<<((control&16)?((control>>20)&3):0));
         for(int v=0;v<h;++v)for(int u=0;u<w;++u) {
@@ -508,8 +512,13 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
             if(!eight)index=(index>>((pixel&1)*4))&15;
             if(!index)continue;
             // 256-colour sprites (the faces) with the extended palettes when on, as objects().
-            out[y*256+x]=rgb(eight&&!engine.extended.empty()?word(engine.extended,(c>>12)*512+index*2):
+            std::uint32_t argb=rgb(eight&&!engine.extended.empty()?word(engine.extended,(c>>12)*512+index*2):
                 word(video.palette(),engine.palette+(index+(!eight?(c>>12)*16:0))*2));
+            if(alpha<16) {
+                auto part=[&](unsigned shift){return (((argb>>shift)&255)*alpha/16)<<shift;};
+                argb=((255u*alpha/16)<<24)|part(16)|part(8)|part(0);
+            }
+            out[y*256+x]=argb;
         }
     }
     return out;
