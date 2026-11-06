@@ -115,6 +115,29 @@ void settingToggles() {
     pc::changeSetting(pc::settingBattleMenus,1);
     check(!pc::gameSettings().classicBattleMenus,"and back to Original");
 }
+void clickConfirmsNextPoll() {
+    pc::BattleMouse mouse;
+    // The click moves the cursor first (this poll), A follows on the next polls.
+    check(mouse.poll(true,true,false,true,true)==0u,"no A in the poll of the click");
+    check(mouse.poll(true,false,false,true,false)==1u,"A on the next poll");
+    check(mouse.poll(true,false,false,true,false)==1u,"A held a second poll");
+    check(mouse.poll(true,false,false,true,false)==1u,"A held a third poll");
+    check(mouse.poll(true,false,false,false,false)==0u,"then released");
+    check(mouse.poll(true,true,false,true,false)==0u,"a click outside the entries is no A");
+    check(mouse.poll(true,false,false,false,false)==0u,"and stays none");
+    check(mouse.poll(true,false,true,false,false)==2u,"a right click is B at once");
+    pc::BattleMouse hidden;
+    check(hidden.poll(false,true,false,true,true)==0u&&hidden.poll(false,false,false,true,false)==0u,"nothing while the windows don't show");
+}
+void heldButtonBlocksTouch() {
+    pc::BattleMouse mouse;
+    mouse.poll(true,true,false,true,true);
+    check(mouse.touchBlocked(true),"no touch while the windows show");
+    mouse.poll(false,false,false,true,false);
+    check(mouse.touchBlocked(false),"no touch while a click begun on them is held");
+    mouse.poll(false,false,false,false,false);
+    check(!mouse.touchBlocked(false),"touch again once released");
+}
 }
 
 int main() {
@@ -130,6 +153,8 @@ int main() {
     hitTest();
     pointerOutsideWindows();
     settingToggles();
+    clickConfirmsNextPoll();
+    heldButtonBlocksTouch();
     std::cout<<(failures?"battle windows: FAILED ":"battle windows: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

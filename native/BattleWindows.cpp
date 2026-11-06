@@ -191,6 +191,16 @@ BattlePointer takeBattlePointer() {
     return pointer;
 }
 int battleClickAt(int x,int y) {return battleEntryAt(lastLayout,x,y);}
+unsigned BattleMouse::poll(bool shown,bool leftPressed,bool rightPressed,bool leftDown,bool onEntry) {
+    if(shown&&leftPressed)held_=true;
+    if(!leftDown)held_=false;
+    if(pendingA_) {pendingA_=false;press_=1u;polls_=3;}
+    if(shown&&leftPressed&&onEntry)pendingA_=true;
+    if(shown&&rightPressed) {press_=2u;polls_=3;}
+    if(polls_==0)return 0;
+    --polls_;
+    return press_;
+}
 int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     for(std::size_t i=0;i<layout.entries.size();++i) {
         const auto& r=layout.entries[i];

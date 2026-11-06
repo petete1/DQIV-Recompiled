@@ -22,13 +22,14 @@
 #include "GameServices.hpp"
 #include "Settings.hpp"
 #include <map>
+#include <string>
 #include <utility>
 #include <vector>
 
 namespace {
 pc::BattleMenuState s_building;
 std::vector<int> s_keys, s_lastKeys;     // what the description shows, to tell when it changed
-std::map<std::pair<int, int>, pc::BattleText> s_texts;
+std::map<std::string, pc::BattleText> s_texts;
 std::map<std::pair<int, int>, pc::BattleText> s_numbers;
 
 // Draws UTF-8 text into a private 4-bit buffer (never the DS menu buffers).
@@ -118,15 +119,15 @@ bool classicBattleMenus()
 
 pc::BattleText battleText(int value)
 {
-    const std::pair<int, int> key(value, TextAPI::m_lang);
-    auto found = s_texts.find(key);
-    if (found != s_texts.end()) {
-        return found->second;
-    }
+    // Cached by the text itself: a value can name something a save changes (the hero).
     char buf[0x400];
     buf[0] = 0;
     extractText(value, buf, sizeof(buf));
-    return s_texts[key] = drawText(buf);
+    auto found = s_texts.find(buf);
+    if (found != s_texts.end()) {
+        return found->second;
+    }
+    return s_texts[buf] = drawText(buf);
 }
 
 pc::BattleText battleNumber(int number)

@@ -55,4 +55,16 @@ void setBattlePointer(int x,int y,bool leftPressed,bool rightPressed);
 BattlePointer takeBattlePointer();
 // The window: the entry a click at this point confirms (pressed as A), or -1.
 int battleClickAt(int x,int y);
+// The mouse buttons as the game's: a click on an entry moves the cursor in
+// its poll and is A from the next (so A confirms the clicked entry), a right
+// click is B; each held 3 polls so the game's frame sees it.
+class BattleMouse {
+public:
+    // The pad bits to add this poll (1 A, 2 B).
+    unsigned poll(bool shown,bool leftPressed,bool rightPressed,bool leftDown,bool onEntry);
+    // No DS touch while the windows show, nor while a click begun on them is held.
+    bool touchBlocked(bool shown) const {return shown||held_;}
+private:
+    unsigned press_=0;int polls_=0;bool pendingA_=false,held_=false;
+};
 }
