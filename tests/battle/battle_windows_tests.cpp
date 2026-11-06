@@ -265,6 +265,21 @@ void touchesOnlyWhatShows() {
     // Off every window, where a moved menu sits on the DS: none.
     check(!pc::overlayTouch(p,screens,640+100*2,192*2+108*2,dsX,dsY),"the DS spot a menu left takes no touch");
 }
+void panelLook() {
+    const auto state=menu(pc::BattleMenuKind::root,2);
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    const int w=layout.picture.w/layout.scale,h=layout.picture.h/layout.scale;
+    if(pixels.size()!=std::size_t(w)*h) {check(false,"a picture");return;}
+    auto at=[&](int x,int y){return pixels[std::size_t(y)*w+x];};
+    check(at(0,0)==0,"rounded outer corner");
+    check(at(0,h/2)==0xe0281810u,"the brown fill out to the edge");
+    check(at(2,h/2)==0xffb89870u,"the tan border inset 2 pixels");
+    check(at(6,h/2)==0xe0281810u,"the brown fill inside");
+    bool hand=false;
+    for(std::uint32_t p:pixels)hand=hand||p==0xfff0c040u;
+    check(hand,"the golden hand cursor");
+}
 }
 
 int main() {
@@ -290,6 +305,7 @@ int main() {
     spriteGoesToContainingLayer();
     noRuleFollowsSmallerTopScreen();
     touchesOnlyWhatShows();
+    panelLook();
     menuSpritesHaveCentres();
     rendersRamAndVramTiles();
     placedPicturesInColour();

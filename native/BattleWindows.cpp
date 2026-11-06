@@ -4,8 +4,9 @@
 namespace pc {
 namespace {
 // DS pixels.
-constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=12,columnGap=16,border=2,rightGap=8;
-constexpr std::uint32_t navy=0xff101830,white=0xffffffff;
+constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=14,columnGap=16,border=2,rightGap=8;
+// The DQ11-like look: see-through brown panels (premultiplied), a tan border inset 2 pixels, cream text.
+constexpr std::uint32_t fill=0xe0281810,tan=0xffb89870,cream=0xfff4ead8,gold=0xfff0c040,goldEdge=0xff806010;
 // What a window shows, in DS pixels relative to the picture.
 struct Box {int x=0,y=0,w=0,h=0;};
 struct Plan {
@@ -75,27 +76,43 @@ void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText&
         const int px=x+tx,py=y+ty;
         if(!index||px<0||py<0||px>=width||py>=height)continue;
         auto colour=palette[index&15];
+        // The game's white letters in cream (its dark edges stay dark).
+        auto tint=[&](unsigned shift){return (((colour>>shift)&255)*((cream>>shift)&255)/255)<<shift;};
+        colour=(colour&0xff000000)|tint(16)|tint(8)|tint(0);
         if(dim)colour=(colour&0xff000000)|((colour>>1)&0x007f7f7f);
         out[std::size_t(py)*width+px]=colour;
     }
     // "…": three dots on the text's baseline.
     if(cut)for(int d=0;d<3;++d)for(int dy=0;dy<2;++dy)for(int dx=0;dx<1;++dx) {
         const int px=x+shown+1+d*2+dx,py=y+text.height-3+dy;
-        if(px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=dim?0xff7f7f7f:white;
+        if(px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=dim?0xff7a756c:cream;
     }
 }
+// A small curl in each corner, inside the border (top-left; mirrored for the others).
+constexpr const char* curl[5]={".XXX.","X....","X.XX.","X.X..","....."};
 void frame(std::vector<std::uint32_t>& out,int width,const Box& box) {
     for(int y=0;y<box.h;++y)for(int x=0;x<box.w;++x) {
         const int dx=std::min(x,box.w-1-x),dy=std::min(y,box.h-1-y);
-        if(dx+dy<border)continue;  // the rounded corners
-        out[std::size_t(box.y+y)*width+box.x+x]=dx<border||dy<border||dx+dy==border?white:navy;
+        if(dx+dy<1)continue;  // the rounded outer corners
+        std::uint32_t colour=fill;
+        if((dx==border&&dy>=border)||(dy==border&&dx>=border))colour=tan;
+        else if(dx>border&&dy>border&&dx-border-1<5&&dy-border-1<5&&curl[dy-border-1][dx-border-1]=='X')colour=tan;
+        out[std::size_t(box.y+y)*width+box.x+x]=colour;
     }
 }
-// ▶ (or ◀): 5 wide, 9 tall.
+// ▶ (or ◀) of the page marks: 5 wide, 9 tall.
 void triangle(std::vector<std::uint32_t>& out,int width,int x,int y,bool right) {
     for(int ty=0;ty<9;++ty) {
         const int span=5-std::abs(ty-4);
-        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+4-tx)]=white;
+        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+4-tx)]=tan;
+    }
+}
+// The cursor: a golden hand pointing right, 11 wide, 7 tall.
+void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
+    static constexpr const char* rows[7]={"....OOO....","OOOOGGGOOO.","OGGGGGGGGGO","OGGGGGGOOO.","OGGGGGO....","OGGGGGO....","OOOOOOO...."};
+    for(int ty=0;ty<7;++ty)for(int tx=0;tx<11;++tx) {
+        const char c=rows[ty][tx];
+        if(c!='.')out[std::size_t(y+ty)*width+x+tx]=c=='G'?gold:goldEdge;
     }
 }
 }
@@ -144,7 +161,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
         const auto& t=p.titleBox;
         if(p.titleOnBorder)  // the name on the top border, over a strip of the panel colour
             for(int y=0;y<state.title.height;++y)for(int x=-2;x<state.title.width+2;++x)
-                if(t.x+x>=0&&t.x+x<width&&t.y+dy+y>=0&&t.y+dy+y<height)out[std::size_t(t.y+dy+y)*width+t.x+x]=navy;
+                if(t.x+x>=0&&t.x+x<width&&t.y+dy+y>=0&&t.y+dy+y<height)out[std::size_t(t.y+dy+y)*width+t.x+x]=fill;
         blit(out,width,height,state.title,t.x,t.y+dy,state.kind==BattleMenuKind::message?t.w:state.title.width,state.palette,false);
     }
     for(std::size_t i=0;i<state.entries.size()&&i<p.entries.size();++i) {
@@ -153,7 +170,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
         blit(out,width,height,e.label,b.x+cursorWidth,textY,p.labelWidth,state.palette,!e.enabled);
         if(e.right.width>0)
             blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
-        if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))triangle(out,width,b.x+2,b.y+dy+(row-9)/2,true);
+        if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);
     }
     if(p.footerY>=0) {
         const auto& list=p.windows.back();
@@ -166,7 +183,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
             triangle(out,width,x,y+(row-9)/2,false);x+=7;
             for(int i=0;i<state.pages;++i,x+=4) {
                 const int size=i==state.page?3:1,cy=y+row/2-size/2;
-                for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx)out[std::size_t(cy+yy)*width+x+xx]=white;
+                for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx)out[std::size_t(cy+yy)*width+x+xx]=tan;
             }
             triangle(out,width,x+1,y+(row-9)/2,true);
         }
