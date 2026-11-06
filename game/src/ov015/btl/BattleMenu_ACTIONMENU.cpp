@@ -36,13 +36,13 @@ THUMB void BattleMenu_ACTIONMENU::menuDraw()
     if (classicBattleMenus()) {
         // drawBattleActionMenu(0xf0)'s commands under the member's name; the
         // monster name plates stay the game's.
-        beginBattleMenu(pc::BattleMenuKind::commands, 1);
-        const int chara = btl::BattleMenuPlayerControl::getSingleton()->activeChara_;
-        setBattleTitle(status::g_Party.getPlayerStatus(chara)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000);
+        // Two columns, as DQ11's: Attack and Spells, then Defend and Items (row by
+        // row here); the member is shown by the party panel.
+        beginBattleMenu(pc::BattleMenuKind::commands, 2);
         addBattleEntry(0x80000004, 0, true);
+        addBattleEntry(0x80000007, 3, true);
         addBattleEntry(0x80000005, 1, true);
         addBattleEntry(0x80000006, 2, true);
-        addBattleEntry(0x80000007, 3, true);
         setBattleCursor(pageItem_.active_);
         endBattleMenu();
         drawMonsterNamePlates(-1);
