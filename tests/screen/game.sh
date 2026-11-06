@@ -2,8 +2,11 @@
 # Runs a test copy of the game on a hidden X display (Xvfb), to drive it with
 # keys and take screenshots, without touching dist/ or the player's desktop.
 #
-#   tests/screen/game.sh start [64|32]  pack build64 (or build32) into ~/.cache/dq4-screen,
-#                                       with a copy of dist/saves, and start it windowed
+#   tests/screen/game.sh start [64|32] [KEY=VALUE...]
+#                                       pack build64 (or build32) into ~/.cache/dq4-screen,
+#                                       with a copy of dist/saves, and start it windowed;
+#                                       KEY=VALUE sets settings.ini lines in the copy
+#                                       (e.g. classicBattleMenus=1), quicker than the menus
 #   tests/screen/game.sh keys ACTION... keys, waits and resizes (see xkeys.py)
 #   tests/screen/game.sh shot FILE [WxH] screenshot of the top-left WxH (default 1280x720)
 #   tests/screen/game.sh journal        the game's journal (errors, crashes)
@@ -28,7 +31,10 @@ stop() {
 
 case ${1:-} in
 start)
-    build=$root/build${2:-64}
+    shift
+    bits=64
+    case ${1:-} in 32|64) bits=$1; shift ;; esac
+    build=$root/build$bits
     [ -x "$build/DragonQuestIV" ] || { echo "Build $build first" >&2; exit 1; }
     stop
     rm -rf "$run"; mkdir -p "$run/saves"
@@ -41,6 +47,16 @@ start)
     cp -r "$root/dist/saves/." "$run/saves/" 2>/dev/null || true
     rm -f "$run/saves/journal.txt"
     [ ! -f "$run/saves/settings.ini" ] || sed -i 's/^fullscreen=.*/fullscreen=0/' "$run/saves/settings.ini"
+    for setting in "$@"; do
+        key=${setting%%=*}
+        [ "$key" != "$setting" ] || { echo "Not KEY=VALUE: $setting" >&2; exit 1; }
+        touch "$run/saves/settings.ini"
+        if grep -q "^$key=" "$run/saves/settings.ini"; then
+            sed -i "s|^$key=.*|$setting|" "$run/saves/settings.ini"
+        else
+            echo "$setting" >> "$run/saves/settings.ini"
+        fi
+    done
     # Large enough for ultrawide windows; without a window manager, fullscreen has no effect.
     Xvfb "$display" -screen 0 4000x1300x24 >/dev/null 2>&1 & echo $! > "$run/xvfb.pid"
     sleep 2
@@ -53,5 +69,5 @@ shot)
     ;;
 journal) cat "$run/saves/journal.txt" ;;
 stop) stop ;;
-*) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+*) sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
