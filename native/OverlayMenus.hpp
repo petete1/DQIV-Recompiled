@@ -42,7 +42,8 @@ struct OverlayMenuState {
     int count=0;
     MenuLayerMaps layers[8];
     const std::uint16_t* oam[2]={};       // top, bottom: 128 entries of 4 halfwords
-    int windowBg=-1,backBg=-1,iconBg=-1;  // main-engine BG numbers of the three menu BGs
+    // BG numbers of the three menu BGs (0-3 main, 4-7 sub; -1 none), per screen: the two screens can use different BGs.
+    int windowBg[2]={-1,-1},backBg[2]={-1,-1},iconBg[2]={-1,-1};
 };
 OverlayMenuState& overlayMenuState();
 }

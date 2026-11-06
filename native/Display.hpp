@@ -40,11 +40,11 @@ public:
     // through the sub engine's bare backdrop.
     void setWorldBackground(bool on) {world_=on;}
     // Overlay menus: one menu layer's 256x384 picture (ARGB, 0 transparent):
-    // its back, window and icon maps (BG numbers 0-3 main, 4-7 sub; -1 none;
+    // its back, window and icon maps (each screen's BG numbers: 0-3 main, 4-7 sub; -1 none;
     // window characters from 0x80 come from the layer's own buffer), then the
     // given sprites of the two full-screen buffers, with this frame's VRAM and
     // palettes. Affine sprites are drawn unscaled.
-    std::vector<std::uint32_t> menuLayerPicture(NitroVideo&,const MenuLayerMaps&,int windowBg,int backBg,int iconBg,
+    static std::vector<std::uint32_t> menuLayerPicture(NitroVideo&,const MenuLayerMaps&,const int (&windowBg)[2],const int (&backBg)[2],const int (&iconBg)[2],
         std::span<const std::uint16_t> oamTop,std::span<const std::uint16_t> oamBottom,std::span<const MenuSprite> sprites);
     // The main engine shows such a copy: BG2 as a direct-colour bitmap, enabled
     // and untransformed, and BG0 not showing 3D.

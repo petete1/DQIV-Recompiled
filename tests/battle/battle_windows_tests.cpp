@@ -219,7 +219,8 @@ void rendersRamAndVramTiles() {
     layer.window[0]=0x0001;layer.window[1]=0x0080;
     auto maps=layer.maps(pc::OverlayMenu::other);maps.chars=chars.data();
     pc::Display display;
-    const auto picture=display.menuLayerPicture(video,maps,0,-1,-1,{},{},{});
+    const int windowBg[2]={0,0},none[2]={-1,-1};
+    const auto picture=display.menuLayerPicture(video,maps,windowBg,none,none,{},{},{});
     check(picture.size()==256*384,"a 256x384 picture");
     if(picture.size()!=256*384)return;
     check(picture[0]!=0&&((picture[0]>>16)&255)>200&&(picture[0]&0xffff)==0,"a VRAM character in the BG palette's colour");

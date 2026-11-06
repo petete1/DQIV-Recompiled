@@ -168,10 +168,21 @@ void publishMenuLayers()
         }
         state.oam[0] = (const unsigned short*)overlayMenuOam(0)->oam_;
         state.oam[1] = (const unsigned short*)overlayMenuOam(1)->oam_;
-        const int y = (getDisplayFrame() & 1) * 192;
-        state.windowBg = getTextBgAtY(y);
-        state.backBg = unkfunc_02081608(y);
-        state.iconBg = 3;
+        // Each screen's BGs, kept from the frames that tell them (the joined
+        // modes name only the current screen's).
+        static int s_windowBg[2] = { -1, -1 }, s_backBg[2] = { -1, -1 };
+        for (int screen = 0; screen < 2; screen++) {
+            const int window = getTextBgAtY(screen * 192), back = unkfunc_02081608(screen * 192);
+            if (window != -1) {
+                s_windowBg[screen] = window;
+            }
+            if (back != -1) {
+                s_backBg[screen] = back;
+            }
+            state.windowBg[screen] = s_windowBg[screen];
+            state.backBg[screen] = s_backBg[screen];
+        }
+        state.iconBg[1] = 3;   // MenuIconBg::flush: the bottom screen's BG 3
     }
     for (int i = 0; i < LAYER_COUNT; i++) {
         s_layers[i].drawn_ = 0;

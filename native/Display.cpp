@@ -419,39 +419,59 @@ void Display::frame(NitroVideo& video,std::span<const std::uint32_t> three,bool 
     ProfileScope timing("display-capture");
     capture(video,three);
 }
-std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const MenuLayerMaps& maps,int windowBg,int backBg,int iconBg,
+std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const MenuLayerMaps& maps,const int (&windowBg)[2],const int (&backBg)[2],const int (&iconBg)[2],
     std::span<const std::uint16_t> oamTop,std::span<const std::uint16_t> oamBottom,std::span<const MenuSprite> sprites) {
     std::vector<std::uint32_t> out(256*384,0u);
     std::vector<std::uint8_t> vram;
-    auto drawMap=[&](const std::uint16_t* map,int number,bool window) {
+    auto drawMap=[&](const std::uint16_t* map,int number,bool window,int firstRow) {
         if(!map||number<0)return;
         const bool sub=number>=4;const unsigned layer=number&3,base=0x04000000+(sub?0x1000:0);
         const unsigned cnt=r16(video,base+8+layer*2),control=r32(video,base);
         const unsigned chars=((cnt>>2)&15)*0x4000+(sub?0:((control>>24)&7)*0x10000),mask=sub?0x1ffff:0x7ffff;
         vram.resize(mask+1);video.readDisplay(sub?0x06200000:0x06000000,vram);
-        for(int row=0;row<48;++row)for(int column=0;column<32;++column) {
+        // 256-colour characters (the icons), with the extended palettes when on (as background()).
+        // 256-colour characters: the 8-bit setting, or BG 2/3 in the affine modes (as background()).
+        const unsigned mode=control&7;
+        const bool affine=(layer==3&&mode>=3)||(layer==2&&(mode==2||mode==4||mode==5));
+        const bool eight=(cnt&128)||affine,extended=eight&&(control&(1u<<30));
+        std::vector<std::uint8_t> extendedPalette;
+        if(extended) {extendedPalette.resize(0x8000);video.readExtendedPalette(sub,false,extendedPalette);}
+        const unsigned slot=layer<2?layer+((cnt&0x2000)?2:0):layer;
+        for(int row=firstRow;row<firstRow+24;++row)for(int column=0;column<32;++column) {
             const unsigned entry=map[row*32+column],c=entry&1023;
             if(!c)continue;
             // The layer's own text characters (MenuWindowBg, VRAM offset 0x1000 = character 0x80).
-            const bool own=window&&maps.chars&&c>=0x80;
+            const bool own=window&&maps.chars&&c>=0x80&&!eight;
             const std::uint8_t* tile=own?maps.chars+((c-0x80)+(row>=24?24*32:0))*32:nullptr;
             for(int y=0;y<8;++y)for(int x=0;x<8;++x) {
                 const int tx=(entry&0x400)?7-x:x,ty=(entry&0x800)?7-y:y;
-                const unsigned pair=own?tile[ty*4+tx/2]:vram[(chars+c*32+ty*4+tx/2)&mask];
-                const unsigned index=(tx&1)?pair>>4:pair&15;
-                if(!index)continue;
-                out[(row*8+y)*256+column*8+x]=rgb(word(video.palette(),(sub?0x400:0)+((entry>>12)*16+index)*2));
+                unsigned index=0,color=0;
+                if(eight) {
+                    index=vram[(chars+c*64+ty*8+tx)&mask];
+                    if(!index)continue;
+                    color=extended?word(extendedPalette,slot*0x2000+(entry>>12)*512+index*2):word(video.palette(),(sub?0x400:0)+index*2);
+                } else {
+                    const unsigned pair=own?tile[ty*4+tx/2]:vram[(chars+c*32+ty*4+tx/2)&mask];
+                    index=(tx&1)?pair>>4:pair&15;
+                    if(!index)continue;
+                    color=word(video.palette(),(sub?0x400:0)+((entry>>12)*16+index)*2);
+                }
+                out[(row*8+y)*256+column*8+x]=rgb(color);
             }
         }
     };
-    drawMap(maps.back,backBg,false);
-    drawMap(maps.window,windowBg,true);
-    drawMap(maps.icon,iconBg,false);
+    for(int screen=0;screen<2;++screen) {
+        drawMap(maps.back,backBg[screen],false,screen*24);
+        drawMap(maps.window,windowBg[screen],true,screen*24);
+        drawMap(maps.icon,iconBg[screen],false,screen*24);
+    }
     if(sprites.empty())return out;
     constexpr int widths[3][4]={{8,16,32,64},{16,32,32,64},{8,8,16,32}};
     constexpr int heights[3][4]={{8,16,32,64},{8,8,16,32},{16,32,32,64}};
     std::vector<std::uint8_t> obj(0x40000);video.readDisplay(0x06400000,obj);
     const unsigned control=r32(video,0x04000000);
+    std::vector<std::uint8_t> objExtended;
+    if(control&0x80000000) {objExtended.resize(0x2000);video.readExtendedPalette(false,true,objExtended);}
     for(const auto& s:sprites) {
         const auto oam=s.screen?oamBottom:oamTop;
         if(oam.size()<std::size_t(s.entry*4+3))continue;
@@ -468,7 +488,9 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
             unsigned index=obj[(start+tileOffset+(eight?pixel:pixel/2))&0x3ffff];
             if(!eight)index=(index>>((pixel&1)*4))&15;
             if(!index)continue;
-            out[y*256+x]=rgb(word(video.palette(),0x200+(index+(!eight?(c>>12)*16:0))*2));
+            // 256-colour sprites (the faces) with the extended palettes when on, as objects().
+            out[y*256+x]=rgb(eight&&!objExtended.empty()?word(objExtended,(c>>12)*512+index*2):
+                word(video.palette(),0x200+(index+(!eight?(c>>12)*16:0))*2));
         }
     }
     return out;

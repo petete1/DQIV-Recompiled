@@ -1,5 +1,6 @@
 #pragma once
 #include "BattleWindows.hpp"
+#include "OverlayMenus.hpp"
 #include "GpuRenderer.hpp"
 #include "TextCanvas.hpp"
 #include <cstdint>
@@ -72,6 +73,9 @@ private:
     std::uint32_t battleRevision_=0;int battleWidth_=0,battleHeight_=0;bool battleBlink_=false;
     std::uint32_t mouseButtons_=0; // the mouse buttons down at the last poll (SDL_MouseButtonFlags)
     BattleMouse battleMouse_; // clicks on the battle windows, as A and B
+    // Overlay menus: the game's menu layers placed on the window (OverlayMenus.hpp).
+    void drawOverlayMenus(int width,int height);
+    std::vector<LayerPlacement> menuPlacements_;
     void setFullscreen(bool);
     // An unlocked achievement, announced in the window's bottom right corner for a few seconds.
     int toast_=-1;

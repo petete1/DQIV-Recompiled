@@ -1,5 +1,7 @@
 #include "GameWindow.hpp"
 #include "BattleWindows.hpp"
+#include "Display.hpp"
+#include "NitroVideo.hpp"
 #include "DebugTools.hpp"
 #include "AudioOutput.hpp"
 #include "GlLoader.hpp"
@@ -23,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5};
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6}; // overlayMenu0..+8: menu layers
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -272,7 +274,13 @@ bool GameWindow::poll() {
     const bool shown=battleWindowsShown();
     buttons|=battleMouse_.poll(shown,(pressed&SDL_BUTTON_LMASK)!=0,(pressed&SDL_BUTTON_RMASK)!=0,focus&&(mouse&SDL_BUTTON_LMASK),
         battleClickAt(pointerX,pointerY)>=0);
-    setTouch(down&&!battleMouse_.touchBlocked(shown),static_cast<int>(x),static_cast<int>(y)-192);
+    if(gameSettings().battleMenus==2&&overlayMenuState().active) {
+        // Overlay menus: the touch goes through the layer under the pointer, at
+        // its DS place (the game's touch areas), and nowhere else.
+        int dsX=0,dsY=0;
+        const bool on=pointerOnLayer(menuPlacements_,pointerX,pointerY,dsX,dsY)&&dsY>=192;
+        setTouch(focus&&(mouse&SDL_BUTTON_LMASK)&&on,on?dsX:0,on?dsY-192:0);
+    } else setTouch(down&&!battleMouse_.touchBlocked(shown),static_cast<int>(x),static_cast<int>(y)-192);
     setButtons(buttons);return running_;
 }
 void GameWindow::drawBattleWindows(int width,int height) {
@@ -293,7 +301,39 @@ void GameWindow::drawBattleWindows(int width,int height) {
     gpu_->drawOverlay(overlayBattle,battlePicture_,layout.picture.w/s,layout.picture.h/s,changed,
         layout.picture.x,layout.picture.y,width,height,layout.picture.w,layout.picture.h);
 }
+void GameWindow::drawOverlayMenus(int width,int height) {
+    const auto& state=overlayMenuState();
+    if(gameSettings().battleMenus!=2||!state.active) {menuPlacements_.clear();return;}
+    // Where the presented picture shows DS pixel (0,0), and how large a DS pixel is.
+    float canvasWidth=0,canvasHeight=0;canvasPixels(layout_,canvasWidth,canvasHeight);
+    const int scale=std::max(1,int(std::lround(canvasHeight/layout_.canvasHeight)));
+    const int originX=int(std::lround((width-canvasWidth)/2+(layout_.canvasWidth-256)/2*canvasWidth/layout_.canvasWidth));
+    const int originY=int(std::lround((height-canvasHeight)/2));
+    menuPlacements_=placeLayers(std::span(state.layers,state.count),width,height,originX,originY,scale);
+    // Each sprite with the layer whose drawn area holds it; the rest at the DS place.
+    std::vector<std::vector<MenuSprite>> sprites(state.count+1);
+    for(const auto& sprite:menuSprites(state.oam[0],state.oam[1])) {
+        const int layer=spriteLayer(menuPlacements_,sprite.centreX,sprite.centreY);
+        sprites[layer<0?state.count:layer].push_back(sprite);
+    }
+    const std::span<const std::uint16_t> top(state.oam[0],state.oam[0]?512:0),bottom(state.oam[1],state.oam[1]?512:0);
+    auto& video=activeVideo();
+    std::vector<std::uint32_t> crop;
+    for(int i=0;i<=state.count;++i) {
+        const bool loose=i==state.count;
+        if(loose&&sprites[i].empty())break;
+        const MenuLayerMaps maps=loose?MenuLayerMaps{}:state.layers[i];
+        const auto picture=Display::menuLayerPicture(video,maps,state.windowBg,state.backBg,state.iconBg,top,bottom,sprites[i]);
+        const DsRect area=loose?DsRect{0,0,256,384}:menuPlacements_[i].area;
+        if(area.w<=0)continue;
+        crop.resize(std::size_t(area.w)*area.h);
+        for(int y=0;y<area.h;++y)std::copy_n(picture.data()+(area.y+y)*256+area.x,area.w,crop.data()+std::size_t(y)*area.w);
+        const int x=loose?originX:menuPlacements_[i].x,y=loose?originY:menuPlacements_[i].y;
+        gpu_->drawOverlay(overlayMenu0+i,crop,area.w,area.h,true,x,y,width,height,area.w*scale,area.h*scale);
+    }
+}
 void GameWindow::drawInterface(int width,int height) {
+    drawOverlayMenus(width,height);
     drawBattleWindows(width,height);
     const float scale=std::max(0.6f,height/720.f);
     if(gameSettings().showFps&&settingsUsed_) {
