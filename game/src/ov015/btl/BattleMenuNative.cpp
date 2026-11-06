@@ -11,6 +11,11 @@
 #include "main/dss/TextConvert.hpp"
 #include "main/dss/VramRequest.hpp"
 #include "main/menu/MenuUpdateAssist.hpp"
+#include "main/status/PartyStatus.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include "ov003/status/MonsterPartyWithDraw.hpp"
+#include "ov015/btl/BattleMenu.hpp"
+#include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "main/text/TextAPI.hpp"
 #include "GameServices.hpp"
 #include "Settings.hpp"
@@ -136,6 +141,19 @@ pc::BattleText battleNumber(int number)
     return s_numbers[key] = drawText(text);
 }
 
+// "×n", as the monster name plates count a group.
+pc::BattleText battleCount(int number)
+{
+    const std::pair<int, int> key(-1 - number, TextAPI::m_lang);
+    auto found = s_numbers.find(key);
+    if (found != s_numbers.end()) {
+        return found->second;
+    }
+    char text[0x40];
+    dss::sprintf_s(text, sizeof(text), "\xc3\x97%d", number);
+    return s_numbers[key] = drawText(text);
+}
+
 void beginBattleMenu(pc::BattleMenuKind kind, int columns)
 {
     s_building = pc::BattleMenuState();
@@ -183,12 +201,14 @@ void setBattleFooter(int value, int number)
     s_keys.push_back(number);
 }
 
-void addBattleEntry(int text, short index, bool enabled, int right, bool rightIsNumber)
+void addBattleEntry(int text, short index, bool enabled, int right, int rightKind)
 {
     pc::BattleMenuEntry entry;
     entry.label = battleText(text);
-    if (rightIsNumber) {
+    if (rightKind == 1) {
         entry.right = battleNumber(right);
+    } else if (rightKind == 2) {
+        entry.right = battleCount(right);
     } else if (right != 0) {
         entry.right = battleText(right);
     }
@@ -199,6 +219,7 @@ void addBattleEntry(int text, short index, bool enabled, int right, bool rightIs
     s_keys.push_back(index);
     s_keys.push_back(enabled);
     s_keys.push_back(right);
+    s_keys.push_back(rightKind);
 }
 
 void setBattlePage(int page, int pages)
@@ -227,6 +248,78 @@ void endBattleMenu()
     state = s_building;
     state.revision = revision;
     s_lastKeys = s_keys;
+}
+
+namespace {
+void activeMemberTitle()
+{
+    const int chara = btl::BattleMenuPlayerControl::getSingleton()->activeChara_;
+    setBattleTitle(status::g_Party.getPlayerStatus(chara)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000);
+}
+}
+
+void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active)
+{
+    beginBattleMenu(pc::BattleMenuKind::targetEnemy, 1);
+    activeMemberTitle();
+    const int group = rects[active].group;
+    int cursor = active;
+    for (int i = 0; i < count; i++) {
+        bool seen = false;
+        for (int j = 0; j < i; j++) {
+            seen = seen || rects[j].group == rects[i].group;
+        }
+        if (seen) {
+            continue;
+        }
+        if (rects[i].group == group) {
+            cursor = i;
+        }
+        const int left = g_monster.getMonsterCountInGroupExist(rects[i].group);
+        addBattleEntry(0x60000000 + g_monster.getMonsterIndexInGroup(rects[i].group), (short)i, true, left > 1 ? left : 0, left > 1 ? 2 : 0);
+    }
+    setBattleCursor((short)cursor);
+    endBattleMenu();
+    drawMonsterNamePlates(group);
+}
+
+void drawBattlePartyTargets(int count, int active)
+{
+    beginBattleMenu(pc::BattleMenuKind::targetParty, 1);
+    activeMemberTitle();
+    for (int i = 0; i < count; i++) {
+        addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+    }
+    setBattleCursor((short)active);
+    endBattleMenu();
+}
+
+void battleTargetInput(menu::MenuItem& item)
+{
+    if (!classicBattleMenus()) {
+        return;
+    }
+    const pc::BattleMenuState& state = pc::battleMenuState();
+    const int at = state.cursor;
+    int to = -1;
+    const pc::BattlePointer pointer = pc::takeBattlePointer();
+    if (pointer.entry >= 0 && pointer.entry < (int)state.entries.size()) {
+        to = pointer.entry;
+    }
+    const int keys = dss::g_Pad.repeat();
+    const int direction = keys & PAD_KEY_UP ? 0 : keys & PAD_KEY_DOWN ? 1 : keys & PAD_KEY_LEFT ? 2 : keys & PAD_KEY_RIGHT ? 3 : -1;
+    if (direction >= 0 && at >= 0) {
+        to = pc::moveBattleCursor(state, at, direction);
+        if (item.result_ != menu::MenuItem::MENUITEM_RESULT_OK && item.result_ != menu::MenuItem::MENUITEM_RESULT_CANCEL) {
+            item.result_ = menu::MenuItem::MENUITEM_RESULT_NONE;   // the item's own move is not the list's
+        }
+    }
+    if (to >= 0 && to != at && item.result_ != menu::MenuItem::MENUITEM_RESULT_OK) {
+        // A rectangle of another group: the menu's "changed" code keeps it.
+        item.active_ = state.entries[to].index;
+        item.result_ = menu::MenuItem::MENUITEM_RESULT_CHANGE;
+        item.reason_ = menu::MenuItem::MENUITEM_REASON_PAD;
+    }
 }
 
 void clearBattleMenu()

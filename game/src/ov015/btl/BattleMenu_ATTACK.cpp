@@ -1,4 +1,5 @@
 #include "ov015/btl/BattleMenu.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "ov003/btl/BattleMonsterMask.hpp"
 #include "ov003/status/MonsterPartyWithDraw.hpp"
@@ -36,6 +37,12 @@ THUMB void BattleMenu_ATTACK::menuExecute()
 
 THUMB void BattleMenu_ATTACK::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawBattleEnemyTargets(touchRect_, enemyMaxNum_, menuItem_.active_);
+        return;
+    }
+#endif
     drawAttackTargetMenu(touchRect_[menuItem_.active_].group);
 }
 
@@ -53,6 +60,9 @@ THUMB void BattleMenu_ATTACK::menuUpdate()
     }
     int old = menuItem_.active_;
     menuItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleTargetInput(menuItem_);
+#endif
     int i = menuItem_.active_;
     switch (menuItem_.result_) {
     case 1:

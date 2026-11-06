@@ -2,6 +2,7 @@
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 
 THUMB void BattleMenu_ITEMUSE2PARTY::menuSetup()
 {
@@ -21,6 +22,12 @@ THUMB void BattleMenu_ITEMUSE2PARTY::menuExecute()
 
 THUMB void BattleMenu_ITEMUSE2PARTY::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawBattlePartyTargets(partyMax_, menuItem_.active_);
+        return;
+    }
+#endif
     drawItemUseOnPartyMenu();
     menuItem_.drawActive();
 }
@@ -39,7 +46,11 @@ THUMB void BattleMenu_ITEMUSE2PARTY::menuUpdate()
         close();
         return;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         redraw_ = 1;
         if (result == 2) {

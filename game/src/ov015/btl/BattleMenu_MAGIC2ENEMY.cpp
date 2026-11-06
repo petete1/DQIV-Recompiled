@@ -1,4 +1,5 @@
 #include "ov015/btl/BattleMenu.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include "ov015/btl/BattleMenuPlayerControl.hpp"
 #include "ov003/btl/BattleMonsterMask.hpp"
 #include "main/status/PartyStatus.hpp"
@@ -40,6 +41,12 @@ THUMB void BattleMenu_MAGIC2ENEMY::menuExecute()
 
 THUMB void BattleMenu_MAGIC2ENEMY::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawBattleEnemyTargets(touchRect_, enemyNumMax_, menuItem_.active_);
+        return;
+    }
+#endif
     drawMagicOnEnemyMenu(touchRect_[menuItem_.active_].group);
 }
 
@@ -48,6 +55,9 @@ THUMB void BattleMenu_MAGIC2ENEMY::menuUpdate()
     int group = touchRect_[menuItem_.active_].group;
     int old = menuItem_.active_;
     menuItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleTargetInput(menuItem_);
+#endif
     int i = menuItem_.active_;
     if (MenuUpdate_Assist::isCancel(cancelItem_)) {
         status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveBattleStatus_.setSelectCommand(status::HaveBattleStatus::UseAction, -1);
