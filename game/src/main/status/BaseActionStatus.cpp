@@ -48,7 +48,10 @@ THUMB int status::BaseActionStatus::getEffectValue(status::CharacterStatus *targ
 
 THUMB int status::BaseActionStatus::actionTypeDamage(status::CharacterStatus *target)
 {
-    if (status::BaseActionStatus::eventBattle_ && target->characterIndex_ == 170 && (target[1].haveStatusInfo_.hp_[0] & 1) == 0) //not sure need to be checked for target[1].haveStatusInfo_.hp_[0]
+    // The Abominable Showman's doppelgangers take no damage: only the real one
+    // has bit 0 of its event flag (MonsterStatus 0x500, read on the DS as the
+    // word after the CharacterStatus; the PC structs are larger).
+    if (status::BaseActionStatus::eventBattle_ && target->characterIndex_ == 170 && (static_cast<status::MonsterStatus*>(target)->eventFlag_.flag_ & 1) == 0)
     {
         return 0;
     }
