@@ -429,13 +429,17 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
         const unsigned cnt=r16(video,base+8+layer*2),control=r32(video,base);
         const unsigned chars=((cnt>>2)&15)*0x4000+(sub?0:((control>>24)&7)*0x10000),mask=sub?0x1ffff:0x7ffff;
         vram.resize(mask+1);video.readDisplay(sub?0x06200000:0x06000000,vram);
-        // 256-colour characters (the icons), with the extended palettes when on (as background()).
-        // 256-colour characters: the 8-bit setting, or BG 2/3 in the affine modes (as background()).
+        // 256-colour characters: the 8-bit setting, or BG 2/3 in the affine modes (as background()),
+        // with the extended palettes when on.
         const unsigned mode=control&7;
         const bool affine=(layer==3&&mode>=3)||(layer==2&&(mode==2||mode==4||mode==5));
         const bool eight=(cnt&128)||affine,extended=eight&&(control&(1u<<30));
         std::vector<std::uint8_t> extendedPalette;
         if(extended) {extendedPalette.resize(0x8000);video.readExtendedPalette(sub,false,extendedPalette);}
+        // The BG's own offset: its scroll, or an affine BG's reference point (the icons sit a few pixels in).
+        const unsigned reference=base+0x28+(layer==3?0x10:0);
+        const int offsetX=affine?signed28(r32(video,reference))>>8:int(r16(video,base+0x10+layer*4)&511);
+        const int offsetY=affine?signed28(r32(video,reference+4))>>8:int(r16(video,base+0x12+layer*4)&511);
         const unsigned slot=layer<2?layer+((cnt&0x2000)?2:0):layer;
         // Window backs blended over the 3D scene as the DS does (BLDCNT alpha mode, this BG a first
         // target, BG0 a second one and showing the 3D); the sub engine's blend over its dark backdrop stays opaque.
@@ -467,7 +471,9 @@ std::vector<std::uint32_t> Display::menuLayerPicture(NitroVideo& video,const Men
                     auto part=[&](unsigned shift){return (((argb>>shift)&255)*alpha/16)<<shift;};
                     argb=((255u*alpha/16)<<24)|part(16)|part(8)|part(0);
                 }
-                out[(row*8+y)*256+column*8+x]=argb;
+                const int px=column*8+x-offsetX,py=row*8+y-offsetY;
+                if(px<0||px>=256||py<firstRow*8||py>=firstRow*8+192)continue;
+                out[py*256+px]=argb;
             }
         }
     };
