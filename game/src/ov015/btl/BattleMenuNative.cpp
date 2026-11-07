@@ -343,8 +343,8 @@ int pageEntries(int count, int page, int& top)
 
 void drawBattleSpells(const int* actions, int count, int page, int active)
 {
+    // The caster's MP is on their party card: only the costs here.
     beginBattleMenu(pc::BattleMenuKind::spells, 2);
-    status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
     int top;
     const int num = pageEntries(count, page, top);
     for (int i = 0; i < num; i++) {
@@ -354,7 +354,6 @@ void drawBattleSpells(const int* actions, int count, int page, int active)
         addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true, shown ? mp : 0, shown ? 1 : 0);
     }
     setBattlePage(page, (count - 1) / 6 + 1);
-    setBattleFooter(0xa000003e, info->getMp());
     setBattleCursor((short)active);
     endBattleMenu();
 }
