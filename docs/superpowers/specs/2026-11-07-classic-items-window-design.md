@@ -22,7 +22,7 @@ picture.
 
 While it shows, the commands panel, the gold panel and the map are hidden. The
 party cards stay as they are, and the chosen member's card slides out as now.
-The Classic message window draws over the window's bottom as now.
+The Classic message window draws over the window's bottom (drawn after it).
 
 ## Layout (DS units, `battleScale`)
 
@@ -35,15 +35,16 @@ The Classic message window draws over the window's bottom as now.
   Rows are 20 high.
 - **The list** (middle pane): a header with the owner's name and, when more than
   one page, ◀ n/m ▶; then up to 6 rows in one column: "E" (equipped) at the
-  left, the 16-px icon, the name. Empty when no member is chosen yet (the pane
-  stays, blank).
+  left, the 16-px icon, the name. While choosing whose items, it previews the
+  member (or Bag) under the cursor, with no cursor of its own, as DQ11 does.
 - **The detail** (right pane), for the item under the list cursor:
   - a header: the item's kind as the DS equipment window names it
     (`MenuDataCommon::getEquipKind`), or the item's name when it is not
     equipment;
   - the item's 32-px icon at full size, centred in a framed box;
   - the description, wrapped (as the description window today);
-  - for the Bag, the count it holds, with the DS bag's count text;
+  - for the Bag, the count it holds, as "×n" (the lists' count form; DQ4 has
+    no "No. Carried" text);
   - for equipment, the owner's line as the DS equipment window gives it
     (`getEquipCompareValues`): the stat's name (`getAbilityKind`) and
     "now ▶ new", or "equipped" and the value, or "can't equip", with the
@@ -52,9 +53,10 @@ The Classic message window draws over the window's bottom as now.
 - **Too narrow**: when the three panes don't fit side by side (the panes'
   minimum widths: whose 76, list 130, detail 100, plus gaps), the detail goes
   below the list, inside the window.
-- **"Do What?"** (the item's commands): a small panel at the window's top right
-  corner, overlapping the area the gold panel used, titled with the game's
-  question, one column.
+- **"Do What?"** (the item's commands): a small panel at the screen's top
+  right, 8 in, over the window's right part and the area the gold panel used,
+  titled with the item's name as today (DQ4 has no "Do What?" text), one
+  column.
 
 ## The cursor in each screen
 
@@ -66,7 +68,7 @@ frame on its choice.
 | whose items | whose | — |
 | the list | list | whose |
 | commands | popup | whose, list |
-| target (use on, transfer to) | whose, titled with the game's question | list |
+| target (use on, transfer to) | whose (Use: the targets as today, titled with the item) | list |
 | swap | list (the target's items, its name in the header) | whose |
 | Chimaera Wing towns | list (the towns, titled) | whose |
 
