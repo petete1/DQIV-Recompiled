@@ -227,9 +227,8 @@ int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     return -1;
 }
 namespace {
-// The party panel (DS pixels): rows of 50, 132 wide: the face with the level
-// over its foot (the strip fading in behind its left part), then the name,
-// HP and MP at the right.
+// The party panel (DS pixels): rows of 50, 132 wide: the face (the strip
+// fading in behind its left part), then the name and level, HP and MP.
 constexpr int face=48,partyRow=50,partyWidth=132,partyFade=0,stripFade=16,partyInfo=partyFade+face+6,partyRight=partyWidth-4;
 constexpr std::uint32_t green=0xff90e070,yellow=0xfff0d050,red=0xfff06050,hpBar=0xff60d040,mpBar=0xff4090f0,barBack=0xff202020;
 }
@@ -274,10 +273,11 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
             for(int y=0;y<face;++y)for(int x=0;x<face;++x)
                 if(const auto index=row.portrait[std::size_t(y)*face+x])out[std::size_t(top+1+y)*width+partyFade+x]=state.portraitPalette[index];
         const std::uint32_t tone=row.colour==2?red:row.colour==1?yellow:cream;
-        // The level over the face's foot, as DQ11 shows it.
-        blit(out,width,height,row.label,partyFade,top+partyRow-14,face,palette,false,tone);
-        blit(out,width,height,row.level,partyFade+face-row.level.width,top+partyRow-14,face,palette,false,tone);
-        blit(out,width,height,row.name,partyRight-row.name.width,top-1,partyRight-partyInfo,palette,false,row.colour?tone:green);
+        // The top line: the name at the left, the level (or condition) at the right.
+        const int levelWidth=row.label.width+2+row.level.width;
+        blit(out,width,height,row.label,partyRight-levelWidth,top-1,row.label.width,palette,false,tone);
+        blit(out,width,height,row.level,partyRight-row.level.width,top-1,row.level.width,palette,false,tone);
+        blit(out,width,height,row.name,partyInfo,top-1,std::max(0,partyRight-levelWidth-4-partyInfo),palette,false,row.colour?tone:green);
         const int barWidth=partyRight-partyInfo;
         for(int k=0;k<2;++k) {
             const int y=top+16+k*17;
