@@ -227,9 +227,10 @@ int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     return -1;
 }
 namespace {
-// The party panel (DS pixels): rows of 50, 156 wide: a 24-pixel fade, the
-// face with the level over its foot, then the name, HP and MP at the right.
-constexpr int face=48,partyRow=50,partyWidth=156,partyFade=24,partyInfo=partyFade+face+6,partyRight=partyWidth-4;
+// The party panel (DS pixels): rows of 50, 132 wide: the face with the level
+// over its foot (the strip fading in behind its left part), then the name,
+// HP and MP at the right.
+constexpr int face=48,partyRow=50,partyWidth=132,partyFade=0,stripFade=16,partyInfo=partyFade+face+6,partyRight=partyWidth-4;
 constexpr std::uint32_t green=0xff90e070,yellow=0xfff0d050,red=0xfff06050,hpBar=0xff60d040,mpBar=0xff4090f0,barBack=0xff202020;
 }
 int battleBarWidth(int value,int max,int width) {
@@ -265,7 +266,7 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
         // The strip: dark (lighter brown for the member choosing), fading in over its left part.
         const std::uint32_t strip=row.active?0x403020:0x000000;
         for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
-            const unsigned alpha=x<partyFade?0xa0u*unsigned(x)/partyFade:0xa0u;
+            const unsigned alpha=x<stripFade?0xa0u*unsigned(x)/stripFade:0xa0u;
             auto part=[&](unsigned shift){return (((strip>>shift)&255)*alpha/255)<<shift;};
             out[std::size_t(y)*width+x]=(alpha<<24)|part(16)|part(8)|part(0);
         }
