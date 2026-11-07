@@ -11,8 +11,12 @@ constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=14,columnGap=16,border=2,r
 constexpr int headerHeight=row+4,helpRow=12,helpSpace=3,helpWidth=200,helpBeside=96;
 // The party panel's room at the right (BattleWindows' party constants below).
 constexpr int partyRoom=132+12;
-// Command icons: the game's 24x24, shrunk to fit a row.
-constexpr int iconSource=24,iconSize=16,iconGap=4;
+// Icons (the commands' 24x24, the items' 32x32), shrunk to fit a row.
+constexpr int iconSize=16,iconGap=4;
+int iconSide(const std::vector<std::uint32_t>& icon) {
+    const int side=int(std::lround(std::sqrt(double(icon.size()))));
+    return side>=iconSize&&std::size_t(side)*side==icon.size()?side:0;
+}
 // The DQ11-like look: see-through brown panels (premultiplied), a tan border inset 2 pixels, cream text.
 constexpr std::uint32_t fill=0xe0281810,tan=0xffb89870,cream=0xfff4ead8,gold=0xfff0c040,goldEdge=0xff806010;
 // What a window shows, in DS pixels relative to the picture.
@@ -43,7 +47,7 @@ Plan plan(const BattleMenuState& state,int width) {
     const int columns=std::max(1,state.columns),count=int(state.entries.size());
     for(const auto& e:state.entries) {
         p.labelWidth=std::max(p.labelWidth,e.label.width);p.rightWidth=std::max(p.rightWidth,e.right.width);
-        if(e.icon.size()==std::size_t(iconSource*iconSource))p.iconWidth=iconSize+iconGap;
+        if(iconSide(e.icon))p.iconWidth=iconSize+iconGap;
     }
     auto columnWidth=[&] {return cursorWidth+p.iconWidth+p.labelWidth+(p.rightWidth?rightGap+p.rightWidth:0);};
     // Cut the labels so the window fits the game window.
@@ -122,25 +126,26 @@ void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText&
         if(px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=dim?0xff7a756c:cream;
     }
 }
-// A command icon shrunk from 24x24 to 16x16: each pixel the average of the 1.5x1.5
-// it covers (premultiplied, so the edges blend with the panel).
+// An icon shrunk to 16x16: each pixel the average of the source area it covers
+// (premultiplied, so the edges blend with the panel).
 void icon(std::vector<std::uint32_t>& out,int width,int height,const std::vector<std::uint32_t>& src,int x,int y,bool dim) {
+    const int n=iconSide(src);
     for(int oy=0;oy<iconSize;++oy)for(int ox=0;ox<iconSize;++ox) {
         double sum[4]{};
-        for(int k=0;k<4;++k) {
-            // The 1.5x1.5 area as the 2x2 source pixels it touches, with their shares.
-            const int sx=ox*3/2+(k&1),sy=oy*3/2+(k>>1);
-            const double wx=(ox&1)?((k&1)?1.0:0.5):((k&1)?0.5:1.0),wy=(oy&1)?((k>>1)?1.0:0.5):((k>>1)?0.5:1.0);
-            const std::uint32_t c=src[std::size_t(sy)*iconSource+sx];
+        // The area in source pixels, times iconSize: [o*n, (o+1)*n).
+        for(int sy=oy*n/iconSize;sy*iconSize<(oy+1)*n;++sy)for(int sx=ox*n/iconSize;sx*iconSize<(ox+1)*n;++sx) {
+            const int wx=std::min((sx+1)*iconSize,(ox+1)*n)-std::max(sx*iconSize,ox*n);
+            const int wy=std::min((sy+1)*iconSize,(oy+1)*n)-std::max(sy*iconSize,oy*n);
+            const std::uint32_t c=src[std::size_t(sy)*n+sx];
             const double a=(c>>24)/255.0*wx*wy;
             sum[0]+=a;sum[1]+=((c>>16)&255)*a;sum[2]+=((c>>8)&255)*a;sum[3]+=(c&255)*a;
         }
         if(sum[0]<=0)continue;
         const int px=x+ox,py=y+oy;
         if(px<0||py<0||px>=width||py>=height)continue;
-        const double alpha=sum[0]/2.25,shade=dim?0.5:1.0;
+        const double area=double(n)*n,alpha=sum[0]/area,shade=dim?0.5:1.0;
         const std::uint32_t under=out[std::size_t(py)*width+px];
-        auto mix=[&](int i,unsigned shift){return std::uint32_t(std::lround(sum[i]/2.25*shade+((under>>shift)&255)*(1-alpha)))<<shift;};
+        auto mix=[&](int i,unsigned shift){return std::uint32_t(std::lround(sum[i]/area*shade+((under>>shift)&255)*(1-alpha)))<<shift;};
         const std::uint32_t a=std::uint32_t(std::lround(255*alpha+(under>>24)*(1-alpha)));
         out[std::size_t(py)*width+px]=(a<<24)|mix(1,16)|mix(2,8)|mix(3,0);
     }
@@ -244,7 +249,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     for(std::size_t i=0;i<state.entries.size()&&i<p.entries.size();++i) {
         const auto& e=state.entries[i];const auto& b=p.entries[i];
         const int textY=b.y+dy+(row-e.label.height)/2;
-        if(e.icon.size()==std::size_t(iconSource*iconSource))
+        if(iconSide(e.icon))
             icon(out,width,height,e.icon,b.x+cursorWidth,b.y+dy+(row-iconSize)/2,!e.enabled);
         blit(out,width,height,e.label,b.x+cursorWidth+p.iconWidth,textY,p.labelWidth,state.palette,!e.enabled);
         if(e.right.width>0)

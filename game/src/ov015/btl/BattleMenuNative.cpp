@@ -241,33 +241,43 @@ void addBattleEntry(int text, short index, bool enabled, int right, int rightKin
     s_keys.push_back(rightKind);
 }
 
-void setBattleEntryIcon(int icon)
+namespace {
+// A menu icon (side x side, 8x8 8-bit tiles) in the item icons' colours (MenuIconBg::loadPalettes), ARGB.
+void setEntryIcon(int type, int index, int side)
 {
-    static std::map<int, std::vector<std::uint32_t> > s_icons;
+    static std::map<std::pair<int, int>, std::vector<std::uint32_t> > s_icons;
     if (s_building.entries.empty()) {
         return;
     }
-    auto found = s_icons.find(icon);
+    const std::pair<int, int> key(type, index);
+    auto found = s_icons.find(key);
     if (found == s_icons.end()) {
-        // 3x3 tiles of 8x8, 8-bit, in the item icons' colours (MenuIconBg::loadPalettes).
         std::vector<std::uint32_t> pixels;
-        void* packed = getMenuIconData(0xf4000000, icon);
+        void* packed = getMenuIconData(type, index);
         const unsigned short* colours = (const unsigned short*)getMenuIconData(0xf0000000, 9999);
-        if (packed != NULL && colours != NULL && getUncompressedSize(packed) == 24 * 24) {
+        if (packed != NULL && colours != NULL && getUncompressedSize(packed) == (unsigned int)(side * side)) {
             const unsigned char* tiles = (const unsigned char*)uncompressAlloc(packed);
-            pixels.resize(24 * 24);
-            for (int y = 0; y < 24; y++) {
-                for (int x = 0; x < 24; x++) {
-                    const unsigned char index = tiles[((y / 8) * 3 + x / 8) * 64 + (y % 8) * 8 + x % 8];
-                    pixels[y * 24 + x] = index != 0 && index < 0xa0 ? rgb(colours[index]) : 0u;
+            const int across = side / 8;
+            pixels.resize(side * side);
+            for (int y = 0; y < side; y++) {
+                for (int x = 0; x < side; x++) {
+                    const unsigned char at = tiles[((y / 8) * across + x / 8) * 64 + (y % 8) * 8 + x % 8];
+                    pixels[y * side + x] = at != 0 && at < 0xa0 ? rgb(colours[at]) : 0u;
                 }
             }
             dssFree(&g_appHeap, (void*)tiles);
         }
-        found = s_icons.insert(std::make_pair(icon, pixels)).first;
+        found = s_icons.insert(std::make_pair(key, pixels)).first;
     }
     s_building.entries.back().icon = found->second;
-    s_keys.push_back(icon);
+    s_keys.push_back(type);
+    s_keys.push_back(index);
+}
+}
+
+void setBattleEntryIcon(int icon)
+{
+    setEntryIcon(0xf4000000, icon, 24);
 }
 
 // A text of numbers ("1/3"), in the game's digits.
@@ -471,6 +481,7 @@ void drawBattleItems(const int* items, int count, int page, int active)
     for (int i = 0; i < num; i++) {
         // The equipped mark where drawBattleItemEntry puts it.
         addBattleEntry(items[top + i] + 0x40000000, (short)i, true, info->haveItem_.isEquipment(i + top) ? 0xa0000041 : 0);
+        setEntryIcon(0xf0000000, items[top + i], 32);   // the item's icon, as drawBattleItemEntry
     }
     setBattlePage(page, count > 0 ? (count - 1) / 6 + 1 : 1);
     if (active >= 0 && active < num) {

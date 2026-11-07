@@ -102,6 +102,17 @@ void rootIcons() {
     const auto plain=pc::layoutBattleMenu(menu(pc::BattleMenuKind::root,2),1920,1080);
     check(layout.picture.w>plain.picture.w,"the icons make room beside the labels");
 }
+void itemIcons() {
+    auto state=menu(pc::BattleMenuKind::items,2,2);
+    for(auto& e:state.entries)e.icon.assign(32*32,0xff00ff00u);
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    const int w=layout.picture.w/layout.scale;
+    if(layout.entries.empty())return;
+    const int y=(layout.entries[0].y-layout.picture.y)/layout.scale+8;
+    int green=0;for(int x=0;x<w;++x)green+=pixels[std::size_t(y)*w+x]==0xff00ff00u;
+    check(green==32,"the 32x32 item icons, shrunk to 16 wide (two entries)");
+}
 void wordsWrap() {
     const std::vector<pc::BattleText> words{ink(30),ink(30),ink(30),pc::BattleText{},ink(10)};
     const auto lines=pc::wrapBattleWords(words,70,3);
@@ -469,6 +480,7 @@ int main() {
     descriptionDrawn();
     wordsWrap();
     rootIcons();
+    itemIcons();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();
