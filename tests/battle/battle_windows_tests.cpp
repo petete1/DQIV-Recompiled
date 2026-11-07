@@ -113,6 +113,9 @@ void itemIcons() {
     int green=0;for(int x=0;x<w;++x)green+=pixels[std::size_t(y)*w+x]==0xff00ff00u;
     check(green==32,"the 32x32 item icons, shrunk to 16 wide (two entries)");
 }
+void menusLabel() {
+    check(std::string(pc::settingLabel(pc::settingBattleMenus,1))=="Menus","the setting is called Menus (English)");
+}
 void spellIcons() {
     std::uint32_t centres[5];
     for(int k=0;k<5;++k) {
@@ -495,6 +498,7 @@ int main() {
     rootIcons();
     itemIcons();
     spellIcons();
+    menusLabel();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

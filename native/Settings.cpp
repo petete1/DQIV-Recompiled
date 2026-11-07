@@ -115,12 +115,12 @@ const char* japanese(const char* en) {
         {"DS screens","DSのがめん"},
         {"Battle display","せんとうの がめん"},
         {"Battle zoom","せんとうの ズーム"},
-        {"Battle menus","せんとうメニュー"},
+        {"Menus","メニュー"},
         {"Classic","クラシック"},
         {"Original","オリジナル"},
         {"Overlay","オーバーレイ"},
-        {"Battles: Classic, console-style windows (wide picture only); Overlay, the DS menus anywhere on the screen; Original, the DS touch menus.",
-            "せんとう: クラシックは まどの メニュー (ワイドのみ)、オーバーレイは DSの メニューを どこにでも、オリジナルは DSの タッチメニュー。"},
+        {"Classic, console-style windows in battle and in the field menu (wide picture only); Overlay, the DS battle menus anywhere on the screen; Original, the DS touch menus.",
+            "クラシックは せんとうと フィールドの まどの メニュー (ワイドのみ)、オーバーレイは DSの せんとうメニューを どこにでも、オリジナルは DSの タッチメニュー。"},
         {"Panorama battles: the monsters seen closer.","パノラマの せんとう: モンスターを ちかくに みせる。"},
         {"Large","おおきく"},
         {"Panorama","パノラマ"},
@@ -288,7 +288,7 @@ const char* settingLabel(int item,int language) {
     case settingFrameRate:return pick(language,"Frame rate","Images par seconde","Bildrate","Fotogrammi al secondo","Imágenes por segundo");
     case settingBattleBoost:return pick(language,"Battle speed","Vitesse des combats","Kampftempo","Velocità battaglie","Velocidad de combate");
     case settingCameraZoom:return pick(language,"Camera zoom","Zoom caméra","Kamerazoom","Zoom telecamera","Zoom de cámara");
-    case settingBattleMenus:return pick(language,"Battle menus","Menus de combat","Kampfmenüs","Menu di battaglia","Menús de combate");
+    case settingBattleMenus:return pick(language,"Menus","Menus","Menüs","Menu","Menús");
     case settingCentredCamera:return pick(language,"Centred camera","Caméra centrée","Zentrierte Kamera","Telecamera centrata","Cámara centrada");
     case settingMobileSound:return pick(language,"HD sound","Son HD","HD-Sound","Audio HD","Sonido HD");
     }
@@ -365,11 +365,11 @@ const char* settingHint(int item,int language) {
         "Grand : monstres agrandis pour remplir la zone de combat ; Panorama : le zoom ci-dessous.","Groß: Monster vergrößert, um den Kampfbereich zu füllen; Panorama: der Zoom unten.",
         "Grande: mostri ingranditi per riempire l'area di battaglia; Panorama: lo zoom sotto.","Grande: monstruos ampliados para llenar la zona de combate; Panorama: el zoom de abajo.");
     case settingPicture:return pick(language,"Wide fills the screen without stretching; DS screens keeps the original layout.","Large remplit l'écran sans étirer ; Écrans DS garde la disposition d'origine.","Breit füllt den Bildschirm ohne Verzerrung; DS-Bildschirme: Original.","Panoramico riempie lo schermo senza deformare; Schermi DS: originale.","Panorámica llena la pantalla sin estirar; Pantallas DS: disposición original.");
-    case settingBattleMenus:return pick(language,"Battles: Classic, console-style windows (wide picture only); Overlay, the DS menus anywhere on the screen; Original, the DS touch menus.",
-        "Combats : Classiques, fenêtres comme sur console (image large seulement) ; Superposés, les menus DS n'importe où ; Originaux, les menus tactiles de la DS.",
-        "Kämpfe: Klassisch, Fenster wie auf Konsolen (nur Breitbild); Überlagert, die DS-Menüs überall; Original, die Touch-Menüs der DS.",
-        "Battaglie: Classici, finestre come su console (solo panoramico); Sovrapposti, i menu DS ovunque; Originali, i menu touch del DS.",
-        "Combates: Clásicos, ventanas como en consola (solo panorámica); Superpuestos, los menús de DS en cualquier lugar; Originales, los menús táctiles de DS.");
+    case settingBattleMenus:return pick(language,"Classic, console-style windows in battle and in the field menu (wide picture only); Overlay, the DS battle menus anywhere on the screen; Original, the DS touch menus.",
+        "Classiques, fenêtres comme sur console en combat et dans le menu hors combat (image large seulement) ; Superposés, les menus de combat DS n'importe où ; Originaux, les menus tactiles de la DS.",
+        "Klassisch, Fenster wie auf Konsolen im Kampf und im Feldmenü (nur Breitbild); Überlagert, die DS-Kampfmenüs überall; Original, die Touch-Menüs der DS.",
+        "Classici, finestre come su console in battaglia e nel menu fuori battaglia (solo panoramico); Sovrapposti, i menu di battaglia DS ovunque; Originali, i menu touch del DS.",
+        "Clásicos, ventanas como en consola en combate y en el menú fuera de combate (solo panorámica); Superpuestos, los menús de combate de DS en cualquier lugar; Originales, los menús táctiles de DS.");
     case settingCentredCamera:return pick(language,"Towns and dungeons: the party in the middle of the picture (No: as on the DS).",
         "Villes et donjons : le groupe au milieu de l'image (Non : comme sur la DS).","Städte und Dungeons: die Gruppe in der Bildmitte (Nein: wie auf dem DS).",
         "Città e dungeon: il gruppo al centro dell'immagine (No: come sul DS).","Pueblos y mazmorras: el grupo en el centro de la imagen (No: como en DS).");
