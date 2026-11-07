@@ -40,9 +40,13 @@ THUMB void BattleMenu_ACTIONMENU::menuDraw()
         // row here); the member is shown by the party panel.
         beginBattleMenu(pc::BattleMenuKind::commands, 2);
         addBattleEntry(0x80000004, 0, true);
+        setBattleEntryIcon(6);
         addBattleEntry(0x80000007, 3, true);
+        setBattleEntryIcon(7);
         addBattleEntry(0x80000005, 1, true);
+        setBattleEntryIcon(2);
         addBattleEntry(0x80000006, 2, true);
+        setBattleEntryIcon(3);
         setBattleCursor(pageItem_.active_);
         endBattleMenu();
         drawMonsterNamePlates(-1);
