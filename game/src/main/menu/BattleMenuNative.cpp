@@ -1,5 +1,6 @@
-// Classic battle menus: the battle menus' descriptions for the native windows
-// (BattleWindows.hpp), their text drawn by the game's own font.
+// Classic battle and field menus: the menus' descriptions for the native windows
+// (BattleWindows.hpp), their text drawn by the game's own font. In the main module:
+// the field menus use it too, and the battle overlay's data is destroyed when it unloads.
 #ifdef DQIV_NATIVE
 #include "ov015/btl/BattleMenuNative.hpp"
 #include "main/dss/BgBuffer.hpp"
@@ -14,6 +15,7 @@
 #include "main/menu/MenuIconData.hpp"
 #include "main/menu/MessageWindow.hpp"
 #include "main/menu/MenuDisplays.hpp"
+#include "main/menu/MenuDataCommon.hpp"
 #include "main/menu/MenuTextDisplay.hpp"
 #include "main/global/GlobalDQ4.hpp"
 #include "main/global/GlobalGamePart.hpp"
@@ -243,12 +245,9 @@ void addBattleEntry(int text, short index, bool enabled, int right, int rightKin
 
 namespace {
 // A menu icon (side x side, 8x8 8-bit tiles) in the item icons' colours (MenuIconBg::loadPalettes), ARGB.
-void setEntryIcon(int type, int index, int side)
+const std::vector<std::uint32_t>& menuIcon(int type, int index, int side)
 {
     static std::map<std::pair<int, int>, std::vector<std::uint32_t> > s_icons;
-    if (s_building.entries.empty()) {
-        return;
-    }
     const std::pair<int, int> key(type, index);
     auto found = s_icons.find(key);
     if (found == s_icons.end()) {
@@ -269,10 +268,51 @@ void setEntryIcon(int type, int index, int side)
         }
         found = s_icons.insert(std::make_pair(key, pixels)).first;
     }
-    s_building.entries.back().icon = found->second;
+    return found->second;
+}
+
+void setEntryIcon(int type, int index, int side)
+{
+    if (s_building.entries.empty()) {
+        return;
+    }
+    s_building.entries.back().icon = menuIcon(type, index, side);
     s_keys.push_back(type);
     s_keys.push_back(index);
 }
+}
+
+pc::BattleText numbersText(const char* ascii, int fontSize);
+
+void beginFieldMenu(pc::BattleMenuKind kind, int columns)
+{
+    beginBattleMenu(kind, columns);
+    s_building.field = true;
+    s_keys.push_back(-2);
+}
+
+void setFieldRootParent(int chosen)
+{
+    // The root's six commands, as drawRootMenuCommands lists them.
+    for (int i = 0; i < 6; i++) {
+        pc::BattleMenuEntry entry;
+        entry.label = battleText(menu::MenuDataCommon::getRootMenuName(i));
+        entry.icon = menuIcon(0xf4000000, menu::MenuDataCommon::getRootMenuKind(i), 24);
+        entry.index = (short)i;
+        s_building.parent.push_back(entry);
+        s_keys.push_back(menu::MenuDataCommon::getRootMenuName(i));
+    }
+    s_building.parentCursor = chosen;
+    s_keys.push_back(chosen);
+}
+
+void setBattleGold(int amount)
+{
+    char buf[0x40];
+    dss::sprintf_s(buf, sizeof(buf), "%d", amount);
+    s_building.gold = numbersText(buf, 12);
+    s_building.goldUnit = battleText(0xa000003c);
+    s_keys.push_back(amount);
 }
 
 void setBattleEntryIcon(int icon)
@@ -563,63 +603,100 @@ void clearBattleActed()
     s_acted.clear();
 }
 
+namespace {
+// The faces the DS status windows show (MenuFaceDisplay: 48x48, 8-bit, their own 160 colours).
+void loadPortraitPalette(pc::BattleMenuState& state)
+{
+    const unsigned short* faceColours = (const unsigned short*)getMenuIconData(0xf5000000, 9999);
+    for (int i = 0; i < 256; i++) {
+        state.portraitPalette[i] = faceColours != NULL && i < 0xa0 ? rgb(faceColours[i]) : 0xff000000u;
+    }
+}
+
+// A party card: label "Lv." (or the member's condition, level 0 then: none shown).
+pc::BattlePartyRow partyRow(status::HaveStatusInfo* info, int hp, int mp, int colour, int label, bool showLevel)
+{
+    static std::map<int, std::vector<std::uint8_t> > s_portraits;
+    pc::BattlePartyRow row;
+    row.name = battleText(info->haveStatus_.playerIndex_ + 0x50000000);
+    // The card's small text in the game's 10-dot font, as the DS status windows.
+    row.label = battleText(label, 10);
+    if (showLevel) {
+        row.level = battleNumber(info->haveStatus_.isBattleNpc_ ? 0 : info->haveStatus_.level_, 10);
+    }
+    row.hpValue = hp;
+    row.hpMax = info->getHpMax();
+    row.mpValue = mp;
+    row.mpMax = info->getMpMax();
+    row.hp = battleNumber(row.hpValue, 10);
+    row.mp = battleNumber(row.mpValue, 10);
+    row.hpLabel = battleText(0xa0000001, 10);
+    row.mpLabel = battleText(0xa0000002, 10);
+    row.colour = colour;
+    const int icon = info->haveStatus_.iconIndex_;
+    auto found = s_portraits.find(icon);
+    if (found == s_portraits.end()) {
+        std::vector<std::uint8_t> pixels;
+        const unsigned char* data = (const unsigned char*)getMenuIconData(0xf5000000, icon);
+        if (data != NULL) {
+            // 6 rows of 6 tiles of 8x8 (MenuFaceDisplay::loadIcon copies a row of 0x180 bytes at a time).
+            pixels.resize(48 * 48);
+            for (int y = 0; y < 48; y++) {
+                for (int x = 0; x < 48; x++) {
+                    pixels[y * 48 + x] = data[(y / 8) * 0x180 + (x / 8) * 64 + (y % 8) * 8 + x % 8];
+                }
+            }
+            found = s_portraits.insert(std::make_pair(icon, pixels)).first;
+        }
+    }
+    if (found != s_portraits.end()) {
+        row.portrait = found->second;
+    }
+    return row;
+}
+}
+
 void publishBattleParty()
 {
     pc::BattleMenuState& state = pc::battleMenuState();
     state.party.clear();
     btl::BattleMenuPlayerControl* control = btl::BattleMenuPlayerControl::getSingleton();
-    // The faces the DS status windows show (MenuFaceDisplay: 48x48, 8-bit, their own 160 colours).
-    static std::map<int, std::vector<std::uint8_t> > s_portraits;
-    const unsigned short* faceColours = (const unsigned short*)getMenuIconData(0xf5000000, 9999);
-    for (int i = 0; i < 256; i++) {
-        state.portraitPalette[i] = faceColours != NULL && i < 0xa0 ? rgb(faceColours[i]) : 0xff000000u;
-    }
+    loadPortraitPalette(state);
     const int count = status::g_Party.getCarriageOutCount();
     for (int i = 0; i < count && i < 4; i++) {
         status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
-        pc::BattlePartyRow row;
-        row.name = battleText(info->haveStatus_.playerIndex_ + 0x50000000);
-        // The card's small text in the game's 10-dot font, as the DS status windows.
-        row.label = battleText(control->getCondition(i), 10);   // "Lv.", or the member's condition
-        if (!control->isConditionChange(i)) {
-            row.level = battleNumber(info->haveStatus_.isBattleNpc_ ? 0 : info->haveStatus_.level_, 10);
-        }
-        row.hpValue = control->memberHP_[i];
-        row.hpMax = info->getHpMax();
-        row.mpValue = control->memberMP_[i];
-        row.mpMax = info->getMpMax();
-        row.hp = battleNumber(row.hpValue, 10);
-        row.mp = battleNumber(row.mpValue, 10);
-        row.hpLabel = battleText(0xa0000001, 10);
-        row.mpLabel = battleText(0xa0000002, 10);
-        row.colour = control->getHPColor(i);
+        pc::BattlePartyRow row = partyRow(info, control->memberHP_[i], control->memberMP_[i], control->getHPColor(i),
+                                          control->getCondition(i), !control->isConditionChange(i));
         row.active = control->activeChara_ == i;
         bool acted = false;
         for (size_t k = 0; k < s_acted.size(); k++) {
             acted = acted || s_acted[k] == info;
         }
         row.ready = !acted && info->isActionEnable();
-        const int icon = info->haveStatus_.iconIndex_;
-        auto found = s_portraits.find(icon);
-        if (found == s_portraits.end()) {
-            std::vector<std::uint8_t> pixels;
-            const unsigned char* data = (const unsigned char*)getMenuIconData(0xf5000000, icon);
-            if (data != NULL) {
-                // 6 rows of 6 tiles of 8x8 (MenuFaceDisplay::loadIcon copies a row of 0x180 bytes at a time).
-                pixels.resize(48 * 48);
-                for (int y = 0; y < 48; y++) {
-                    for (int x = 0; x < 48; x++) {
-                        pixels[y * 48 + x] = data[(y / 8) * 0x180 + (x / 8) * 64 + (y % 8) * 8 + x % 8];
-                    }
-                }
-                found = s_portraits.insert(std::make_pair(icon, pixels)).first;
-            }
-        }
-        if (found != s_portraits.end()) {
-            row.portrait = found->second;
-        }
         state.party.push_back(row);
     }
+}
+
+void publishFieldParty(int active)
+{
+    // The members walking (battle mode orders them), as drawPartyStatusWindows shows them.
+    pc::BattleMenuState& state = pc::battleMenuState();
+    state.party.clear();
+    loadPortraitPalette(state);
+    status::g_Party.setBattleMode();
+    const int count = status::g_Party.getCarriageOutCount();
+    for (int i = 0; i < count && i < 4; i++) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
+        const int condition = getStatusCondition(info);
+        const int label = condition == 2 ? menu::MenuDataCommon::convMessage(info, 0xa0000014)
+                        : condition == 3 ? menu::MenuDataCommon::convMessage(info, 0xa0000018)
+                                         : 0xa000003f;
+        pc::BattlePartyRow row = partyRow(info, info->getHp(), info->getMp(), getHpTextColorIndex(info), label,
+                                          condition != 2 && condition != 3);
+        row.active = i == active;
+        state.party.push_back(row);
+    }
+    status::g_Party.setPlayerMode();
 }
 
 namespace {
@@ -650,7 +727,8 @@ pc::BattleText lineText(MenuTextDisplay* line, int wholeWidth = 0)
 
 bool publishBattleMessage(MessageWindow* window)
 {
-    if (!classicBattleMenus() || !g_GlobalDQ4.unkfunc_02058114(BATTLE_PART)) {
+    // Battles, and the field menus while they show (they published this frame).
+    if (!classicBattleMenus() || (!g_GlobalDQ4.unkfunc_02058114(BATTLE_PART) && !pc::battleMenuState().field)) {
         return false;
     }
     pc::BattleMessage& message = pc::battleMenuState().message;

@@ -49,6 +49,11 @@ void drawBattleUseOrEquip(int item, int active);
 // The party panel (Classic): the members' portraits, names, HP, MP and level,
 // as the DS status windows show them (BattleMenuSub_HISTORY draws this instead).
 void publishBattleParty();
+// Classic field menus: the same state, placed from the top left (field), with the gold.
+void beginFieldMenu(pc::BattleMenuKind kind, int columns);
+void setFieldRootParent(int chosen);   // the root's commands above the list, the hand on chosen
+void publishFieldParty(int active);    // the walking members' cards; active slides out (-1: none)
+void setBattleGold(int amount);
 // The battle message window (Classic): its lines as the game rendered them.
 // True when published: the DS window is then not drawn.
 struct MessageWindow;

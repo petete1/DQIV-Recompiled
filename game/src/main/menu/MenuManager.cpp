@@ -83,6 +83,8 @@ THUMB void MenuManager::execute()
     pc::battleMenuState().party.clear();
     pc::battleMenuState().message.shown = false;
     pc::battleMenuState().plates.clear();
+    pc::battleMenuState().field = false;
+    pc::battleMenuState().gold = pc::BattleText();
 #endif
     if (g_DebugMenu.unkfunc_02058380() == 1) {
         s_redraw = 1;

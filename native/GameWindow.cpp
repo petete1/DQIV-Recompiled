@@ -25,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6,overlayBattleParty=30,overlayBattleMessage=31,overlayBattlePlate0=32}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6,overlayBattleParty=30,overlayBattleMessage=31,overlayBattlePlate0=32,overlayBattleGold=36}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -323,7 +323,7 @@ void GameWindow::drawBattleWindows(int width,int height) {
     // The message window, above the command panel when both show.
     auto message=layoutBattleMessage(state,width,height);
     if(message.picture.w>0) {
-        if(state.kind!=BattleMenuKind::none) {
+        if(state.kind!=BattleMenuKind::none&&!state.field) {
             const auto menu=layoutBattleMenu(state,width,height);
             if(!menu.windows.empty())message.picture.y=std::min(message.picture.y,menu.picture.y-message.picture.h-gapPixels(message.scale));
         }
@@ -333,6 +333,13 @@ void GameWindow::drawBattleWindows(int width,int height) {
             message.picture.x,message.picture.y,width,height,message.picture.w,message.picture.h);
     }
     if(state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
+    // The field menu's gold, at the top right.
+    const auto gold=layoutBattleGold(state,width,height);
+    if(gold.picture.w>0) {
+        const int s=gold.scale;
+        gpu_->drawOverlay(overlayBattleGold,composeBattleGold(state,gold),gold.picture.w/s,gold.picture.h/s,true,
+            gold.picture.x,gold.picture.y,width,height,gold.picture.w,gold.picture.h);
+    }
     const auto layout=layoutBattleMenu(state,width,height);
     rememberBattleLayout(layout);
     if(layout.windows.empty())return;

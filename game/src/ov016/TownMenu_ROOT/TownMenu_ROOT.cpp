@@ -15,6 +15,10 @@
 #include "main/text/TextAPI.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 THUMB void TownMenu_ROOT::menuSetup()
 {
@@ -34,6 +38,21 @@ THUMB void TownMenu_ROOT::menuExecute()
 
 THUMB void TownMenu_ROOT::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        // drawRootMenuScreen's commands (with their icons), gold and party, by the port.
+        beginFieldMenu(pc::BattleMenuKind::commands, 2);
+        for (int i = 0; i < 6; i++) {
+            addBattleEntry(menu::MenuDataCommon::getRootMenuName(i), (short)i, true);
+            setBattleEntryIcon(menu::MenuDataCommon::getRootMenuKind(i));
+        }
+        setBattleCursor(menuItem_.active_);
+        setBattleGold(status::g_Party.gold_);
+        endBattleMenu();
+        publishFieldParty(-1);
+        return;
+    }
+#endif
     drawRootMenuScreen();
     if (!g_TownMenuMessage.isOpen()) {
         menuItem_.drawActive();
@@ -58,7 +77,11 @@ THUMB void TownMenu_ROOT::menuUpdate()
         stat_ = MENUBASE_STAT_OK;
         return;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         redraw_ = 1;
         if (result == 2) {
