@@ -19,7 +19,7 @@ struct BattleMenuEntry {
 // One member of the party panel (Classic, at the right of the window).
 struct BattlePartyRow {
     BattleText name,label,level,hp,mp,hpLabel,mpLabel; // label: "Lv." or the member's condition; level empty then
-    std::vector<std::uint8_t> portrait;                // 32x32 palette indices (0 transparent), may be empty
+    std::vector<std::uint8_t> portrait;                // the face: 48x48 palette indices (0 transparent), may be empty
     int hpValue=0,hpMax=0,mpValue=0,mpMax=0;
     int colour=0;                                      // the game's HP colour: 0 normal, 1 low, 2 down
     bool active=false;                                 // choosing a command now
@@ -44,7 +44,7 @@ struct BattleMenuState {
     std::array<std::uint32_t,16> palette{};  // ARGB of BG palette 15
     std::uint32_t revision=0;         // changes whenever anything above changes
     std::vector<BattlePartyRow> party;               // empty: no party panel
-    std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the portraits' palette
+    std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the faces' palette
     BattleMessage message;                           // the battle message window (Classic)
 };
 // Filled by the game each frame (kind none when no battle menu draws).

@@ -226,9 +226,9 @@ int battleEntryAt(const BattleMenuLayout& layout,int x,int y) {
     return -1;
 }
 namespace {
-// The party panel (DS pixels): rows of 46, 140 wide: a 24-pixel fade, the
-// portrait with the level under it, then the name, HP and MP at the right.
-constexpr int partyRow=46,partyWidth=140,partyFade=24,partyInfo=partyFade+38,partyRight=partyWidth-4;
+// The party panel (DS pixels): rows of 50, 156 wide: a 24-pixel fade, the
+// face with the level over its foot, then the name, HP and MP at the right.
+constexpr int face=48,partyRow=50,partyWidth=156,partyFade=24,partyInfo=partyFade+face+6,partyRight=partyWidth-4;
 constexpr std::uint32_t green=0xff90e070,yellow=0xfff0d050,red=0xfff06050,hpBar=0xff60d040,mpBar=0xff4090f0,barBack=0xff202020;
 }
 int battleBarWidth(int value,int max,int width) {
@@ -264,16 +264,17 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
             auto part=[&](unsigned shift){return (((strip>>shift)&255)*alpha/255)<<shift;};
             out[std::size_t(y)*width+x]=(alpha<<24)|part(16)|part(8)|part(0);
         }
-        if(row.portrait.size()==32*32)
-            for(int y=0;y<32;++y)for(int x=0;x<32;++x)
-                if(const auto index=row.portrait[std::size_t(y)*32+x])out[std::size_t(top+1+y)*width+partyFade+x]=state.portraitPalette[index];
+        if(row.portrait.size()==face*face)
+            for(int y=0;y<face;++y)for(int x=0;x<face;++x)
+                if(const auto index=row.portrait[std::size_t(y)*face+x])out[std::size_t(top+1+y)*width+partyFade+x]=state.portraitPalette[index];
         const std::uint32_t tone=row.colour==2?red:row.colour==1?yellow:cream;
-        blit(out,width,height,row.label,partyFade,top+33,36,palette,false,tone);
-        blit(out,width,height,row.level,partyFade+36-row.level.width,top+33,36,palette,false,tone);
+        // The level over the face's foot, as DQ11 shows it.
+        blit(out,width,height,row.label,partyFade,top+partyRow-14,face,palette,false,tone);
+        blit(out,width,height,row.level,partyFade+face-row.level.width,top+partyRow-14,face,palette,false,tone);
         blit(out,width,height,row.name,partyRight-row.name.width,top-1,partyRight-partyInfo,palette,false,row.colour?tone:green);
         const int barWidth=partyRight-partyInfo;
         for(int k=0;k<2;++k) {
-            const int y=top+14+k*16;
+            const int y=top+16+k*17;
             rect(partyInfo,y+11,barWidth,3,barBack);
             rect(partyInfo,y+11,battleBarWidth(k?row.mpValue:row.hpValue,k?row.mpMax:row.hpMax,barWidth),3,k?mpBar:(row.colour?tone:hpBar));
             blit(out,width,height,k?row.mpLabel:row.hpLabel,partyInfo,y-2,barWidth,palette,false,tone);

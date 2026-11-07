@@ -400,11 +400,11 @@ void publishBattleParty()
     pc::BattleMenuState& state = pc::battleMenuState();
     state.party.clear();
     btl::BattleMenuPlayerControl* control = btl::BattleMenuPlayerControl::getSingleton();
-    // The portraits: the game's menu faces (32x32, 8-bit), with the main BG palette.
+    // The faces the DS status windows show (MenuFaceDisplay: 48x48, 8-bit, their own 160 colours).
     static std::map<int, std::vector<std::uint8_t> > s_portraits;
-    const PaletteBuffer* palette = getBgPaletteBuffer(0);
+    const unsigned short* faceColours = (const unsigned short*)getMenuIconData(0xf5000000, 9999);
     for (int i = 0; i < 256; i++) {
-        state.portraitPalette[i] = rgb(palette->color_[i]);
+        state.portraitPalette[i] = faceColours != NULL && i < 0xa0 ? rgb(faceColours[i]) : 0xff000000u;
     }
     const int count = status::g_Party.getCarriageOutCount();
     for (int i = 0; i < count && i < 4; i++) {
@@ -429,21 +429,21 @@ void publishBattleParty()
         auto found = s_portraits.find(icon);
         if (found == s_portraits.end()) {
             std::vector<std::uint8_t> pixels;
-            void* data = getMenuIconData(0xf1000000, icon);
-            if (data != NULL && getUncompressedSize(data) == 32 * 32) {
-                unsigned char* picture = (unsigned char*)uncompressAlloc(data);
-                // 4x4 tiles of 8x8 to rows (as HdPictures' linear()).
-                pixels.resize(32 * 32);
-                for (int y = 0; y < 32; y++) {
-                    for (int x = 0; x < 32; x++) {
-                        pixels[y * 32 + x] = picture[((y / 8) * 4 + x / 8) * 64 + (y % 8) * 8 + x % 8];
+            const unsigned char* data = (const unsigned char*)getMenuIconData(0xf5000000, icon);
+            if (data != NULL) {
+                // 6 rows of 6 tiles of 8x8 (MenuFaceDisplay::loadIcon copies a row of 0x180 bytes at a time).
+                pixels.resize(48 * 48);
+                for (int y = 0; y < 48; y++) {
+                    for (int x = 0; x < 48; x++) {
+                        pixels[y * 48 + x] = data[(y / 8) * 0x180 + (x / 8) * 64 + (y % 8) * 8 + x % 8];
                     }
                 }
-                dssFree(&g_appHeap, picture);
+                found = s_portraits.insert(std::make_pair(icon, pixels)).first;
             }
-            found = s_portraits.insert(std::make_pair(icon, pixels)).first;
         }
-        row.portrait = found->second;
+        if (found != s_portraits.end()) {
+            row.portrait = found->second;
+        }
         state.party.push_back(row);
     }
 }

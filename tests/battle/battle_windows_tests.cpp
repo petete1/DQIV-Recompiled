@@ -285,7 +285,7 @@ pc::BattleMenuState partyOf(int members) {
     pc::BattleMenuState state;
     for(int i=0;i<members;++i) {
         pc::BattlePartyRow row;row.name=ink(40);row.hpValue=50;row.hpMax=100;row.mpValue=10;row.mpMax=20;
-        row.portrait.assign(32*32,1);state.party.push_back(row);
+        row.portrait.assign(48*48,1);state.party.push_back(row);
     }
     return state;
 }
