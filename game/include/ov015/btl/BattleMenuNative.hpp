@@ -68,6 +68,18 @@ void drawFieldItems(int chara, bool bag, int page, int active, int giver);
 void drawBattlePartyTargetsPaged(int title, int rootCommand, const status::HaveStatusInfo* user, int page, int active);
 // The towns of a Chimaera Wing or Zoom (drawRuraTownList), under the root command.
 void drawFieldTowns(int rootCommand, const status::HaveStatusInfo* user, int page, const unsigned char* towns, int count, int active);
+// Classic items window (the field Items flow, BattleItemsWindow): every Items screen draws
+// all of it: beginItemsWindow, the panes out of focus (store*), then the focused one
+// (beginFieldMenu .. setItemsDetail .. endItemsWindow; drawFieldItems,
+// drawBattlePartyTargetsPaged and drawFieldTowns end it themselves while it is open).
+void beginItemsWindow();
+bool itemsWindowOpen();
+void addItemsWhose(int cursor);              // the members with their faces and the bag, into the menu being built
+void storeItemsWhose(int chosen);            // the same, out of focus (chosen: its still cursor, -1 none)
+void storeItemsList(int chara, bool bag, int page, int chosen);  // a member's or the bag's list, out of focus
+// The detail of item: owner its holder (NULL: the bag; no comparison), bagIndex the bag's slot (-1: a member's).
+void setItemsDetail(int item, status::HaveStatusInfo* owner, int bagIndex);
+void endItemsWindow(pc::BattleItemsFocus focus, const status::HaveStatusInfo* slid);
 // The spells actions[0..num), their kind icons, the chosen one's description and "cost/casterMp".
 void addBattleSpells(const int* actions, int num, int active, int casterMp);
 // The battle message window (Classic): its lines as the game rendered them.

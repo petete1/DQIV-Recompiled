@@ -46,6 +46,11 @@
 
 namespace {
 pc::BattleMenuState s_building;
+// The Items window being built this frame (beginItemsWindow .. endItemsWindow): the panes
+// out of focus, built before the focused one, and what they show.
+pc::BattleItemsWindow s_items;
+std::vector<int> s_itemsKeys;
+bool s_itemsOpen = false;
 std::vector<int> s_keys, s_lastKeys;     // what the description shows, to tell when it changed
 std::map<std::string, pc::BattleText> s_texts;
 std::map<std::pair<int, int>, pc::BattleText> s_numbers;
@@ -447,6 +452,12 @@ void endBattleMenu()
 {
     pc::BattleMenuState& state = pc::battleMenuState();
     setCursorFrames(s_building);
+    if (s_itemsOpen) {
+        s_building.items = s_items;
+        s_building.items.shown = true;
+        s_keys.insert(s_keys.end(), s_itemsKeys.begin(), s_itemsKeys.end());
+        s_itemsOpen = false;
+    }
     const unsigned int revision = state.revision + (s_keys != s_lastKeys || state.kind == pc::BattleMenuKind::none ? 1 : 0);
     // The party panel and the message window are published by others (any order of the menus).
     s_building.party.swap(state.party);
@@ -670,10 +681,31 @@ void loadPortraitPalette(pc::BattleMenuState& state)
     }
 }
 
+// A member's face (MenuFaceDisplay's icon): 48x48 indices into the faces' palette; empty when missing.
+const std::vector<std::uint8_t>& portraitPixels(int icon)
+{
+    static std::map<int, std::vector<std::uint8_t> > s_portraits;
+    auto found = s_portraits.find(icon);
+    if (found == s_portraits.end()) {
+        std::vector<std::uint8_t> pixels;
+        const unsigned char* data = (const unsigned char*)getMenuIconData(0xf5000000, icon);
+        if (data != NULL) {
+            // 6 rows of 6 tiles of 8x8 (MenuFaceDisplay::loadIcon copies a row of 0x180 bytes at a time).
+            pixels.resize(48 * 48);
+            for (int y = 0; y < 48; y++) {
+                for (int x = 0; x < 48; x++) {
+                    pixels[y * 48 + x] = data[(y / 8) * 0x180 + (x / 8) * 64 + (y % 8) * 8 + x % 8];
+                }
+            }
+        }
+        found = s_portraits.insert(std::make_pair(icon, pixels)).first;
+    }
+    return found->second;
+}
+
 // A party card: label "Lv." (or the member's condition, level 0 then: none shown).
 pc::BattlePartyRow partyRow(status::HaveStatusInfo* info, int hp, int mp, int colour, int label, bool showLevel)
 {
-    static std::map<int, std::vector<std::uint8_t> > s_portraits;
     pc::BattlePartyRow row;
     row.name = battleText(info->haveStatus_.playerIndex_ + 0x50000000);
     // The card's small text in the game's 10-dot font, as the DS status windows.
@@ -690,25 +722,7 @@ pc::BattlePartyRow partyRow(status::HaveStatusInfo* info, int hp, int mp, int co
     row.hpLabel = battleText(0xa0000001, 10);
     row.mpLabel = battleText(0xa0000002, 10);
     row.colour = colour;
-    const int icon = info->haveStatus_.iconIndex_;
-    auto found = s_portraits.find(icon);
-    if (found == s_portraits.end()) {
-        std::vector<std::uint8_t> pixels;
-        const unsigned char* data = (const unsigned char*)getMenuIconData(0xf5000000, icon);
-        if (data != NULL) {
-            // 6 rows of 6 tiles of 8x8 (MenuFaceDisplay::loadIcon copies a row of 0x180 bytes at a time).
-            pixels.resize(48 * 48);
-            for (int y = 0; y < 48; y++) {
-                for (int x = 0; x < 48; x++) {
-                    pixels[y * 48 + x] = data[(y / 8) * 0x180 + (x / 8) * 64 + (y % 8) * 8 + x % 8];
-                }
-            }
-            found = s_portraits.insert(std::make_pair(icon, pixels)).first;
-        }
-    }
-    if (found != s_portraits.end()) {
-        row.portrait = found->second;
-    }
+    row.portrait = portraitPixels(info->haveStatus_.iconIndex_);
     return row;
 }
 }
@@ -878,13 +892,14 @@ int battleMenuSelect(menu::MenuItem& item, CursorMoveBase& cursor)
     }
     return result;
 }
-void drawFieldItems(int chara, bool bag, int page, int active, int giver)
+namespace {
+// A member's items (6 a page) or the bag's (FukuroItemInfo: also 6 a page), one column, under
+// its name; owner: the member (NULL for the bag).
+std::vector<int> addFieldItems(int chara, bool bag, int page, int active, status::HaveStatusInfo*& owner)
 {
-    // A member's items (6 a page) or the bag's (FukuroItemInfo: also 6 a page), under its
-    // name; for a swap (giver), the target's items and an empty slot to give into.
     status::g_Party.setPlayerMode();
     std::vector<int> items;
-    status::HaveStatusInfo* owner = NULL;
+    owner = NULL;
     int title = 0x5000005b;
     if (bag) {
         const int count = status::FukuroItemInfo::getItemMaxCount();
@@ -899,9 +914,117 @@ void drawFieldItems(int chara, bool bag, int page, int active, int giver)
         }
         title = owner->haveStatus_.playerIndex_ + 0x50000000;
     }
-    beginFieldMenu(pc::BattleMenuKind::items, 2);
+    beginFieldMenu(pc::BattleMenuKind::items, 1);
     setBattleTitle(title);
     addBattleItems(items.empty() ? NULL : &items[0], (int)items.size(), page, active, owner);
+    return items;
+}
+
+// Moves the pane built so far out of focus (into the Items window).
+void stashItemsPane(pc::BattleItemsPane& into)
+{
+    into.title = s_building.title;
+    into.pageText = s_building.pageText;
+    into.pages = s_building.pages;
+    into.entries.swap(s_building.entries);
+    into.cursor = s_building.cursor;
+    s_itemsKeys.insert(s_itemsKeys.end(), s_keys.begin(), s_keys.end());
+}
+}
+
+void beginItemsWindow()
+{
+    s_items = pc::BattleItemsWindow();
+    s_items.title = battleText(menu::MenuDataCommon::getRootMenuName(TownMenu_ROOT::ROOT_ITEM));
+    s_itemsKeys.clear();
+    s_itemsKeys.push_back(-4);
+    s_itemsOpen = true;
+}
+
+void addItemsWhose(int cursor)
+{
+    // The members (player order) with their faces, then the bag, as drawCharaSelectWindow.
+    status::g_Party.setPlayerMode();
+    const int count = status::g_Party.getCount();
+    for (int i = 0; i < count; i++) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
+        addBattleEntry(info->haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+        s_building.entries.back().face = portraitPixels(info->haveStatus_.iconIndex_);
+    }
+    if (status::g_Party.fukuro_ != 0) {
+        addBattleEntry(0x5000005b, (short)count, true);
+    }
+    setBattleCursor((short)cursor);
+}
+
+void storeItemsWhose(int chosen)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    addItemsWhose(chosen);
+    stashItemsPane(s_items.whose);
+}
+
+void storeItemsList(int chara, bool bag, int page, int chosen)
+{
+    status::HaveStatusInfo* owner;
+    addFieldItems(chara, bag, page, chosen, owner);
+    stashItemsPane(s_items.list);
+}
+
+void setItemsDetail(int item, status::HaveStatusInfo* owner, int bagIndex)
+{
+    // As drawEquipCompareWindow: the equipment's kind and the owner's stat it changes.
+    const bool equipment = status::UseItem::getItemType(item) <= 4;
+    s_items.kind = battleText(equipment ? menu::MenuDataCommon::getEquipKind(status::UseItem::getItemType(item)) : item + 0x40000000);
+    s_items.icon = menuIcon(0xf0000000, item, 32);
+    setBattleHelp(status::UseItem::getMenuMessage(item));
+    s_itemsKeys.push_back(item);
+    s_itemsKeys.push_back(bagIndex);
+    if (bagIndex >= 0) {
+        const int count = status::g_Party.haveItemSack_.getItemCount(bagIndex);
+        s_items.count = battleCount(count);
+        s_itemsKeys.push_back(count);
+    }
+    if (owner != NULL && equipment) {
+        const int type = status::UseItem::getEquipType(item);
+        s_items.statLabel = battleText(type == 4 ? 0xa000000b : menu::MenuDataCommon::getAbilityKind(type));
+        int param[8] = {0};
+        const int result = getEquipCompareValues(owner, item, param);
+        if (result == 1) {
+            s_items.statNow = battleNumber(param[2]);
+            s_items.statNew = battleNumber(param[4]);
+        } else {
+            s_items.statNote = battleText(param[2]);
+            if (result == 2) {
+                s_items.statNow = battleNumber(param[3]);
+            }
+        }
+        s_itemsKeys.push_back(result);
+        s_itemsKeys.push_back(param[2]);
+        s_itemsKeys.push_back(param[3]);
+        s_itemsKeys.push_back(param[4]);
+    }
+}
+
+void endItemsWindow(pc::BattleItemsFocus focus, const status::HaveStatusInfo* slid)
+{
+    s_items.focus = focus;
+    s_itemsKeys.push_back((int)focus);
+    s_building.columns = 1;
+    endBattleMenu();
+    publishFieldParty(slid);
+}
+
+bool itemsWindowOpen()
+{
+    return s_itemsOpen;
+}
+
+void drawFieldItems(int chara, bool bag, int page, int active, int giver)
+{
+    // For a swap (giver), the target's items and an empty slot to give into.
+    status::HaveStatusInfo* owner;
+    const std::vector<int> items = addFieldItems(chara, bag, page, active, owner);
     const int shown = (int)s_building.entries.size();
     if (giver >= 0 && !bag && shown < 6 && page * 6 + shown == (int)items.size()) {
         pc::BattleMenuEntry empty;
@@ -918,6 +1041,13 @@ void drawFieldItems(int chara, bool bag, int page, int active, int giver)
     const status::HaveStatusInfo* slid = owner;
     if (giver >= 0) {
         slid = TownMenuPlayerControl::getSingleton()->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(giver)->haveStatusInfo_;
+    }
+    if (s_itemsOpen) {
+        if (active >= 0 && active < shown) {
+            setItemsDetail(items[page * 6 + active], owner, bag ? page * 6 + active : -1);
+        }
+        endItemsWindow(pc::BattleItemsFocus::list, slid);
+        return;
     }
     endFieldMenu(TownMenu_ROOT::ROOT_ITEM, slid);
 }
@@ -937,6 +1067,10 @@ void drawBattlePartyTargetsPaged(int title, int rootCommand, const status::HaveS
     }
     setBattleCursor((short)active);
     status::g_Party.setPlayerMode();
+    if (s_itemsOpen) {
+        endItemsWindow(pc::BattleItemsFocus::whose, user);
+        return;
+    }
     endFieldMenu(rootCommand, user);
 }
 
@@ -951,6 +1085,10 @@ void drawFieldTowns(int rootCommand, const status::HaveStatusInfo* user, int pag
         setBattlePage(page, (count - 1) / 8 + 1);
     }
     setBattleCursor((short)active);
+    if (s_itemsOpen) {
+        endItemsWindow(pc::BattleItemsFocus::list, user);
+        return;
+    }
     endFieldMenu(rootCommand, user);
 }
 #endif

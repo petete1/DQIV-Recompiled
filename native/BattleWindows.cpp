@@ -61,7 +61,7 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
     int listW=inner-whoseW-gap;
     if(!p.detailBelow)listW=std::clamp(2*pad+cursorWidth+8+iconSize+iconGap+names,listMin,inner-whoseW-detailMin-2*gap);
     const Box whoseBox{pad,top,whoseW,bottom-top};
-    const Box listBox{pad+whoseW+gap,top,listW,headerHeight+2*pad+6*row};
+    const Box listBox{pad+whoseW+gap,top,listW,headerHeight+2*pad+std::max(6,int(list.size()))*row};  // towns: 8 a page
     const Box detail=p.detailBelow?Box{listBox.x,listBox.y+listBox.h+gap,listW,bottom-(listBox.y+listBox.h+gap)}
         :Box{listBox.x+listW+gap,top,inner+pad-(listBox.x+listW+gap),bottom-top};
     p.windows.push_back(whoseBox);p.windows.push_back(listBox);p.windows.push_back(detail);
