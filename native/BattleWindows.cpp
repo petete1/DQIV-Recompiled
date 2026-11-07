@@ -11,6 +11,8 @@ constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=14,columnGap=16,border=2,r
 constexpr int headerHeight=row+4,helpRow=12,helpSpace=3,helpWidth=200,helpBeside=96;
 // The party panel's room at the right (BattleWindows' party constants below).
 constexpr int partyRoom=132+12;
+// Command icons: the game's 24x24, shrunk to fit a row.
+constexpr int iconSource=24,iconSize=16,iconGap=4;
 // The DQ11-like look: see-through brown panels (premultiplied), a tan border inset 2 pixels, cream text.
 constexpr std::uint32_t fill=0xe0281810,tan=0xffb89870,cream=0xfff4ead8,gold=0xfff0c040,goldEdge=0xff806010;
 // What a window shows, in DS pixels relative to the picture.
@@ -20,6 +22,7 @@ struct Plan {
     std::vector<Box> windows,entries;
     Box titleBox;bool titleOnBorder=false;   // where the title text goes
     int labelWidth=0,rightWidth=0;          // a column's label and right parts
+    int iconWidth=0;                         // the icons' column before the labels (0 without icons)
     int footerY=-1;                          // the footer row (picture coordinates)
     int headerY=-1;                          // a list's header row
     Box help;bool described=false;           // the description's text area; windows[1] is its window
@@ -40,11 +43,12 @@ Plan plan(const BattleMenuState& state,int width) {
     const int columns=std::max(1,state.columns),count=int(state.entries.size());
     for(const auto& e:state.entries) {
         p.labelWidth=std::max(p.labelWidth,e.label.width);p.rightWidth=std::max(p.rightWidth,e.right.width);
+        if(e.icon.size()==std::size_t(iconSource*iconSource))p.iconWidth=iconSize+iconGap;
     }
-    auto columnWidth=[&] {return cursorWidth+p.labelWidth+(p.rightWidth?rightGap+p.rightWidth:0);};
+    auto columnWidth=[&] {return cursorWidth+p.iconWidth+p.labelWidth+(p.rightWidth?rightGap+p.rightWidth:0);};
     // Cut the labels so the window fits the game window.
     const int room=width-2*margin-2*pad-(columns-1)*columnGap;
-    if(columnWidth()*columns>room)p.labelWidth=std::max(0,room/columns-cursorWidth-(p.rightWidth?rightGap+p.rightWidth:0));
+    if(columnWidth()*columns>room)p.labelWidth=std::max(0,room/columns-cursorWidth-p.iconWidth-(p.rightWidth?rightGap+p.rightWidth:0));
     const int rows=(count+columns-1)/columns;
     const bool footer=state.footer.width>0;
     // Lists: the title and the pager in a row of their own; root and commands: the title on the border.
@@ -116,6 +120,29 @@ void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText&
     if(cut)for(int d=0;d<3;++d)for(int dy=0;dy<2;++dy)for(int dx=0;dx<1;++dx) {
         const int px=x+shown+1+d*2+dx,py=y+text.height-3+dy;
         if(px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=dim?0xff7a756c:cream;
+    }
+}
+// A command icon shrunk from 24x24 to 16x16: each pixel the average of the 1.5x1.5
+// it covers (premultiplied, so the edges blend with the panel).
+void icon(std::vector<std::uint32_t>& out,int width,int height,const std::vector<std::uint32_t>& src,int x,int y,bool dim) {
+    for(int oy=0;oy<iconSize;++oy)for(int ox=0;ox<iconSize;++ox) {
+        double sum[4]{};
+        for(int k=0;k<4;++k) {
+            // The 1.5x1.5 area as the 2x2 source pixels it touches, with their shares.
+            const int sx=ox*3/2+(k&1),sy=oy*3/2+(k>>1);
+            const double wx=(ox&1)?((k&1)?1.0:0.5):((k&1)?0.5:1.0),wy=(oy&1)?((k>>1)?1.0:0.5):((k>>1)?0.5:1.0);
+            const std::uint32_t c=src[std::size_t(sy)*iconSource+sx];
+            const double a=(c>>24)/255.0*wx*wy;
+            sum[0]+=a;sum[1]+=((c>>16)&255)*a;sum[2]+=((c>>8)&255)*a;sum[3]+=(c&255)*a;
+        }
+        if(sum[0]<=0)continue;
+        const int px=x+ox,py=y+oy;
+        if(px<0||py<0||px>=width||py>=height)continue;
+        const double alpha=sum[0]/2.25,shade=dim?0.5:1.0;
+        const std::uint32_t under=out[std::size_t(py)*width+px];
+        auto mix=[&](int i,unsigned shift){return std::uint32_t(std::lround(sum[i]/2.25*shade+((under>>shift)&255)*(1-alpha)))<<shift;};
+        const std::uint32_t a=std::uint32_t(std::lround(255*alpha+(under>>24)*(1-alpha)));
+        out[std::size_t(py)*width+px]=(a<<24)|mix(1,16)|mix(2,8)|mix(3,0);
     }
 }
 // A small curl in each corner, inside the border (top-left; mirrored for the others).
@@ -217,7 +244,9 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     for(std::size_t i=0;i<state.entries.size()&&i<p.entries.size();++i) {
         const auto& e=state.entries[i];const auto& b=p.entries[i];
         const int textY=b.y+dy+(row-e.label.height)/2;
-        blit(out,width,height,e.label,b.x+cursorWidth,textY,p.labelWidth,state.palette,!e.enabled);
+        if(e.icon.size()==std::size_t(iconSource*iconSource))
+            icon(out,width,height,e.icon,b.x+cursorWidth,b.y+dy+(row-iconSize)/2,!e.enabled);
+        blit(out,width,height,e.label,b.x+cursorWidth+p.iconWidth,textY,p.labelWidth,state.palette,!e.enabled);
         if(e.right.width>0)
             blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
         if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);

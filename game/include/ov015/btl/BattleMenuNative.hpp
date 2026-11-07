@@ -21,6 +21,8 @@ void setBattleTitle(int value);
 void setBattleFooter(int value, int number);   // a label and a number ("MP 12"); value 0: none
 // right: a message value (rightKind 0), a number (1) or a count shown "×n" (2).
 void addBattleEntry(int text, short index, bool enabled, int right = 0, int rightKind = 0);
+// The last entry's command icon (command24, as drawBattleCommandIcon picks it).
+void setBattleEntryIcon(int icon);
 void setBattlePage(int page, int pages);
 void setBattleCursor(short active);           // the entry with that game index
 void endBattleMenu();

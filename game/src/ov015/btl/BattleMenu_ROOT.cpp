@@ -61,12 +61,17 @@ THUMB void BattleMenu_ROOT::menuDraw()
             // drawBattleRootMenu's commands, in its order: Fight, Flee; or
             // Fight, Formation, Tactics, Flee.
             beginBattleMenu(pc::BattleMenuKind::root, 1);
+            // With their icons, as drawBattleCommandIcon draws them.
             addBattleEntry(0x80000000, 0, true);
+            setBattleEntryIcon(6);
             if (!isSimpleMenu_) {
                 addBattleEntry(0x80000002, 1, true);
+                setBattleEntryIcon(1);
                 addBattleEntry(0x80000001, 2, true);
+                setBattleEntryIcon(9);
             }
             addBattleEntry(0x80000003, isSimpleMenu_ ? 1 : 3, true);
+            setBattleEntryIcon(10);
             setBattleCursor(menuItem_.active_);
             endBattleMenu();
         }

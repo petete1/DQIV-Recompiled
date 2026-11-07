@@ -88,6 +88,20 @@ void descriptionAboveWhenNarrow() {
     check(desc.y+desc.h+4*4<=list.y&&desc.x==list.x,"no room at the right: above the list");
     check(inside(layout.picture,1920,1080),"inside the window");
 }
+void rootIcons() {
+    auto state=menu(pc::BattleMenuKind::root,2);
+    for(auto& e:state.entries)e.icon.assign(24*24,0xffff0000u);
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    const int w=layout.picture.w/layout.scale;
+    if(layout.entries.empty())return;
+    const auto& e=layout.entries[0];
+    const int y=(e.y-layout.picture.y)/layout.scale+8;
+    int red=0;for(int x=0;x<w;++x)red+=pixels[std::size_t(y)*w+x]==0xffff0000u;
+    check(red==16,"the command icon, shrunk to 16 wide");
+    const auto plain=pc::layoutBattleMenu(menu(pc::BattleMenuKind::root,2),1920,1080);
+    check(layout.picture.w>plain.picture.w,"the icons make room beside the labels");
+}
 void wordsWrap() {
     const std::vector<pc::BattleText> words{ink(30),ink(30),ink(30),pc::BattleText{},ink(10)};
     const auto lines=pc::wrapBattleWords(words,70,3);
@@ -454,6 +468,7 @@ int main() {
     descriptionAboveWhenNarrow();
     descriptionDrawn();
     wordsWrap();
+    rootIcons();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

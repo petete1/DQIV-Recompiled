@@ -241,6 +241,35 @@ void addBattleEntry(int text, short index, bool enabled, int right, int rightKin
     s_keys.push_back(rightKind);
 }
 
+void setBattleEntryIcon(int icon)
+{
+    static std::map<int, std::vector<std::uint32_t> > s_icons;
+    if (s_building.entries.empty()) {
+        return;
+    }
+    auto found = s_icons.find(icon);
+    if (found == s_icons.end()) {
+        // 3x3 tiles of 8x8, 8-bit, in the item icons' colours (MenuIconBg::loadPalettes).
+        std::vector<std::uint32_t> pixels;
+        void* packed = getMenuIconData(0xf4000000, icon);
+        const unsigned short* colours = (const unsigned short*)getMenuIconData(0xf0000000, 9999);
+        if (packed != NULL && colours != NULL && getUncompressedSize(packed) == 24 * 24) {
+            const unsigned char* tiles = (const unsigned char*)uncompressAlloc(packed);
+            pixels.resize(24 * 24);
+            for (int y = 0; y < 24; y++) {
+                for (int x = 0; x < 24; x++) {
+                    const unsigned char index = tiles[((y / 8) * 3 + x / 8) * 64 + (y % 8) * 8 + x % 8];
+                    pixels[y * 24 + x] = index != 0 && index < 0xa0 ? rgb(colours[index]) : 0u;
+                }
+            }
+            dssFree(&g_appHeap, (void*)tiles);
+        }
+        found = s_icons.insert(std::make_pair(icon, pixels)).first;
+    }
+    s_building.entries.back().icon = found->second;
+    s_keys.push_back(icon);
+}
+
 // A text of numbers ("1/3"), in the game's digits.
 pc::BattleText numbersText(const char* ascii, int fontSize)
 {

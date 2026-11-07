@@ -14,6 +14,7 @@ enum class BattleMenuKind {none,root,commands,targetEnemy,targetParty,spells,ite
 struct BattleText {std::vector<std::uint8_t> ink;int width=0,height=0;};
 struct BattleMenuEntry {
     BattleText label,right;  // right: MP cost, count or mark (may be empty)
+    std::vector<std::uint32_t> icon;  // the command's 24x24 icon, ARGB (may be empty)
     short index=0;           // the game's MenuItem::active_ for this entry
     bool enabled=true;
 };
