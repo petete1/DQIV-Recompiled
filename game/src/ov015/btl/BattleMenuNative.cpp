@@ -447,6 +447,45 @@ int pageEntries(int count, int page, int& top)
 }
 }
 
+// A spell's kind for its icon (DQ11's five), from what the game says it does.
+pc::BattleSpellKind spellKind(int action)
+{
+    switch (status::UseAction::getDamageType(action)) {
+    case status::UseAction::DamageTypeDamage:
+    case status::UseAction::DamageTypeInstantDeath:
+    case status::UseAction::DamageTypeMahosute:
+    case status::UseAction::DamageTypeDragoram:
+        return pc::BattleSpellKind::attack;
+    case status::UseAction::DamageTypeRecovery:
+    case status::UseAction::DamageTypeRebirth:
+    case status::UseAction::DamageTypeAddMp:
+    case status::UseAction::DamageTypeStatusClear:
+        return pc::BattleSpellKind::healing;
+    case status::UseAction::DamageTypeDefenceChange:
+    case status::UseAction::DamageTypeAgilityChange:
+        // Sap and Slow on the enemy, Kabuff and Acceleratle on the party.
+        return status::UseAction::getUseType(action) == status::UseItem::Enemy ? pc::BattleSpellKind::debuff : pc::BattleSpellKind::buff;
+    case status::UseAction::DamageTypeAstoron:
+    case status::UseAction::DamageTypeBaikiruto:
+    case status::UseAction::DamageTypeFubaha:
+    case status::UseAction::DamageTypeMahokanta:
+    case status::UseAction::DamageTypeDefence:
+        return pc::BattleSpellKind::buff;
+    case status::UseAction::DamageTypeSpazz:
+    case status::UseAction::DamageTypeSleep:
+    case status::UseAction::DamageTypeManusa:
+    case status::UseAction::DamageTypeMahoton:
+    case status::UseAction::DamageTypeConfusion:
+    case status::UseAction::DamageTypePoison:
+    case status::UseAction::DamageTypeSubMp:
+    case status::UseAction::DamageTypeFizzleZone:
+    case status::UseAction::DamageTypeTimeStop:
+        return pc::BattleSpellKind::debuff;
+    default:
+        return pc::BattleSpellKind::utility;
+    }
+}
+
 void drawBattleSpells(const int* actions, int count, int page, int active)
 {
     // The chosen spell's description and MP cost in a window of their own.
@@ -456,6 +495,13 @@ void drawBattleSpells(const int* actions, int count, int page, int active)
     const int num = pageEntries(count, page, top);
     for (int i = 0; i < num; i++) {
         addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true);
+        static std::vector<std::uint32_t> s_kinds[5];
+        const int kind = (int)spellKind(actions[top + i]);
+        if (s_kinds[kind].empty()) {
+            s_kinds[kind] = pc::battleSpellIcon((pc::BattleSpellKind)kind);
+        }
+        s_building.entries.back().icon = s_kinds[kind];
+        s_keys.push_back(kind);
     }
     setBattlePage(page, (count - 1) / 6 + 1);
     if (active >= 0 && active < num) {

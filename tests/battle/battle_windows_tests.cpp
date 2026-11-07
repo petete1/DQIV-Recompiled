@@ -113,6 +113,19 @@ void itemIcons() {
     int green=0;for(int x=0;x<w;++x)green+=pixels[std::size_t(y)*w+x]==0xff00ff00u;
     check(green==32,"the 32x32 item icons, shrunk to 16 wide (two entries)");
 }
+void spellIcons() {
+    std::uint32_t centres[5];
+    for(int k=0;k<5;++k) {
+        const auto icon=pc::battleSpellIcon(pc::BattleSpellKind(k));
+        check(icon.size()==16*16,"a 16x16 spell icon");
+        if(icon.size()!=16*16)return;
+        check((icon[0]>>24)==0,"round: the corners are clear");
+        centres[k]=icon[size_t(12)*16+2];  // inside the circle, off the symbol
+    }
+    bool distinct=true;
+    for(int a=0;a<5;++a)for(int b=a+1;b<5;++b)distinct=distinct&&centres[a]!=centres[b];
+    check(distinct,"each kind in its own colour");
+}
 void wordsWrap() {
     const std::vector<pc::BattleText> words{ink(30),ink(30),ink(30),pc::BattleText{},ink(10)};
     const auto lines=pc::wrapBattleWords(words,70,3);
@@ -481,6 +494,7 @@ int main() {
     wordsWrap();
     rootIcons();
     itemIcons();
+    spellIcons();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

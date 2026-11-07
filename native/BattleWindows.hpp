@@ -60,6 +60,9 @@ struct BattleMenuState {
 // The words in lines at most width wide (a word of width 0 breaks the line):
 // the index of each line's first word.
 std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space);
+// The spells' kinds, as DQ11 marks them: an icon each, drawn here (DQ4 has none).
+enum class BattleSpellKind {attack,healing,buff,debuff,utility};
+std::vector<std::uint32_t> battleSpellIcon(BattleSpellKind kind);  // 16x16 ARGB
 // Filled by the game each frame (kind none when no battle menu draws).
 BattleMenuState& battleMenuState();
 struct BattleRect {int x=0,y=0,w=0,h=0;}; // game window pixels

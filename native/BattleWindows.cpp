@@ -184,6 +184,39 @@ void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
 }
 
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
+std::vector<std::uint32_t> battleSpellIcon(BattleSpellKind kind) {
+    // A coloured disc with a light rim at the top left, a dark one at the bottom right, and a
+    // white symbol (10x10) with a shadow: flame, cross, arrow up, arrow down, wing.
+    static constexpr const char* symbols[5][10]={
+        {"....X.....","...XX.....","...XXX....","..XXXX.X..","..XXXXXX..",".XXXXXXXX.",".XXX.XXXX.",".XX...XXX.","..X...XX..","...XXXX..."},
+        {"..........","....XX....","....XX....","....XX....",".XXXXXXXX.",".XXXXXXXX.","....XX....","....XX....","....XX....",".........."},
+        {"..........","....XX....","...XXXX...","..XXXXXX..",".XXXXXXXX.","....XX....","....XX....","....XX....","....XX....",".........."},
+        {"..........","....XX....","....XX....","....XX....","....XX....",".XXXXXXXX.","..XXXXXX..","...XXXX...","....XX....",".........."},
+        {"........XX","......XXX.","....XXXX..","..XXXXX...",".XXXXX....",".XXXX.X...","XXX..X....","X..XX.....","..........",".........."}};
+    static constexpr std::uint32_t colours[5]={0xe04838,0x38b048,0x3870e0,0x9048d0,0xd8b028};
+    const int k=int(kind);
+    if(k<0||k>4)return {};
+    std::vector<std::uint32_t> out(16*16,0);
+    auto shade=[](std::uint32_t c,double f) {
+        auto part=[&](unsigned shift){return std::uint32_t(std::clamp(((c>>shift)&255)*f,0.0,255.0))<<shift;};
+        return part(16)|part(8)|part(0);
+    };
+    for(int y=0;y<16;++y)for(int x=0;x<16;++x) {
+        const double dx=x+0.5-8,dy=y+0.5-8,d=std::sqrt(dx*dx+dy*dy);
+        const double alpha=std::clamp(8.0-d,0.0,1.0);
+        if(alpha<=0)continue;
+        // The rim: lighter where it faces the top left, darker elsewhere.
+        const double f=d>6.5?(dx+dy<0?1.35:0.55):1.0;
+        const std::uint32_t c=shade(colours[k],f*alpha);
+        out[std::size_t(y)*16+x]=(std::uint32_t(std::lround(alpha*255))<<24)|c;
+    }
+    for(int pass=0;pass<2;++pass)for(int y=0;y<10;++y)for(int x=0;x<10;++x) {
+        if(symbols[k][y][x]!='X')continue;
+        const int px=3+x+(pass?0:1),py=3+y+(pass?0:1);
+        if(px<16&&py<16)out[std::size_t(py)*16+px]=pass?0xfff8f0e0u:(0xff000000u|shade(colours[k],0.45));
+    }
+    return out;
+}
 std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space) {
     std::vector<int> starts;
     int x=0;
