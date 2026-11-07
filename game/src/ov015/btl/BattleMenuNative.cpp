@@ -120,7 +120,7 @@ unsigned int rgb(unsigned short c)
 
 bool classicBattleMenus()
 {
-    return pc::gameSettings().battleMenus == 1;
+    return pc::classicBattleMenusOn(pc::gameSettings());
 }
 
 bool overlayMenus()

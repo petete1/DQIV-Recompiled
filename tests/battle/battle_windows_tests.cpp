@@ -349,6 +349,14 @@ void messageInTinyWindow() {
     const auto layout=pc::layoutBattleMessage(state,25,480);
     check(pc::composeBattleMessage(state,layout,0).size()==std::size_t(layout.picture.w/layout.scale)*(layout.picture.h/layout.scale),"a tiny window does not break the message window");
 }
+void classicOnlyWide() {
+    pc::GameSettings s;s.battleMenus=1;s.wide=true;
+    check(pc::classicBattleMenusOn(s),"Classic with the wide picture");
+    s.wide=false;
+    check(!pc::classicBattleMenusOn(s),"the original menus with the DS screens");
+    s.battleMenus=2;s.wide=true;
+    check(!pc::classicBattleMenusOn(s),"not Classic when Overlay is chosen");
+}
 }
 
 int main() {
@@ -364,6 +372,7 @@ int main() {
     hitTest();
     pointerOutsideWindows();
     settingCyclesThree();
+    classicOnlyWide();
     clickConfirmsNextPoll();
     heldButtonBlocksTouch();
     areaOfCells();

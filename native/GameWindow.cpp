@@ -288,7 +288,7 @@ bool GameWindow::poll() {
 static int gapPixels(int scale) {return 4*scale;}
 void GameWindow::drawBattleWindows(int width,int height) {
     const auto& state=battleMenuState();
-    if(gameSettings().battleMenus!=1) {rememberBattleLayout({});return;}
+    if(!classicBattleMenusOn(gameSettings())) {rememberBattleLayout({});return;}
     // The party panel, whenever the battle shows its status (small: drawn anew each time).
     const auto party=layoutBattleParty(state,width,height);
     if(party.picture.w>0) {

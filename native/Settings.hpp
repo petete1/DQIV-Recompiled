@@ -88,6 +88,8 @@ inline constexpr int windowSizeCount=4;
 GameSettings& gameSettings();
 // Vertical sync as used: on Linux never (the compositor already syncs, and
 // waiting on it as well made the sound crackle), so it has no setting there.
+// Classic battle menus are laid out for the wide picture: with the DS screens' width the original ones show.
+inline bool classicBattleMenusOn(const GameSettings& s) {return s.battleMenus==1&&s.wide;}
 inline bool verticalSync(const GameSettings& s) {
 #ifdef _WIN32
     return s.vsync;
