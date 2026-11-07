@@ -219,6 +219,67 @@ void wordsWrap() {
     check(lines==std::vector<int>({0,2,4}),"two words a line, then a forced break");
     check(pc::wrapBattleWords(std::vector<pc::BattleText>{ink(100)},70,3)==std::vector<int>({0}),"a long word alone on its line");
 }
+pc::BattleMenuState itemsState(pc::BattleItemsFocus focus,int whose=4) {
+    pc::BattleMenuState state;state.kind=pc::BattleMenuKind::list;state.field=true;state.palette.fill(0xffffffff);
+    state.items.shown=true;state.items.title=ink(30);state.items.focus=focus;
+    for(int i=0;i<whose;++i)state.items.whose.entries.push_back(entry(40,short(i)));
+    for(int i=0;i<6;++i)state.items.list.entries.push_back(entry(70,short(i)));
+    state.items.list.title=ink(40);state.items.kind=ink(40);state.items.icon.assign(32*32,0xffffffff);
+    for(int i=0;i<12;++i)state.help.push_back(ink(30,10));
+    for(int i=0;i<4;++i)state.party.push_back({});
+    const auto& from=focus==pc::BattleItemsFocus::whose?state.items.whose:state.items.list;
+    if(focus!=pc::BattleItemsFocus::popup) {state.entries=from.entries;state.title=from.title;}
+    else {for(int i=0;i<4;++i)state.entries.push_back(entry(50,short(i)));state.title=ink(60);}
+    state.cursor=0;
+    return state;
+}
+void itemsWindowFills() {
+    for(auto [w,h]:{std::pair{640,480},{1280,720},{1920,1080}}) {
+        const auto layout=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::list),w,h);
+        const int s=pc::battleScale(h);
+        if(layout.windows.size()<4) {check(false,"the window and its three panes");continue;}
+        const auto& big=layout.windows[0];
+        check(big.x==8*s&&big.y==8*s,"the items window 8 in at the top left");
+        check(big.y+big.h==h-8*s,"down to 8 above the bottom");
+        check(big.x+big.w<=pc::layoutBattleParty(itemsState(pc::BattleItemsFocus::list),w,h).picture.x,"left of the party cards");
+        bool all=true;for(std::size_t i=1;i<4;++i)all=all&&layout.windows[i].x>=big.x&&layout.windows[i].y>=big.y
+            &&layout.windows[i].x+layout.windows[i].w<=big.x+big.w&&layout.windows[i].y+layout.windows[i].h<=big.y+big.h;
+        check(all,"the panes inside the window");
+    }
+}
+void itemsDetailBeside() {
+    const auto layout=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::list),1280,720);
+    if(layout.windows.size()<4) {check(false,"the detail pane");return;}
+    const auto& list=layout.windows[2];const auto& detail=layout.windows[3];
+    check(detail.x>=list.x+list.w&&detail.y==list.y,"the detail beside the list where it fits");
+}
+void itemsDetailBelowWhenNarrow() {
+    const auto layout=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::list),1920,1080);
+    if(layout.windows.size()<4) {check(false,"the detail pane");return;}
+    const auto& list=layout.windows[2];const auto& detail=layout.windows[3];
+    check(detail.x==list.x&&detail.y>=list.y+list.h,"the detail below the list at 1080p");
+}
+void itemsPopupTopRight() {
+    const auto layout=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::popup),1920,1080);
+    if(layout.windows.size()<5) {check(false,"the popup");return;}
+    const auto& popup=layout.windows[4];
+    check(popup.x+popup.w==1920-8*4&&popup.y==8*4,"the popup at the screen's top right, 8 in");
+}
+void itemsHitAreasFocusOnly() {
+    const auto popup=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::popup),1920,1080);
+    check(popup.windows.size()>=5&&popup.entries.size()==4&&popup.entries[0].x>=popup.windows[4].x,"hit areas: the popup's entries only");
+    const auto whose=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::whose),1920,1080);
+    check(whose.windows.size()>=3&&whose.entries.size()==4&&whose.entries[0].x<whose.windows[2].x,"hit areas: the whose pane's");
+}
+void itemsWhoseFitsNine() {
+    const auto layout=pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::whose,9),1920,1080);
+    check(layout.windows.size()>=2&&layout.entries.size()==9&&layout.entries[8].y+layout.entries[8].h<=layout.windows[1].y+layout.windows[1].h,"nine members and the Bag fit");
+}
+void itemsHideGoldAndMap() {
+    auto state=itemsState(pc::BattleItemsFocus::list);state.gold=ink(30);state.goldUnit=ink(8);
+    check(pc::layoutBattleGold(state,1920,1080).picture.w==0,"no gold with the items window");
+    check(!pc::classicFieldMapShown(state),"no map with the items window");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -592,6 +653,13 @@ int main() {
     mapBottomLeft();
     mapHiddenWithMessage();
     originalCursor();
+    itemsWindowFills();
+    itemsDetailBeside();
+    itemsDetailBelowWhenNarrow();
+    itemsPopupTopRight();
+    itemsHitAreasFocusOnly();
+    itemsWhoseFitsNine();
+    itemsHideGoldAndMap();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

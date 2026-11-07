@@ -18,6 +18,7 @@ struct BattleMenuEntry {
     std::vector<std::uint32_t> icon;  // a square icon (the commands' 24x24, the items' 32x32), ARGB; may be empty
     short index=0;           // the game's MenuItem::active_ for this entry
     bool enabled=true;
+    std::vector<std::uint8_t> face;  // a member's 48x48 portrait (portraitPalette indices), may be empty
 };
 // One member of the party panel (Classic, at the right of the window).
 struct BattlePartyRow {
@@ -40,6 +41,21 @@ struct BattleMessage {
 // A monster group's name plate, where the battle places it (bottom screen DS
 // pixels, which can run outside the screen in the band around it).
 struct BattlePlate {BattleText text;int x=0,y=0,width=0;int tone=0;bool dim=false;std::array<std::uint32_t,16> palette{};}; // width: the DS plate's (0: fit the text); tone: 0 normal, 1 low health, 2 very low
+// The field Items flow in DQ11's layout (Classic): one window with the whose-items, list and
+// detail panes, and the item's commands in a popup. The focused pane is the state's entries;
+// the others are kept here.
+struct BattleItemsPane {BattleText title,pageText;int pages=1;std::vector<BattleMenuEntry> entries;int cursor=-1;};
+enum class BattleItemsFocus {whose,list,popup};
+struct BattleItemsWindow {
+    bool shown=false;
+    BattleText title;                 // the root command's name ("Items")
+    BattleItemsFocus focus=BattleItemsFocus::whose;
+    BattleItemsPane whose,list;       // the panes not in focus
+    BattleText kind;                  // the detail's header (the equipment's kind, or the item's name)
+    std::vector<std::uint32_t> icon;  // 32x32 ARGB; empty: no detail
+    BattleText count;                 // "×n" (the Bag), may be empty
+    BattleText statLabel,statNow,statNew,statNote;  // the comparison: label now ▶ new, or label note (now)
+};
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
     BattleText title,footer;          // member name (or a message); "MP left" line (may be empty)
@@ -63,6 +79,7 @@ struct BattleMenuState {
     BattleText gold,goldUnit;                        // "1259" and "G"; empty gold: no gold panel
     std::array<std::vector<std::uint32_t>,5> cursorFrames;  // the game's animated cursor, 16x16 ARGB each (empty: the hand)
     int cursorFrame=0;                               // the frame showing now
+    BattleItemsWindow items;                         // the Items window (field, Classic)
 };
 // The world map inset at the bottom left while a field menu shows, canvas units (canvas
 // canvasHeight high): {x,y,w,h}.
@@ -83,7 +100,7 @@ struct BattleMenuLayout {
     std::vector<BattleRect> windows;      // frames, in drawing order
     std::vector<BattleRect> entries;      // one per state entry (hit areas)
     BattleRect picture;                   // where the composed picture goes
-    int planWidth=0;                      // the game window's width in DS pixels, as laid out
+    int planWidth=0,planHeight=0;         // the game window's size in DS pixels, as laid out
 };
 int battleScale(int windowHeight);
 // A group drawn on its own (the party panel, the message window): where its picture goes.

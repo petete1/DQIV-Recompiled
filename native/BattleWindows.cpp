@@ -33,14 +33,63 @@ struct Plan {
     Box help;bool described=false;           // the description's text area; the window after the list's
     int listIndex=0;                         // the list's window (1 under field parent commands)
     std::shared_ptr<const Plan> parent;      // a field list's parent commands (their own plan, at the top)
+    // The Items window: windows 0 the window, 1 whose, 2 list, 3 detail, 4 the popup; each pane's rows.
+    bool items=false,detailBelow=false;
+    std::vector<Box> whoseRows,listRows;
+    std::shared_ptr<const Plan> popup;       // the popup's own plan (placed at windows[4])
 };
 bool listed(BattleMenuKind kind) {return kind!=BattleMenuKind::none&&kind!=BattleMenuKind::message;}
 // The commands and root windows carry their entries; the others show the
 // member's name in a window of its own at the left.
 bool ownWindow(BattleMenuKind kind) {return kind==BattleMenuKind::root||kind==BattleMenuKind::commands;}
-Plan plan(const BattleMenuState& state,int width) {
+Plan plan(const BattleMenuState& state,int width,int height=0);
+// The Items window (the field, Classic): see BattleItemsWindow.
+constexpr int itemsRow=20,whoseMin=76,whoseMax=110,listMin=130,detailMin=100,faceStrip=32;
+Plan planItems(const BattleMenuState& state,int width,int height) {
+    Plan p;p.items=true;
+    const auto focus=state.items.focus;
+    const auto& whose=focus==BattleItemsFocus::whose?state.entries:state.items.whose.entries;
+    const auto& list=focus==BattleItemsFocus::list?state.entries:state.items.list.entries;
+    const int right=state.party.empty()?width-margin:width-margin-partyRoom-gap;
+    const Box big{0,0,right-margin,height-2*margin};
+    p.windows.push_back(big);
+    const int inner=big.w-2*pad,top=headerHeight+gap,bottom=big.h-pad;
+    int labels=0;for(const auto& e:whose)labels=std::max(labels,e.label.width);
+    const int whoseW=std::clamp(2*pad+cursorWidth+labels+4+faceStrip,whoseMin,whoseMax);
+    int names=0;for(const auto& e:list)names=std::max(names,e.label.width);
+    p.detailBelow=whoseW+listMin+detailMin+2*gap>inner;
+    int listW=inner-whoseW-gap;
+    if(!p.detailBelow)listW=std::clamp(2*pad+cursorWidth+8+iconSize+iconGap+names,listMin,inner-whoseW-detailMin-2*gap);
+    const Box whoseBox{pad,top,whoseW,bottom-top};
+    const Box listBox{pad+whoseW+gap,top,listW,headerHeight+2*pad+6*row};
+    const Box detail=p.detailBelow?Box{listBox.x,listBox.y+listBox.h+gap,listW,bottom-(listBox.y+listBox.h+gap)}
+        :Box{listBox.x+listW+gap,top,inner+pad-(listBox.x+listW+gap),bottom-top};
+    p.windows.push_back(whoseBox);p.windows.push_back(listBox);p.windows.push_back(detail);
+    for(std::size_t i=0;i<whose.size();++i)
+        p.whoseRows.push_back({whoseBox.x+pad,whoseBox.y+pad+int(i)*itemsRow,whoseBox.w-2*pad,itemsRow});
+    for(std::size_t i=0;i<list.size();++i)
+        p.listRows.push_back({listBox.x+pad,listBox.y+headerHeight+pad+int(i)*row,listBox.w-2*pad,row});
+    p.headerY=listBox.y+pad;
+    p.picture={margin,0,width-2*margin,big.h};
+    if(focus==BattleItemsFocus::popup) {
+        BattleMenuState commands;
+        commands.kind=BattleMenuKind::list;commands.field=true;commands.entries=state.entries;commands.title=state.title;
+        auto popup=plan(commands,width);
+        if(!popup.windows.empty()) {
+            const int x=width-2*margin-popup.picture.w;
+            auto& box=popup.windows.front();box.x+=x;
+            for(auto& e:popup.entries)e.x+=x;
+            popup.titleBox.x+=x;
+            p.windows.push_back(box);p.entries=popup.entries;
+            p.popup=std::make_shared<const Plan>(popup);
+        }
+    } else p.entries=focus==BattleItemsFocus::whose?p.whoseRows:p.listRows;
+    return p;
+}
+Plan plan(const BattleMenuState& state,int width,int height) {
     Plan p;
     if(state.kind==BattleMenuKind::none)return p;
+    if(state.items.shown)return planItems(state,width,height);
     if(state.kind==BattleMenuKind::message) {
         const int w=std::min(state.title.width+2*pad,width-2*margin),h=state.title.height+2*pad;
         p.windows.push_back({0,0,std::max(w,2*pad),h});p.titleBox={pad,pad,w-2*pad,state.title.height};
@@ -210,7 +259,7 @@ void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
 BattleGroupLayout layoutBattleGold(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
-    if(state.gold.width<=0)return layout;
+    if(state.gold.width<=0||state.items.shown)return layout;
     const int s=layout.scale,w=2*pad+state.gold.width+3+state.goldUnit.width,h=row+2*pad;
     layout.picture={windowWidth-(margin+w)*s,margin*s,w*s,h*s};
     return layout;
@@ -227,7 +276,7 @@ std::vector<std::uint32_t> composeBattleGold(const BattleMenuState& state,const 
     return out;
 }
 bool classicFieldMapShown(const BattleMenuState& state) {
-    return state.field&&state.kind!=BattleMenuKind::none&&!state.message.shown;
+    return state.field&&state.kind!=BattleMenuKind::none&&!state.message.shown&&!state.items.shown;
 }
 std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight) {
     return {6.f,canvasHeight-6.f-insetHeight,insetWidth,insetHeight};
@@ -284,10 +333,10 @@ int battleScale(int windowHeight) {return std::max(1,windowHeight/270);}
 BattleMenuLayout layoutBattleMenu(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleMenuLayout layout;layout.scale=battleScale(windowHeight);
     const int s=layout.scale;
-    const auto p=plan(state,windowWidth/s);
+    const auto p=plan(state,windowWidth/s,windowHeight/s);
     if(p.windows.empty())return layout;
-    layout.planWidth=windowWidth/s;
-    const int top=state.field?margin:windowHeight/s-margin-p.picture.h;
+    layout.planWidth=windowWidth/s;layout.planHeight=windowHeight/s;
+    const int top=state.field||state.items.shown?margin:windowHeight/s-margin-p.picture.h;
     layout.picture={p.picture.x*s,top*s,p.picture.w*s,p.picture.h*s};
     auto place=[&](const Box& b) {return BattleRect{(p.picture.x+b.x)*s,(top+b.y)*s,b.w*s,b.h*s};};
     for(const auto& b:p.windows)layout.windows.push_back(place(b));
@@ -314,7 +363,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     if(layout.windows.empty())return {};
     const int s=layout.scale,width=layout.picture.w/s,height=layout.picture.h/s;
     // The same plan as the layout.
-    const auto p=plan(state,layout.planWidth>0?layout.planWidth:width+2*margin);
+    const auto p=plan(state,layout.planWidth>0?layout.planWidth:width+2*margin,layout.planHeight);
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     // The layout's windows in DS pixels relative to the picture.
     for(const auto& w:layout.windows)
