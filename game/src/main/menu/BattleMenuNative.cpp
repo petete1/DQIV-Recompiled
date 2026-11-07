@@ -5,6 +5,7 @@
 #include "ov015/btl/BattleMenuNative.hpp"
 #include "main/dss/BgBuffer.hpp"
 #include "main/dss/BgText.hpp"
+#include "main/dss/SystemText.hpp"
 #include "main/dss/Display.hpp"
 #include "main/dss/Pad.hpp"
 #include "nitro/pad.h"
@@ -412,9 +413,40 @@ void setBattleCursor(short active)
     s_keys.push_back(s_building.cursor);
 }
 
+namespace {
+// The menus' animated cursor (MenuArrowDisplay, kind active): five 16x16 frames of the
+// system sprites (getSystemTextData(3), 32 tiles a row, loaded at sprite name 0x100),
+// sprite names 0x1ca + 2 * frame, in the bottom screen's sprite palette 15.
+void setCursorFrames(pc::BattleMenuState& state)
+{
+    const unsigned char* sheet = (const unsigned char*)getSystemTextData(3);
+    if (sheet == NULL) {
+        return;
+    }
+    const PaletteBuffer* obj = getObjPaletteBuffer(1);
+    for (int f = 0; f < 5; f++) {
+        std::vector<std::uint32_t>& frame = state.cursorFrames[f];
+        frame.assign(16 * 16, 0u);
+        const int tile = 0x1ca - 0x100 + f * 2;
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                const unsigned char* t = sheet + (tile + (y / 8) * 32 + x / 8) * 32;
+                const unsigned char pair = t[(y % 8) * 4 + (x % 8) / 2];
+                const int index = (x & 1) ? pair >> 4 : pair & 15;
+                if (index != 0) {
+                    frame[y * 16 + x] = rgb(obj->color_[15 * 16 + index]);
+                }
+            }
+        }
+    }
+    state.cursorFrame = (g_MenuDisplays.arrow_.getAnimCharName() - 0x1ca) / 2;
+}
+}
+
 void endBattleMenu()
 {
     pc::BattleMenuState& state = pc::battleMenuState();
+    setCursorFrames(s_building);
     const unsigned int revision = state.revision + (s_keys != s_lastKeys || state.kind == pc::BattleMenuKind::none ? 1 : 0);
     // The party panel and the message window are published by others (any order of the menus).
     s_building.party.swap(state.party);

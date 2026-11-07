@@ -182,6 +182,21 @@ void mapHiddenWithMessage() {
     state.message.shown=false;state.kind=pc::BattleMenuKind::none;
     check(!pc::classicFieldMapShown(state),"no map without a menu");
 }
+void originalCursor() {
+    // The game's animated cursor replaces the hand: the current frame at the chosen entry,
+    // frame 0 (still) on the parent commands.
+    auto state=fieldList();
+    for(int f=0;f<5;++f)state.cursorFrames[std::size_t(f)].assign(16*16,0xff000000u|(0x10u*unsigned(f+1)));
+    state.cursorFrame=3;state.cursor=1;
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    int current=0,still=0,gold=0;
+    for(const auto p:pixels) {current+=p==(0xff000000u|0x40u);still+=p==(0xff000000u|0x10u);gold+=p==0xfff0c040u;}
+    check(current==16*16,"the current frame at the chosen entry");
+    check(still==16*16,"frame 0 on the parent commands");
+    check(gold==0,"no hand");
+    check(pc::composeBattleMenu(state,layout,25)==pixels,"no blinking: the frames animate instead");
+}
 void menusLabel() {
     check(std::string(pc::settingLabel(pc::settingBattleMenus,1))=="Menus","the setting is called Menus (English)");
 }
@@ -576,6 +591,7 @@ int main() {
     fieldDescriptionBelow();
     mapBottomLeft();
     mapHiddenWithMessage();
+    originalCursor();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

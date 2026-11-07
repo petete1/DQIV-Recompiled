@@ -327,7 +327,18 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
                 if(t.x+x>=0&&t.x+x<width&&t.y+dy+y>=0&&t.y+dy+y<height)out[std::size_t(t.y+dy+y)*width+t.x+x]=fill;
         blit(out,width,height,state.title,t.x,t.y+dy,state.kind==BattleMenuKind::message?t.w:state.title.width,state.palette,false);
     }
-    auto entries=[&](const Plan& q,const std::vector<BattleMenuEntry>& list,int cursor,bool blinking) {
+    // The cursor: the game's animated one (still on the parent commands), else the hand.
+    auto pointer=[&](int x,int y,bool blinking,bool still) {
+        const auto& frame=state.cursorFrames[std::size_t(still?0:std::clamp(state.cursorFrame,0,4))];
+        if(frame.size()==16*16) {
+            for(int ty=0;ty<16;++ty)for(int tx=0;tx<16;++tx) {
+                const int px=x+tx,py=y+ty;
+                const auto colour=frame[std::size_t(ty)*16+tx];
+                if((colour>>24)&&px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=colour;
+            }
+        } else if(!blinking||blinkFrame%30<20)hand(out,width,x+4,y+(16-7)/2);
+    };
+    auto entries=[&](const Plan& q,const std::vector<BattleMenuEntry>& list,int cursor,bool blinking,bool still) {
         for(std::size_t i=0;i<list.size()&&i<q.entries.size();++i) {
             const auto& e=list[i];const auto& b=q.entries[i];
             const int textY=b.y+dy+(row-e.label.height)/2;
@@ -336,11 +347,11 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
             blit(out,width,height,e.label,b.x+cursorWidth+q.iconWidth,textY,q.labelWidth,state.palette,!e.enabled);
             if(e.right.width>0)
                 blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
-            if(int(i)==cursor&&(!blinking||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);
+            if(int(i)==cursor)pointer(b.x-3,b.y+dy+(row-16)/2,blinking,still);
         }
     };
-    entries(p,state.entries,state.cursor,state.waiting);
-    if(p.parent)entries(*p.parent,state.parent,state.parentCursor,false);
+    entries(p,state.entries,state.cursor,state.waiting,false);
+    if(p.parent)entries(*p.parent,state.parent,state.parentCursor,false,true);
     const auto& list=p.windows[std::size_t(p.listIndex)];
     if(p.footerY>=0&&state.footer.width>0)
         blit(out,width,height,state.footer,list.x+pad+cursorWidth,p.footerY+dy+(row-state.footer.height)/2,

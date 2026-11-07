@@ -61,6 +61,8 @@ struct BattleMenuState {
     std::vector<BattleMenuEntry> parent;             // the root commands shown above a field list (2 columns)
     int parentCursor=-1;                             // the chosen command (a still hand)
     BattleText gold,goldUnit;                        // "1259" and "G"; empty gold: no gold panel
+    std::array<std::vector<std::uint32_t>,5> cursorFrames;  // the game's animated cursor, 16x16 ARGB each (empty: the hand)
+    int cursorFrame=0;                               // the frame showing now
 };
 // The world map inset at the bottom left while a field menu shows, canvas units (canvas
 // canvasHeight high): {x,y,w,h}.
