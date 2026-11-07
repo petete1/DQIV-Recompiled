@@ -23,6 +23,14 @@
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include <vector>
+#endif
+
 THUMB void TownMenu_ITEM_USE::menuSetup()
 {
     status::g_Party.setBattleMode();
@@ -68,6 +76,12 @@ THUMB void TownMenu_ITEM_USE::menuExecute()
 
 THUMB void TownMenu_ITEM_USE::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawBattlePartyTargetsPaged(itemID_ + 0x40000000, page_, charaItem_.active_);
+        return;
+    }
+#endif
     drawItemUseTargetScreen(charaItem_.active_, itemID_, page_);
     if (!g_TownMenuMessage.isOpen()) {
         charaItem_.drawActive();
@@ -120,7 +134,11 @@ THUMB void TownMenu_ITEM_USE::menuUpdate()
         return;
     }
     navigator_.setup(2, 2, status::g_Party.getCount());
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(charaItem_, navigator_) : MenuUpdate_Assist::menuSelect(charaItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(charaItem_, navigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             itemUse();

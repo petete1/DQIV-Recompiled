@@ -4,6 +4,8 @@
 #include "main/menu/MenuBase.hpp"
 #include "main/menu/CursorMoveGridLoop.hpp"
 
+namespace status { struct HaveStatusInfo; }
+
 // Classic battle menus (pc::gameSettings().battleMenus 1): each battle
 // menu describes what it shows (pc::battleMenuState) instead of drawing the
 // DS menu, and reads its input through battleMenuSelect.
@@ -52,8 +54,20 @@ void publishBattleParty();
 // Classic field menus: the same state, placed from the top left (field), with the gold.
 void beginFieldMenu(pc::BattleMenuKind kind, int columns);
 void setFieldRootParent(int chosen);   // the root's commands above the list, the hand on chosen
-void publishFieldParty(int active);    // the walking members' cards; active slides out (-1: none)
+void publishFieldParty(const status::HaveStatusInfo* active);  // the walking members' cards; active slides out (NULL: none)
 void setBattleGold(int amount);
+// A field list's end: the root's commands above it (the hand on rootCommand), the gold,
+// endBattleMenu, the party (active slid out).
+void endFieldMenu(int rootCommand, const status::HaveStatusInfo* active);
+// The items of one page (6), their icons, "E" marks (owner NULL: none), pager and the
+// chosen one's description.
+void addBattleItems(const int* items, int count, int page, int active, status::HaveStatusInfo* owner);
+// Field item lists: a member's (or the bag's) items; giver >= 0: a swap's target list with an empty slot.
+void drawFieldItems(int chara, bool bag, int page, int active, int giver);
+// The party, 4 a page, under an item's (0x4...) or a spell's name.
+void drawBattlePartyTargetsPaged(int title, int page, int active);
+// The towns of a Chimaera Wing or Zoom (drawRuraTownList), under the root command; chara -1: the bag.
+void drawFieldTowns(int rootCommand, int chara, int page, const unsigned char* towns, int count, int active);
 // The battle message window (Classic): its lines as the game rendered them.
 // True when published: the DS window is then not drawn.
 struct MessageWindow;

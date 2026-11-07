@@ -11,6 +11,18 @@
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include "ov016/status/FukuroItemInfo.hpp"
+#include "ov016/status/PlayerItemInfo.hpp"
+#include "ov016/TownMenuPlayerControl/TownMenuPlayerControl.hpp"
+#include "main/status/PartyStatus.hpp"
+#include <vector>
+#endif
+
 THUMB void TownMenuItemSelectItem::menuSetup()
 {
     status::g_Party.setPlayerMode();
@@ -56,6 +68,12 @@ THUMB void TownMenuItemSelectItem::menuDraw()
     } else {
         itemId = status::PlayerItemInfo::getItemIndex(chara, TownMenuPlayerControl::getSingleton()->getActiveItemIndexToAll());
     }
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawFieldItems(chara, TownMenuPlayerControl::getSingleton()->activeFukuro_ != 0, page_, menuItem_.active_, -1);
+        return;
+    }
+#endif
     drawItemSelectScreen(chara, itemId, page_);
     if (!g_TownMenuMessage.isOpen()) {
         menuItem_.drawActive();
@@ -91,7 +109,11 @@ THUMB void TownMenuItemSelectItem::menuUpdate()
         playerNavigator_.setup(2, 3, status::PlayerItemInfo::getItemMaxCount(TownMenuPlayerControl::getSingleton()->activeChara_));
         navigator = &playerNavigator_;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, *navigator) : MenuUpdate_Assist::menuSelect(menuItem_, *navigator);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, *navigator);
+#endif
     if (result == 0) {
         return;
     }

@@ -15,6 +15,11 @@
 #include "main/menu/MenuIconData.hpp"
 #include "main/menu/MessageWindow.hpp"
 #include "main/menu/MenuDisplays.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/TownMenuPlayerControl/TownMenuPlayerControl.hpp"
+#include "ov016/status/PlayerItemInfo.hpp"
+#include "ov016/status/FukuroItemInfo.hpp"
 #include "main/menu/MenuDataCommon.hpp"
 #include "main/menu/MenuTextDisplay.hpp"
 #include "main/global/GlobalDQ4.hpp"
@@ -306,6 +311,14 @@ void setFieldRootParent(int chosen)
     s_keys.push_back(chosen);
 }
 
+void endFieldMenu(int rootCommand, const status::HaveStatusInfo* active)
+{
+    setFieldRootParent(rootCommand);
+    setBattleGold(status::g_Party.gold_);
+    endBattleMenu();
+    publishFieldParty(active);
+}
+
 void setBattleGold(int amount)
 {
     char buf[0x40];
@@ -561,12 +574,18 @@ void drawBattleItems(const int* items, int count, int page, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::items, 2);
     setBattleTitle(0x80000006);
-    status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
+    addBattleItems(items, count, page, active,
+                   &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_);
+    endBattleMenu();
+}
+
+void addBattleItems(const int* items, int count, int page, int active, status::HaveStatusInfo* owner)
+{
     int top;
     const int num = count > 0 ? pageEntries(count, page, top) : 0;
     for (int i = 0; i < num; i++) {
         // The equipped mark where drawBattleItemEntry puts it.
-        addBattleEntry(items[top + i] + 0x40000000, (short)i, true, info->haveItem_.isEquipment(i + top) ? 0xa0000041 : 0);
+        addBattleEntry(items[top + i] + 0x40000000, (short)i, true, owner != NULL && owner->haveItem_.isEquipment(i + top) ? 0xa0000041 : 0);
         setEntryIcon(0xf0000000, items[top + i], 32);   // the item's icon, as drawBattleItemEntry
     }
     setBattlePage(page, count > 0 ? (count - 1) / 6 + 1 : 1);
@@ -574,7 +593,6 @@ void drawBattleItems(const int* items, int count, int page, int active)
         setBattleHelp(status::UseItem::getMenuMessage(items[top + active]));
     }
     setBattleCursor((short)active);
-    endBattleMenu();
 }
 
 void drawBattleUseOrEquip(int item, int active)
@@ -677,7 +695,7 @@ void publishBattleParty()
     }
 }
 
-void publishFieldParty(int active)
+void publishFieldParty(const status::HaveStatusInfo* active)
 {
     // The members walking (battle mode orders them), as drawPartyStatusWindows shows them.
     pc::BattleMenuState& state = pc::battleMenuState();
@@ -693,7 +711,7 @@ void publishFieldParty(int active)
                                          : 0xa000003f;
         pc::BattlePartyRow row = partyRow(info, info->getHp(), info->getMp(), getHpTextColorIndex(info), label,
                                           condition != 2 && condition != 3);
-        row.active = i == active;
+        row.active = info == active;
         state.party.push_back(row);
     }
     status::g_Party.setPlayerMode();
@@ -821,4 +839,81 @@ int battleMenuSelect(menu::MenuItem& item, CursorMoveBase& cursor)
     }
     return result;
 }
+void drawFieldItems(int chara, bool bag, int page, int active, int giver)
+{
+    // A member's items (6 a page) or the bag's (FukuroItemInfo: also 6 a page), under its
+    // name; for a swap (giver), the target's items and an empty slot to give into.
+    status::g_Party.setPlayerMode();
+    std::vector<int> items;
+    status::HaveStatusInfo* owner = NULL;
+    int title = 0x5000005b;
+    if (bag) {
+        const int count = status::FukuroItemInfo::getItemMaxCount();
+        for (int k = 0; k < count; k++) {
+            items.push_back(status::FukuroItemInfo::getItemId(k % 6, k / 6));
+        }
+    } else {
+        owner = &status::g_Party.getPlayerStatus(chara)->haveStatusInfo_;
+        const int count = status::PlayerItemInfo::getItemMaxCount(chara);
+        for (int k = 0; k < count; k++) {
+            items.push_back(status::PlayerItemInfo::getItemIndex(chara, k));
+        }
+        title = owner->haveStatus_.playerIndex_ + 0x50000000;
+    }
+    beginFieldMenu(pc::BattleMenuKind::items, 2);
+    setBattleTitle(title);
+    addBattleItems(items.empty() ? NULL : &items[0], (int)items.size(), page, active, owner);
+    const int shown = (int)s_building.entries.size();
+    if (giver >= 0 && !bag && shown < 6 && page * 6 + shown == (int)items.size()) {
+        pc::BattleMenuEntry empty;
+        empty.label = numbersText("- - -", 12);
+        empty.index = (short)shown;
+        s_building.entries.push_back(empty);
+        if (items.empty()) {
+            setBattlePage(0, 1);
+        }
+        setBattleCursor((short)active);
+        s_keys.push_back(-3);
+    }
+    endFieldMenu(TownMenu_ROOT::ROOT_ITEM, giver >= 0 ? &status::g_Party.getPlayerStatus(giver)->haveStatusInfo_ : owner);
+}
+
+void drawBattlePartyTargetsPaged(int title, int page, int active)
+{
+    // The party in battle order, 4 a page (drawPartyHpMpList), under the item or spell.
+    const status::HaveStatusInfo* user = NULL;
+    TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
+    status::g_Party.setPlayerMode();
+    if (!control->activeFukuro_) {
+        user = &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_;
+    }
+    status::g_Party.setBattleMode();
+    const int count = status::g_Party.getCount();
+    beginFieldMenu(pc::BattleMenuKind::targetParty, 1);
+    setBattleTitle(title);
+    for (int i = page * 4; i < count && i < page * 4 + 4; i++) {
+        addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)(i - page * 4), true);
+    }
+    if (count > 4) {
+        setBattlePage(page, (count - 1) / 4 + 1);
+    }
+    setBattleCursor((short)active);
+    endFieldMenu((title & 0xf0000000) == 0x40000000 ? TownMenu_ROOT::ROOT_ITEM : TownMenu_ROOT::ROOT_MAGIC, user);
+}
+
+void drawFieldTowns(int rootCommand, int chara, int page, const unsigned char* towns, int count, int active)
+{
+    // drawRuraTownList's towns, 8 a page in two columns.
+    beginFieldMenu(pc::BattleMenuKind::list, 2);
+    for (int i = page * 8; i < count && i < page * 8 + 8; i++) {
+        addBattleEntry(getRuraTownName(towns[i]), (short)(i - page * 8), true);
+    }
+    if (count > 8) {
+        setBattlePage(page, (count - 1) / 8 + 1);
+    }
+    setBattleCursor((short)active);
+    status::g_Party.setPlayerMode();
+    endFieldMenu(rootCommand, chara >= 0 ? &status::g_Party.getPlayerStatus(chara)->haveStatusInfo_ : NULL);
+}
 #endif
+

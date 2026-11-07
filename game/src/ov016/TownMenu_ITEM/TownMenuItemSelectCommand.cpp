@@ -39,6 +39,14 @@ static int equipMessage_[27] = {
     0xc4e18, 0xc4e29, 0xc4e42, 0xc4e49, 0xc4e50, 0xc4e5d, 0xc4e8f, 0xc4ea5, 0xc4fba,
 };
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include <vector>
+#endif
+
 THUMB void TownMenuItemSelectCommand::menuSetup()
 {
     status::g_Party.setPlayerMode();
@@ -92,6 +100,22 @@ THUMB void TownMenuItemSelectCommand::menuExecute()
 THUMB void TownMenuItemSelectCommand::menuDraw()
 {
     char page = TownMenuPlayerControl::getSingleton()->activeItemPage_;
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        // drawItemUseCommands' commands, one column, under the item's name.
+        TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
+        int list[6];
+        const int count = getItemUseCommandList(commandFlag_, list);
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        setBattleTitle(itemID_ + 0x40000000);
+        for (int i = 0; i < count; i++) {
+            addBattleEntry(list[i], (short)i, true);
+        }
+        setBattleCursor(menuItem_.active_);
+        endFieldMenu(TownMenu_ROOT::ROOT_ITEM, control->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_);
+        return;
+    }
+#endif
     drawItemCommandScreen(TownMenuPlayerControl::getSingleton()->activeChara_, itemID_, page, sound_);
     if (!g_TownMenuMessage.isOpen() && sound_ == 0) {
         menuItem_.drawActive();
@@ -178,7 +202,11 @@ THUMB void TownMenuItemSelectCommand::menuUpdate()
         return;
     }
     navigator_.setup(3, 2, getCommandCount());
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             TownMenuPlayerControl::getSingleton()->setActiveCommand(menuItem_.active_);

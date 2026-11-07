@@ -10,6 +10,14 @@
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include <vector>
+#endif
+
 THUMB void TownMenuItemSelectTargetItem::menuSetup()
 {
     status::g_Party.setPlayerMode();
@@ -61,6 +69,13 @@ THUMB void TownMenuItemSelectTargetItem::menuExecute()
 THUMB void TownMenuItemSelectTargetItem::menuDraw()
 {
     int targetChara = TownMenuPlayerControl::getSingleton()->targetChara_;
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawFieldItems(targetChara, TownMenuPlayerControl::getSingleton()->targetFukuro_ != 0, startPage_, menuItem_.active_,
+                       TownMenuPlayerControl::getSingleton()->activeChara_);
+        return;
+    }
+#endif
     drawItemTargetItemScreen(TownMenuPlayerControl::getSingleton()->activeChara_, targetChara, giveItemID_, startPage_, sound_);
     if (!g_TownMenuMessage.isOpen() && sound_ == 0) {
         menuItem_.drawActive();
@@ -92,7 +107,11 @@ THUMB void TownMenuItemSelectTargetItem::menuUpdate()
         }
         navigator = &playerNavigator_;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, *navigator) : MenuUpdate_Assist::menuSelect(menuItem_, *navigator);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, *navigator);
+#endif
     if (result != 0) {
         startPage_ = navigator->getPageNo();
         TownMenuPlayerControl::getSingleton()->setTargetItemPage(startPage_);

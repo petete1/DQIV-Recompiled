@@ -664,10 +664,10 @@ THUMB void drawEquipCompareWindow(status::HaveStatusInfo* info, int item, int eq
     drawMenuPartsColored(parts, param, g_menuTextColors[getCharaTextColorIndex(info)]);
 }
 
-THUMB void drawItemUseCommands(int mode)
+// The item's commands for its command flag (mode), in the order drawItemUseCommands shows them.
+THUMB int getItemUseCommandList(int mode, int* list)
 {
     int count = 0;
-    int list[6];
     int command[6];
     command[0] = menu::MenuDataCommon::getItemUseCommand(0);
     command[1] = menu::MenuDataCommon::getItemUseCommand(1);
@@ -705,10 +705,18 @@ THUMB void drawItemUseCommands(int mode)
         break;
     case 3:
         for (int i = 0; i < 6; i++) {
-            drawMenuParts(s_partsItemUseCommand, &command[i], (i % 3) * 64 + 0x10 + (i % 3) * 16, (i / 3) * 0x18 + 0x70, g_menuTextColors[0]);
+            list[i] = command[i];
         }
-        return;
+        count = 6;
+        break;
     }
+    return count;
+}
+
+THUMB void drawItemUseCommands(int mode)
+{
+    int list[6];
+    const int count = getItemUseCommandList(mode, list);
     for (int i = 0; i < count; i++) {
         drawMenuParts(s_partsItemUseCommand, &list[i], (i % 3) * 64 + 0x10 + (i % 3) * 16, (i / 3) * 0x18 + 0x70, g_menuTextColors[0]);
     }
@@ -888,6 +896,16 @@ THUMB void drawSpellName(int x, int y, int value, int flag, status::HaveStatusIn
         return;
     }
     drawMenuParts(s_partsSpellNameNarrow, &param, x, y, g_menuTextColors[getCharaTextColorIndex(info)]);
+}
+
+// The town's name drawRuraTownList shows (the envoy's own town name for the 0xd slot).
+THUMB int getRuraTownName(unsigned char town)
+{
+    if (town == 0xd && g_EnvoyManager.isMyEnvoyEnabled() == 1) {
+        g_EnvoyManager.mode_ = 1;
+        return (int)g_EnvoyManager.getTownName();
+    }
+    return menu::MenuDataCommon::getRuraName(town);
 }
 
 THUMB void drawRuraTownList(int page, unsigned char* rura)

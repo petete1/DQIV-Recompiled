@@ -20,12 +20,14 @@ void drawMenuDescription(int index, int flag, int mode);
 void drawItemUsageInfo(int item);
 void drawEquipCompareWindow(status::HaveStatusInfo* info, int item, int equipIndex, int flag);
 void drawItemUseCommands(int mode);
+int getItemUseCommandList(int mode, int* list);   // the commands drawItemUseCommands shows: their count
 void drawPartyIconRow(int mode, int flag);
 void drawCharaSummaryPanel(status::HaveStatusInfo* info, int index, int flag);
 void drawCasterMpBar(status::HaveStatusInfo* info, int pageMax, int page);
 void drawTownSpellList(status::HaveStatusInfo* info);
 void drawSpellName(int x, int y, int value, int flag, status::HaveStatusInfo* info);
 void drawRuraTownList(int page, unsigned char* rura);
+int getRuraTownName(unsigned char town);           // a town's name as drawRuraTownList shows it
 void drawStatusCharaProfile(status::HaveStatusInfo* info);
 void drawStatusAbilities(status::HaveStatusInfo* info);
 void drawStatusEquipment(status::HaveStatusInfo* info, int flag);

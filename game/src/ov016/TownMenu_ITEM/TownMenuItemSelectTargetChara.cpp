@@ -10,6 +10,14 @@
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "ov016/UnkTownMenuDraw/TownMenuDraw.hpp"
+#include "main/status/PlayerStatus.hpp"
+#include <vector>
+#endif
+
 THUMB void TownMenuItemSelectTargetChara::menuSetup()
 {
     status::g_Party.setPlayerMode();
@@ -49,6 +57,24 @@ THUMB void TownMenuItemSelectTargetChara::menuExecute()
 
 THUMB void TownMenuItemSelectTargetChara::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        // To whom (the members and the bag), under the item's name; the giver slides out.
+        status::g_Party.setPlayerMode();
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        setBattleTitle(giveItemID_ + 0x40000000);
+        const int count = status::g_Party.getCount();
+        for (int i = 0; i < count; i++) {
+            addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+        }
+        if (status::g_Party.fukuro_ != 0) {
+            addBattleEntry(0x5000005b, (short)count, true);
+        }
+        setBattleCursor(menuItem_.active_);
+        endFieldMenu(TownMenu_ROOT::ROOT_ITEM, TownMenuPlayerControl::getSingleton()->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_);
+        return;
+    }
+#endif
     drawItemTargetCharaScreen(activeChara_, targetChara_, giveItemID_, sound_);
     if (!g_TownMenuMessage.isOpen() && sound_ == 0) {
         menuItem_.drawActive();
@@ -69,7 +95,11 @@ THUMB void TownMenuItemSelectTargetChara::menuUpdate()
         return;
     }
     navigator_.setup(5, 2, charaCount_);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result == 0) {
         return;
     }

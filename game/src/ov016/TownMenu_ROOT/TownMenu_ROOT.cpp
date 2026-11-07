@@ -49,7 +49,7 @@ THUMB void TownMenu_ROOT::menuDraw()
         setBattleCursor(menuItem_.active_);
         setBattleGold(status::g_Party.gold_);
         endBattleMenu();
-        publishFieldParty(-1);
+        publishFieldParty(NULL);
         return;
     }
 #endif
