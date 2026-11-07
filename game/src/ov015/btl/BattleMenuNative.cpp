@@ -13,6 +13,7 @@
 #include "main/menu/MenuCommonDraw.hpp"
 #include "main/menu/MenuIconData.hpp"
 #include "main/menu/MessageWindow.hpp"
+#include "main/menu/MenuDisplays.hpp"
 #include "main/menu/MenuTextDisplay.hpp"
 #include "main/global/GlobalDQ4.hpp"
 #include "main/global/GlobalGamePart.hpp"
@@ -462,10 +463,10 @@ void publishBattleParty()
 
 namespace {
 // A text display's rendered line (its 4-bit buffer, 256x16), up to what is revealed.
-pc::BattleText lineText(MenuTextDisplay* line)
+pc::BattleText lineText(MenuTextDisplay* line, int wholeWidth = 0)
 {
     pc::BattleText text;
-    int width = line->visibleWidth_ < line->width_ ? line->visibleWidth_ : line->width_;
+    int width = wholeWidth > 0 ? wholeWidth : line->visibleWidth_ < line->width_ ? line->visibleWidth_ : line->width_;
     if (width > 256) {
         width = 256;
     }
@@ -511,6 +512,35 @@ bool publishBattleMessage(MessageWindow* window)
     if (window->namePlate_ && window->namePlate_->enable_) {
         message.name = lineText(window->namePlate_);
     }
+    return true;
+}
+
+bool publishBattlePlate(MenuTextDisplay* text)
+{
+    if (!classicBattleMenus() || !text->frame_ || !g_GlobalDQ4.unkfunc_02058114(BATTLE_PART)) {
+        return false;
+    }
+    // The message window's name plate is the message window's.
+    if (g_MenuDisplays.message_.namePlate_ == text) {
+        return false;
+    }
+    pc::BattlePlate plate;
+    // A plate's text sits 4 pixels into its buffer, the whole frame wide (setFramedText).
+    plate.text = lineText(text, text->frameWidth_);
+    plate.width = text->frameWidth_;
+    plate.x = text->x_;
+    plate.y = text->y_ % 192;   // as MenuTextDisplay::draw places it on the bottom screen
+    // The plates' colours (drawMonsterNamePlates): palette 15 bright, 14 dim;
+    // letters 10/11 yellow (low health), 12/13 red (very low), odd ones dim.
+    const int letters = text->letterPalette_;
+    plate.tone = letters == 10 || letters == 11 ? 1 : letters == 12 || letters == 13 ? 2 : 0;
+    plate.dim = letters >= 0 ? (letters & 1) != 0 : text->palette_ == 14;
+    // The bright plate palette of the bottom screen's sprites (the count is in one of its colours).
+    const PaletteBuffer* obj = getObjPaletteBuffer(1);
+    for (int i = 0; i < 16; i++) {
+        plate.palette[i] = rgb(obj->color_[15 * 16 + i]);
+    }
+    pc::battleMenuState().plates.push_back(plate);
     return true;
 }
 

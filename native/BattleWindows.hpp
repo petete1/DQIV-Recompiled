@@ -35,6 +35,9 @@ struct BattleMessage {
     int height=0;                     // the game's window height, DS pixels
     int shakeX=0,shakeY=0;            // the game shakes the window when the party is hit (DS pixels)
 };
+// A monster group's name plate, where the battle places it (bottom screen DS
+// pixels, which can run outside the screen in the band around it).
+struct BattlePlate {BattleText text;int x=0,y=0,width=0;int tone=0;bool dim=false;std::array<std::uint32_t,16> palette{};}; // width: the DS plate's (0: fit the text); tone: 0 normal, 1 low health, 2 very low
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
     BattleText title,footer;          // member name (or a message); "MP left" line (may be empty)
@@ -48,6 +51,7 @@ struct BattleMenuState {
     std::vector<BattlePartyRow> party;               // empty: no party panel
     std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the faces' palette
     BattleMessage message;                           // the battle message window (Classic)
+    std::vector<BattlePlate> plates;                 // the monster name plates (Classic)
 };
 // Filled by the game each frame (kind none when no battle menu draws).
 BattleMenuState& battleMenuState();
@@ -72,6 +76,8 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const Battl
 // tall as the game's, moved by its shake; picture.w 0 when not shown.
 BattleGroupLayout layoutBattleMessage(const BattleMenuState&,int windowWidth,int windowHeight);
 std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState&,const BattleGroupLayout&,int blinkFrame);
+// A name plate's picture at DS scale (width x height), in the panels' look.
+std::vector<std::uint32_t> composeBattlePlate(const BattlePlate&,const BattleMenuState&,int& width,int& height);
 // A bar's filled width: clamped to 0..width, 0 when max <= 0, at least 1 when value > 0.
 int battleBarWidth(int value,int max,int width);
 BattleMenuLayout layoutBattleMenu(const BattleMenuState&,int windowWidth,int windowHeight);

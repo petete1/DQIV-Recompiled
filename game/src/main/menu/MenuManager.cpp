@@ -82,6 +82,7 @@ THUMB void MenuManager::execute()
     pc::battleMenuState().kind = pc::BattleMenuKind::none;
     pc::battleMenuState().party.clear();
     pc::battleMenuState().message.shown = false;
+    pc::battleMenuState().plates.clear();
 #endif
     if (g_DebugMenu.unkfunc_02058380() == 1) {
         s_redraw = 1;

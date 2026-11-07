@@ -25,7 +25,7 @@
 namespace pc {
 namespace {
 void require(bool ok) {if(!ok)throw std::runtime_error(SDL_GetError());}
-enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6,overlayBattleParty=30,overlayBattleMessage=31}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
+enum Overlay : unsigned {overlayFps=1,overlayToast=2,overlayDebug=3,overlayVersion=4,overlayBattle=5,overlayMenu0=6,overlayBattleParty=30,overlayBattleMessage=31,overlayBattlePlate0=32}; // overlayMenu0..+17: menu layers (a picture per screen part), +16 and +17: the sprites of no layer
 // The achievement notification: slides in, stays, slides out (nanoseconds).
 constexpr std::uint64_t toastSlide=350'000'000,toastShown=5'000'000'000;
 }
@@ -304,6 +304,18 @@ void GameWindow::drawBattleWindows(int width,int height) {
         const int s=party.scale;
         gpu_->drawOverlay(overlayBattleParty,pixels,party.picture.w/s,party.picture.h/s,true,
             party.picture.x,party.picture.y,width,height,party.picture.w,party.picture.h);
+    }
+    // The monster name plates, where the battle places them over the scene (its DS pixel size).
+    if(!state.plates.empty()) {
+        float canvasWidth=0,canvasHeight=0;canvasPixels(layout_,canvasWidth,canvasHeight);
+        const float k=canvasHeight/layout_.canvasHeight;
+        const float originX=(width-canvasWidth)/2+(layout_.canvasWidth-256)/2*k,originY=(height-canvasHeight)/2+192*k;
+        for(std::size_t i=0;i<state.plates.size()&&i<4;++i) {
+            int w=0,h=0;
+            const auto pixels=composeBattlePlate(state.plates[i],state,w,h);
+            gpu_->drawOverlay(overlayBattlePlate0+unsigned(i),pixels,w,h,true,int(std::lround(originX+state.plates[i].x*k)),
+                int(std::lround(originY+state.plates[i].y*k)),width,height,int(std::lround(w*k)),int(std::lround(h*k)));
+        }
     }
     // The message window, above the command panel when both show.
     auto message=layoutBattleMessage(state,width,height);

@@ -55,6 +55,10 @@ bool publishBattleMessage(MessageWindow* window);
 namespace status { struct CharacterStatus; }
 void markBattleActed(status::CharacterStatus* chara);
 void clearBattleActed();
+// A monster name plate (a framed MenuTextDisplay in battle, Classic): published
+// for the port to draw. True when published: the DS sprites are then not drawn.
+struct MenuTextDisplay;
+bool publishBattlePlate(MenuTextDisplay* text);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

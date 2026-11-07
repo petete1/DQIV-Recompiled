@@ -377,6 +377,13 @@ void stripOnlyWhenReady() {
     check((pixels[std::size_t(25)*w+w-2]>>24)!=0,"a member who can still act has the background, out to the edge");
     check((pixels[std::size_t(50+25)*w+w-2]>>24)==0,"no background once acted, or unable to act");
 }
+void plateLook() {
+    pc::BattlePlate plate;plate.text=ink(40);plate.tone=1;
+    int w=0,h=0;
+    const auto pixels=pc::composeBattlePlate(plate,pc::BattleMenuState{},w,h);
+    check(w==40+8&&h==16&&pixels.size()==std::size_t(w)*h,"a plate fits its name");
+    check(pixels.size()>0&&pixels[std::size_t(h/2)*w]==0xe0281810u&&pixels[std::size_t(h/2)*w+2]==0xffb89870u,"the brown panel with its tan border");
+}
 }
 
 int main() {
@@ -408,6 +415,7 @@ int main() {
     barWidths();
     activeCardSlidesOut();
     stripOnlyWhenReady();
+    plateLook();
     messageInsideWindow();
     messageClearOfParty();
     messageWidthFromFullLine();

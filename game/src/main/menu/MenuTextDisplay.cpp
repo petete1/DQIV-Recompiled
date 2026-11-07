@@ -1,4 +1,7 @@
 #include "main/menu/MenuTextDisplay.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 #include "main/menu/MenuIconDisplay.hpp"
 #include "main/dss/DssUtils.hpp"
 #include "main/text/TextAPI.hpp"
@@ -46,6 +49,12 @@ THUMB void MenuTextDisplay::draw(OamBuffer* main, OamBuffer* sub)
     if (!isDrawable(main, sub)) {
         return;
     }
+#ifdef DQIV_NATIVE
+    // Classic battles: the port draws the monster name plates.
+    if (publishBattlePlate(this)) {
+        return;
+    }
+#endif
     y = y_ % 192;
     chr = id_;
     x = 0;

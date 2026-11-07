@@ -91,13 +91,13 @@ void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText&
 }
 // A small curl in each corner, inside the border (top-left; mirrored for the others).
 constexpr const char* curl[5]={".XXX.","X....","X.XX.","X.X..","....."};
-void frame(std::vector<std::uint32_t>& out,int width,const Box& box) {
+void frame(std::vector<std::uint32_t>& out,int width,const Box& box,bool curls=true) {
     for(int y=0;y<box.h;++y)for(int x=0;x<box.w;++x) {
         const int dx=std::min(x,box.w-1-x),dy=std::min(y,box.h-1-y);
         if(dx+dy<1)continue;  // the rounded outer corners
         std::uint32_t colour=fill;
         if((dx==border&&dy>=border)||(dy==border&&dx>=border))colour=tan;
-        else if(dx>border&&dy>border&&dx-border-1<5&&dy-border-1<5&&curl[dy-border-1][dx-border-1]=='X')colour=tan;
+        else if(curls&&dx>border&&dy>border&&dx-border-1<5&&dy-border-1<5&&curl[dy-border-1][dx-border-1]=='X')colour=tan;
         out[std::size_t(box.y+y)*width+box.x+x]=colour;
     }
 }
@@ -347,6 +347,19 @@ std::vector<std::uint32_t> composeBattleMessage(const BattleMenuState& state,con
         const int x=width-pad-7,y=height-pad-3;
         for(int ty=0;ty<4;++ty)for(int tx=ty;tx<7-ty;++tx)if(y+ty<height)out[std::size_t(y+ty)*width+x+tx]=tan;
     }
+    return out;
+}
+std::vector<std::uint32_t> composeBattlePlate(const BattlePlate& plate,const BattleMenuState& state,int& width,int& height) {
+    // The text as the game laid it out in the plate (its margins included), else fitted.
+    const bool laidOut=plate.width>0;
+    width=laidOut?plate.width:plate.text.width+8;height=16;
+    std::vector<std::uint32_t> out(std::size_t(width)*height,0);
+    frame(out,width,{0,0,width,height},false);   // too small for the corner curls
+    std::array<std::uint32_t,16> white;white.fill(0xffffffff);
+    // The plate's own palette (its sprites'), else the menus'.
+    const auto& palette=plate.palette[1]?plate.palette:state.palette[1]?state.palette:white;
+    const std::uint32_t tone=plate.tone==2?red:plate.tone==1?yellow:cream;
+    blit(out,width,height,plate.text,laidOut?0:4,laidOut?0:(height-plate.text.height)/2,width,palette,plate.dim,tone);
     return out;
 }
 }
