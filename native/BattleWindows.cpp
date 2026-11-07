@@ -226,6 +226,9 @@ std::vector<std::uint32_t> composeBattleGold(const BattleMenuState& state,const 
     blit(out,w,h,state.goldUnit,unitX,(h-state.goldUnit.height)/2,state.goldUnit.width,state.palette,false);
     return out;
 }
+bool classicFieldMapShown(const BattleMenuState& state) {
+    return state.field&&state.kind!=BattleMenuKind::none&&!state.message.shown;
+}
 std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight) {
     return {6.f,canvasHeight-6.f-insetHeight,insetWidth,insetHeight};
 }

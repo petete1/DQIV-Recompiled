@@ -172,6 +172,16 @@ void mapBottomLeft() {
     const auto r=pc::fieldMapInset(384,153.6f,115.2f);
     check(r[0]==6&&std::abs(r[1]-(384-6-115.2f))<0.01f&&r[2]==153.6f&&r[3]==115.2f,"the map at the bottom left, 6 in");
 }
+void mapHiddenWithMessage() {
+    auto state=menu(pc::BattleMenuKind::commands,6,2);state.field=true;
+    check(pc::classicFieldMapShown(state),"the map with a field menu");
+    state.message.shown=true;
+    check(!pc::classicFieldMapShown(state),"no map while a message shows");
+    auto battle=menu(pc::BattleMenuKind::commands,4,2);
+    check(!pc::classicFieldMapShown(battle),"no map in battle");
+    state.message.shown=false;state.kind=pc::BattleMenuKind::none;
+    check(!pc::classicFieldMapShown(state),"no map without a menu");
+}
 void menusLabel() {
     check(std::string(pc::settingLabel(pc::settingBattleMenus,1))=="Menus","the setting is called Menus (English)");
 }
@@ -565,6 +575,7 @@ int main() {
     fieldListPaged();
     fieldDescriptionBelow();
     mapBottomLeft();
+    mapHiddenWithMessage();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

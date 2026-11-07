@@ -65,6 +65,8 @@ struct BattleMenuState {
 // The world map inset at the bottom left while a field menu shows, canvas units (canvas
 // canvasHeight high): {x,y,w,h}.
 std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight);
+// A Classic field menu shows (this frame) with no message over it: the map shows at the bottom left.
+bool classicFieldMapShown(const BattleMenuState&);
 // The words in lines at most width wide (a word of width 0 breaks the line):
 // the index of each line's first word.
 std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space);

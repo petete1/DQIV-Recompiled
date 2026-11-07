@@ -1,6 +1,8 @@
 #include "FramePresenter.hpp"
 #include <future>
+#include "BattleWindows.hpp"
 #include "DualScreen.hpp"
+#include "Settings.hpp"
 #include "NitroVideo.hpp"
 #include "Profile.hpp"
 #include <algorithm>
@@ -195,6 +197,12 @@ void FramePresenter::frame(NitroVideo& video,const GxGeometry& geometry,const Gx
         batches.push_back({geometry.triangles(),{},true,true});
     }
     if(mode!=Mode::field&&mode!=Mode::menu) {seen3d_=false;insetFrames_=0;}
+    // Classic field menus: the field's last map (its 3D target and 2D rows are kept while
+    // the menu shows) at the bottom left, where the game shows none.
+    if(mode==Mode::menu&&seen3d_&&classicBattleMenusOn(gameSettings())&&classicFieldMapShown(battleMenuState())) {
+        layout_.inset=fieldMapInset(384,256*0.6f,192*0.6f);
+        layout_.insetAlpha=std::clamp((float(insetFrames_)-30.f)/20.f,0.f,1.f);
+    }
     // A hidden screen (panel layouts) still renders at a usable size.
     const auto renderRect=layout_.threeRects[slot][2]>=1?layout_.threeRects[slot]:GpuLayout::Rect{0,0,256,192};
     int targetWidth=0,targetHeight=0;pixels(renderRect,targetWidth,targetHeight);
