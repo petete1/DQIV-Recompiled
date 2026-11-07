@@ -268,18 +268,10 @@ void endBattleMenu()
     s_lastKeys = s_keys;
 }
 
-namespace {
-void activeMemberTitle()
-{
-    const int chara = btl::BattleMenuPlayerControl::getSingleton()->activeChara_;
-    setBattleTitle(status::g_Party.getPlayerStatus(chara)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000);
-}
-}
 
 void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::targetEnemy, 1);
-    activeMemberTitle();
     const int group = rects[active].group;
     int cursor = active;
     for (int i = 0; i < count; i++) {
@@ -304,7 +296,6 @@ void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active)
 void drawBattlePartyTargets(int count, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::targetParty, 1);
-    activeMemberTitle();
     for (int i = 0; i < count; i++) {
         addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
     }
@@ -353,7 +344,6 @@ int pageEntries(int count, int page, int& top)
 void drawBattleSpells(const int* actions, int count, int page, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::spells, 2);
-    activeMemberTitle();
     status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
     int top;
     const int num = pageEntries(count, page, top);
@@ -372,7 +362,6 @@ void drawBattleSpells(const int* actions, int count, int page, int active)
 void drawBattleItems(const int* items, int count, int page, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::items, 2);
-    activeMemberTitle();
     status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
     int top;
     const int num = count > 0 ? pageEntries(count, page, top) : 0;

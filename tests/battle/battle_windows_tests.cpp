@@ -357,6 +357,16 @@ void classicOnlyWide() {
     s.battleMenus=2;s.wide=true;
     check(!pc::classicBattleMenusOn(s),"not Classic when Overlay is chosen");
 }
+void activeCardSlidesOut() {
+    auto state=partyOf(2);
+    const auto layout=pc::layoutBattleParty(state,1920,1080);
+    const std::array<float,2> slides{1.f,0.f};
+    const auto pixels=pc::composeBattleParty(state,layout,slides);
+    const int w=layout.picture.w/layout.scale;
+    auto leftmost=[&](int y){for(int x=0;x<w;++x)if(pixels[std::size_t(y)*w+x]>>24)return x;return w;};
+    check(leftmost(20)+pc::battleCardSlide<=leftmost(50+20)+1,"the active card slides out to the left");
+    check(pc::composeBattleParty(state,layout,{}).size()==pixels.size(),"the same picture without slides");
+}
 }
 
 int main() {
@@ -386,6 +396,7 @@ int main() {
     panelLook();
     partyInsideWindow();
     barWidths();
+    activeCardSlidesOut();
     messageInsideWindow();
     messageClearOfParty();
     messageWidthFromFullLine();

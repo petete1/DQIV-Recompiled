@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace pc {
@@ -61,7 +62,10 @@ int battleScale(int windowHeight);
 struct BattleGroupLayout {int scale=1;BattleRect picture;};
 // The party panel: right edge and bottom, 8 DS pixels in; picture.w 0 without a party.
 BattleGroupLayout layoutBattleParty(const BattleMenuState&,int windowWidth,int windowHeight);
-std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&);
+// How far (DS pixels) the active member's card slides out to the left.
+inline constexpr int battleCardSlide=12;
+// slides: per row, 0 in place .. 1 slid out (missing rows: 0).
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&,std::span<const float> slides={});
 // The message window: bottom centre of the room left of the party panel, as
 // wide as its widest line and 240 DS pixels at least (that room at most), as
 // tall as the game's, moved by its shake; picture.w 0 when not shown.

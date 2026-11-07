@@ -292,7 +292,15 @@ void GameWindow::drawBattleWindows(int width,int height) {
     // The party panel, whenever the battle shows its status (small: drawn anew each time).
     const auto party=layoutBattleParty(state,width,height);
     if(party.picture.w>0) {
-        const auto pixels=composeBattleParty(state,party);
+        // The active member's card slides out (and back) over about an eighth of a second.
+        const auto now=SDL_GetTicksNS();
+        const float step=cardTime_?float(double(now-cardTime_)/125e6):0.f;
+        cardTime_=now;
+        for(std::size_t i=0;i<cardSlides_.size();++i) {
+            const float target=i<state.party.size()&&state.party[i].active?1.f:0.f;
+            cardSlides_[i]=target>cardSlides_[i]?std::min(target,cardSlides_[i]+step):std::max(target,cardSlides_[i]-step);
+        }
+        const auto pixels=composeBattleParty(state,party,cardSlides_);
         const int s=party.scale;
         gpu_->drawOverlay(overlayBattleParty,pixels,party.picture.w/s,party.picture.h/s,true,
             party.picture.x,party.picture.y,width,height,party.picture.w,party.picture.h);

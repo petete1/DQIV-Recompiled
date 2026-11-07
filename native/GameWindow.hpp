@@ -73,6 +73,7 @@ private:
     std::uint32_t battleRevision_=0;int battleWidth_=0,battleHeight_=0;bool battleBlink_=false;
     std::uint32_t mouseButtons_=0; // the mouse buttons down at the last poll (SDL_MouseButtonFlags)
     BattleMouse battleMouse_; // clicks on the battle windows, as A and B
+    std::array<float,4> cardSlides_{}; std::uint64_t cardTime_=0; // the party cards' slide (0 in place, 1 out)
     // Overlay menus: the game's menu layers placed on the window (OverlayMenus.hpp).
     void drawOverlayMenus(int width,int height);
     std::vector<LayerPlacement> menuPlacements_;

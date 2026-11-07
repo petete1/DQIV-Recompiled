@@ -1,5 +1,6 @@
 #include "BattleWindows.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace pc {
 namespace {
@@ -240,12 +241,15 @@ BattleGroupLayout layoutBattleParty(const BattleMenuState& state,int windowWidth
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
     if(state.party.empty())return layout;
     const int s=layout.scale,h=int(state.party.size())*partyRow;
-    layout.picture={windowWidth-(margin+partyWidth)*s,windowHeight-(margin+h)*s,partyWidth*s,h*s};
+    layout.picture={windowWidth-(margin+partyWidth+battleCardSlide)*s,windowHeight-(margin+h)*s,(partyWidth+battleCardSlide)*s,h*s};
     return layout;
 }
-std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout) {
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout,std::span<const float> slides) {
     if(layout.picture.w<=0)return {};
-    const int width=partyWidth,height=int(state.party.size())*partyRow;
+    const int pictureWidth=partyWidth+battleCardSlide,pictureHeight=int(state.party.size())*partyRow;
+    std::vector<std::uint32_t> picture(std::size_t(pictureWidth)*pictureHeight,0);
+    // Each card is drawn on its own, then placed: the active one slid out to the left.
+    const int width=partyWidth,height=partyRow;
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     std::array<std::uint32_t,16> white;white.fill(0xffffffff);
     // The palette the text inks map through: the menu text palette of the state.
@@ -256,7 +260,8 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
     };
     for(std::size_t r=0;r<state.party.size();++r) {
         const auto& row=state.party[r];
-        const int top=int(r)*partyRow;
+        const int top=0;
+        std::fill(out.begin(),out.end(),0u);
         // The strip: dark (lighter brown for the member choosing), fading in over its left part.
         const std::uint32_t strip=row.active?0x403020:0x000000;
         for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
@@ -281,15 +286,18 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
             const auto& number=k?row.mp:row.hp;
             blit(out,width,height,number,partyRight-number.width,y-2,barWidth,palette,false,tone);
         }
+        const float slide=r<slides.size()?std::clamp(slides[r],0.f,1.f):0.f;
+        const int x=battleCardSlide-int(std::lround(slide*battleCardSlide));
+        for(int y=0;y<height;++y)std::copy_n(out.data()+std::size_t(y)*width,width,picture.data()+std::size_t(int(r)*partyRow+y)*pictureWidth+x);
     }
-    return out;
+    return picture;
 }
 BattleGroupLayout layoutBattleMessage(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
     if(!state.message.shown)return layout;
     const int s=layout.scale;
     // The room: the window less its margins, and left of the party panel when there is one.
-    const int right=state.party.empty()?windowWidth/s-margin:windowWidth/s-margin-partyWidth-gap;
+    const int right=state.party.empty()?windowWidth/s-margin:windowWidth/s-margin-partyWidth-battleCardSlide-gap;
     const int room=right-margin;
     int widest=0;
     for(const auto& line:state.message.lines)widest=std::max({widest,line.fullWidth,line.text.width});
