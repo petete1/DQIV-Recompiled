@@ -11,9 +11,10 @@ bool classicBattleMenus();
 // Overlay menus (battleMenus 2): the DS menus drawn on the port overlay (MenuLayers.hpp).
 bool overlayMenus();
 // A message value (as drawMenuText takes it) drawn by the game's 12-dot font.
-pc::BattleText battleText(int value);
+// fontSize: the game's 12-dot font, or its 10-dot one.
+pc::BattleText battleText(int value, int fontSize = 12);
 // A number, as drawMenuNumber draws it.
-pc::BattleText battleNumber(int number);
+pc::BattleText battleNumber(int number, int fontSize = 12);
 // Starts this frame's description; endBattleMenu publishes it.
 void beginBattleMenu(pc::BattleMenuKind kind, int columns);
 void setBattleTitle(int value);

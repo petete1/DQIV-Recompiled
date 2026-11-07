@@ -39,7 +39,7 @@ std::map<std::string, pc::BattleText> s_texts;
 std::map<std::pair<int, int>, pc::BattleText> s_numbers;
 
 // Draws UTF-8 text into a private 4-bit buffer (never the DS menu buffers).
-pc::BattleText drawText(const char* text)
+pc::BattleText drawText(const char* text, int fontSize = 12)
 {
     enum { TILES_X = 40, TILES_Y = 3 };
     static unsigned char tiles[TILES_X * TILES_Y * 0x20];
@@ -47,14 +47,14 @@ pc::BattleText drawText(const char* text)
     initCharBuffer(&buffer, tiles, TILES_X, TILES_Y);
     MI_CpuFill(0, tiles, sizeof(tiles));
     const int size = g_BgText.size_;
-    setBgTextFontSize(12);
+    setBgTextFontSize(fontSize);
     drawBgText(&buffer, 0, 0, g_menuTextColors[0], text);
     pc::BattleText out;
     out.width = getBgTextWidth();
     if (out.width > TILES_X * 8) {
         out.width = TILES_X * 8;
     }
-    out.height = getBgTextLineHeight(12) + 2;
+    out.height = getBgTextLineHeight(fontSize) + 2;
     if (size == 10 || size == 12) {
         setBgTextFontSize(size);
     }
@@ -128,22 +128,23 @@ bool overlayMenus()
     return pc::gameSettings().battleMenus == 2;
 }
 
-pc::BattleText battleText(int value)
+pc::BattleText battleText(int value, int fontSize)
 {
     // Cached by the text itself: a value can name something a save changes (the hero).
     char buf[0x400];
     buf[0] = 0;
     extractText(value, buf, sizeof(buf));
-    auto found = s_texts.find(buf);
+    const std::string key = std::string(fontSize == 10 ? "10:" : "12:") + buf;
+    auto found = s_texts.find(key);
     if (found != s_texts.end()) {
         return found->second;
     }
-    return s_texts[buf] = drawText(buf);
+    return s_texts[key] = drawText(buf, fontSize);
 }
 
-pc::BattleText battleNumber(int number)
+pc::BattleText battleNumber(int number, int fontSize)
 {
-    const std::pair<int, int> key(number, TextAPI::m_lang);
+    const std::pair<int, int> key(number, TextAPI::m_lang + (fontSize == 10 ? 100 : 0));
     auto found = s_numbers.find(key);
     if (found != s_numbers.end()) {
         return found->second;
@@ -152,7 +153,7 @@ pc::BattleText battleNumber(int number)
     char text[0x100];
     dss::sprintf_s(buf, sizeof(buf), "%d", number);
     translateText(g_fullWidthCharTable, g_asciiCharTable, text, sizeof(text), buf);
-    return s_numbers[key] = drawText(text);
+    return s_numbers[key] = drawText(text, fontSize);
 }
 
 // "×n", as the monster name plates count a group.
@@ -399,18 +400,19 @@ void publishBattleParty()
         status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
         pc::BattlePartyRow row;
         row.name = battleText(info->haveStatus_.playerIndex_ + 0x50000000);
-        row.label = battleText(control->getCondition(i));   // "Lv.", or the member's condition
+        // The card's small text in the game's 10-dot font, as the DS status windows.
+        row.label = battleText(control->getCondition(i), 10);   // "Lv.", or the member's condition
         if (!control->isConditionChange(i)) {
-            row.level = battleNumber(info->haveStatus_.isBattleNpc_ ? 0 : info->haveStatus_.level_);
+            row.level = battleNumber(info->haveStatus_.isBattleNpc_ ? 0 : info->haveStatus_.level_, 10);
         }
         row.hpValue = control->memberHP_[i];
         row.hpMax = info->getHpMax();
         row.mpValue = control->memberMP_[i];
         row.mpMax = info->getMpMax();
-        row.hp = battleNumber(row.hpValue);
-        row.mp = battleNumber(row.mpValue);
-        row.hpLabel = battleText(0xa0000001);
-        row.mpLabel = battleText(0xa0000002);
+        row.hp = battleNumber(row.hpValue, 10);
+        row.mp = battleNumber(row.mpValue, 10);
+        row.hpLabel = battleText(0xa0000001, 10);
+        row.mpLabel = battleText(0xa0000002, 10);
         row.colour = control->getHPColor(i);
         row.active = control->activeChara_ == i;
         const int icon = info->haveStatus_.iconIndex_;

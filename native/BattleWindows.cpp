@@ -275,8 +275,10 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
         const std::uint32_t tone=row.colour==2?red:row.colour==1?yellow:cream;
         // The top line: the name at the left, the level (or condition) at the right.
         const int levelWidth=row.label.width+2+row.level.width;
-        blit(out,width,height,row.label,partyRight-levelWidth,top-1,row.label.width,palette,false,tone);
-        blit(out,width,height,row.level,partyRight-row.level.width,top-1,row.level.width,palette,false,tone);
+        // The small font on the name's baseline.
+        const int levelY=top-1+std::max(0,row.name.height-std::max(row.label.height,row.level.height));
+        blit(out,width,height,row.label,partyRight-levelWidth,levelY,row.label.width,palette,false,tone);
+        blit(out,width,height,row.level,partyRight-row.level.width,levelY,row.level.width,palette,false,tone);
         blit(out,width,height,row.name,partyInfo,top-1,std::max(0,partyRight-levelWidth-4-partyInfo),palette,false,row.colour?tone:green);
         const int barWidth=partyRight-partyInfo;
         for(int k=0;k<2;++k) {
