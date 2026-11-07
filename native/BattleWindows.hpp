@@ -24,6 +24,7 @@ struct BattlePartyRow {
     int hpValue=0,hpMax=0,mpValue=0,mpMax=0;
     int colour=0;                                      // the game's HP colour: 0 normal, 1 low, 2 down
     bool active=false;                                 // choosing a command now
+    bool ready=false;                                  // can still act this round: the card shows its background
 };
 // A line of the battle message window: the game's own rendered text.
 struct BattleMessageLine {BattleText text;int y=0,fullWidth=0;};  // y: DS pixels from the window's top; fullWidth: the whole line, typed or not

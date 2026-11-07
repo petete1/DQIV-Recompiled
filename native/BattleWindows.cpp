@@ -241,15 +241,16 @@ BattleGroupLayout layoutBattleParty(const BattleMenuState& state,int windowWidth
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
     if(state.party.empty())return layout;
     const int s=layout.scale,h=int(state.party.size())*partyRow;
-    layout.picture={windowWidth-(margin+partyWidth+battleCardSlide)*s,windowHeight-(margin+h)*s,(partyWidth+battleCardSlide)*s,h*s};
+    // The cards' background runs out to the window's right edge.
+    layout.picture={windowWidth-(margin+partyWidth+battleCardSlide)*s,windowHeight-(margin+h)*s,(partyWidth+battleCardSlide+margin)*s,h*s};
     return layout;
 }
 std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout,std::span<const float> slides) {
     if(layout.picture.w<=0)return {};
-    const int pictureWidth=partyWidth+battleCardSlide,pictureHeight=int(state.party.size())*partyRow;
+    const int pictureWidth=partyWidth+battleCardSlide+margin,pictureHeight=int(state.party.size())*partyRow;
     std::vector<std::uint32_t> picture(std::size_t(pictureWidth)*pictureHeight,0);
     // Each card is drawn on its own, then placed: the active one slid out to the left.
-    const int width=partyWidth,height=partyRow;
+    const int width=partyWidth+margin,height=partyRow;
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     std::array<std::uint32_t,16> white;white.fill(0xffffffff);
     // The palette the text inks map through: the menu text palette of the state.
@@ -262,10 +263,11 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
         const auto& row=state.party[r];
         const int top=0;
         std::fill(out.begin(),out.end(),0u);
-        // The strip: dark (lighter brown for the member choosing), fading in over its left part.
-        const std::uint32_t strip=row.active?0x403020:0x000000;
-        for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
-            const unsigned alpha=x<stripFade?0xa0u*unsigned(x)/stripFade:0xa0u;
+        // The strip, while the member can still act this round: a light dark brown (a little
+        // lighter for the member choosing), fading in over its left part.
+        const std::uint32_t strip=row.active?0x4a3c2c:0x2a2018;
+        if(row.ready)for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
+            const unsigned alpha=x<stripFade?0x80u*unsigned(x)/stripFade:0x80u;
             auto part=[&](unsigned shift){return (((strip>>shift)&255)*alpha/255)<<shift;};
             out[std::size_t(y)*width+x]=(alpha<<24)|part(16)|part(8)|part(0);
         }

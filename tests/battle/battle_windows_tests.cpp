@@ -285,7 +285,7 @@ pc::BattleMenuState partyOf(int members) {
     pc::BattleMenuState state;
     for(int i=0;i<members;++i) {
         pc::BattlePartyRow row;row.name=ink(40);row.hpValue=50;row.hpMax=100;row.mpValue=10;row.mpMax=20;
-        row.portrait.assign(48*48,1);state.party.push_back(row);
+        row.portrait.assign(48*48,1);row.ready=true;state.party.push_back(row);
     }
     return state;
 }
@@ -294,7 +294,7 @@ void partyInsideWindow() {
         const auto layout=pc::layoutBattleParty(partyOf(4),w,h);
         const auto& r=layout.picture;
         check(r.x>=0&&r.y>=0&&r.x+r.w<=w&&r.y+r.h<=h,"the party panel stays inside the window");
-        check(r.x+r.w==w-8*layout.scale,"the party panel 8 DS pixels from the right edge");
+        check(r.x+r.w==w,"the party panel's background reaches the right edge");
         check(r.y+r.h==h-8*layout.scale,"the party panel 8 DS pixels from the bottom");
         check(pc::composeBattleParty(partyOf(4),layout).size()==std::size_t(r.w/layout.scale)*(r.h/layout.scale),"a party picture at DS scale");
     }
@@ -367,6 +367,16 @@ void activeCardSlidesOut() {
     check(leftmost(20)+pc::battleCardSlide<=leftmost(50+20)+1,"the active card slides out to the left");
     check(pc::composeBattleParty(state,layout,{}).size()==pixels.size(),"the same picture without slides");
 }
+void stripOnlyWhenReady() {
+    auto state=partyOf(2);
+    state.party[0].ready=true;state.party[1].ready=false;
+    const auto layout=pc::layoutBattleParty(state,1920,1080);
+    const auto pixels=pc::composeBattleParty(state,layout);
+    const int w=layout.picture.w/layout.scale;
+    // Far right, past the text: only the background is there.
+    check((pixels[std::size_t(25)*w+w-2]>>24)!=0,"a member who can still act has the background, out to the edge");
+    check((pixels[std::size_t(50+25)*w+w-2]>>24)==0,"no background once acted, or unable to act");
+}
 }
 
 int main() {
@@ -397,6 +407,7 @@ int main() {
     partyInsideWindow();
     barWidths();
     activeCardSlidesOut();
+    stripOnlyWhenReady();
     messageInsideWindow();
     messageClearOfParty();
     messageWidthFromFullLine();

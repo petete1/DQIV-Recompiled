@@ -11,6 +11,9 @@
 
 THUMB void BattleMenu_ROOT::menuSetup()
 {
+#ifdef DQIV_NATIVE
+    clearBattleActed();   // a new round of commands: every member can act again
+#endif
     status::g_Party.setBattleMode();
     btl::BattleMenuPlayerControl::getSingleton()->clear();
     btl::BattleMenuPlayerControl::getSingleton()->activeChara_ = -1;

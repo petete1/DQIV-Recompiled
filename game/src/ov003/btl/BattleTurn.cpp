@@ -1,4 +1,7 @@
 #include "ov003/btl/BattleTurn.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 
 #pragma profile on
@@ -53,6 +56,10 @@ THUMB int btl::BattleTurn::checkEnd()
 
 THUMB void btl::BattleTurn::setup()
 {
+#ifdef DQIV_NATIVE
+    // Classic: the member's card loses its background as their turn starts (monsters: no card).
+    markBattleActed(battleActor_->characterStatus_);
+#endif
     battleActor_->setup();
 }
 

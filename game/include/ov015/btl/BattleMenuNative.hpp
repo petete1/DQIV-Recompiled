@@ -50,6 +50,11 @@ void publishBattleParty();
 // True when published: the DS window is then not drawn.
 struct MessageWindow;
 bool publishBattleMessage(MessageWindow* window);
+// The party cards' background shows while a member can still act this round:
+// a turn starting marks its actor, the next command phase clears the marks.
+namespace status { struct CharacterStatus; }
+void markBattleActed(status::CharacterStatus* chara);
+void clearBattleActed();
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

@@ -20,6 +20,7 @@
 #include "main/menu/MenuUpdateAssist.hpp"
 #include "main/status/UseAction.hpp"
 #include "main/status/PartyStatus.hpp"
+#include "main/status/CharacterStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "ov003/status/MonsterPartyWithDraw.hpp"
 #include "ov015/btl/BattleMenu.hpp"
@@ -384,6 +385,22 @@ void drawBattleUseOrEquip(int item, int active)
     endBattleMenu();
 }
 
+namespace {
+std::vector<const status::HaveStatusInfo*> s_acted;
+}
+
+void markBattleActed(status::CharacterStatus* chara)
+{
+    if (chara != NULL) {
+        s_acted.push_back(&chara->haveStatusInfo_);
+    }
+}
+
+void clearBattleActed()
+{
+    s_acted.clear();
+}
+
 void publishBattleParty()
 {
     pc::BattleMenuState& state = pc::battleMenuState();
@@ -415,6 +432,11 @@ void publishBattleParty()
         row.mpLabel = battleText(0xa0000002, 10);
         row.colour = control->getHPColor(i);
         row.active = control->activeChara_ == i;
+        bool acted = false;
+        for (size_t k = 0; k < s_acted.size(); k++) {
+            acted = acted || s_acted[k] == info;
+        }
+        row.ready = !acted && info->isActionEnable();
         const int icon = info->haveStatus_.iconIndex_;
         auto found = s_portraits.find(icon);
         if (found == s_portraits.end()) {
