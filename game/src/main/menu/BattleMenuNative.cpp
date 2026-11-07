@@ -49,6 +49,7 @@ pc::BattleMenuState s_building;
 // The Items window being built this frame (beginItemsWindow .. endItemsWindow): the panes
 // out of focus, built before the focused one, and what they show.
 pc::BattleItemsWindow s_items;
+std::vector<pc::BattleText> s_itemsHelp;   // the detail's description (whichever pane is built after it)
 std::vector<int> s_itemsKeys;
 bool s_itemsOpen = false;
 std::vector<int> s_keys, s_lastKeys;     // what the description shows, to tell when it changed
@@ -455,6 +456,9 @@ void endBattleMenu()
     if (s_itemsOpen) {
         s_building.items = s_items;
         s_building.items.shown = true;
+        if (s_building.help.empty()) {
+            s_building.help = s_itemsHelp;
+        }
         s_keys.insert(s_keys.end(), s_itemsKeys.begin(), s_itemsKeys.end());
         s_itemsOpen = false;
     }
@@ -936,6 +940,7 @@ void beginItemsWindow()
 {
     s_items = pc::BattleItemsWindow();
     s_items.title = battleText(menu::MenuDataCommon::getRootMenuName(TownMenu_ROOT::ROOT_ITEM));
+    s_itemsHelp.clear();
     s_itemsKeys.clear();
     s_itemsKeys.push_back(-4);
     s_itemsOpen = true;
@@ -977,7 +982,11 @@ void setItemsDetail(int item, status::HaveStatusInfo* owner, int bagIndex)
     const bool equipment = status::UseItem::getItemType(item) <= 4;
     s_items.kind = battleText(equipment ? menu::MenuDataCommon::getEquipKind(status::UseItem::getItemType(item)) : item + 0x40000000);
     s_items.icon = menuIcon(0xf0000000, item, 32);
+    std::vector<pc::BattleText> help;
+    help.swap(s_building.help);   // setBattleHelp adds to what is there
     setBattleHelp(status::UseItem::getMenuMessage(item));
+    s_itemsHelp.swap(s_building.help);
+    s_building.help = help;
     s_itemsKeys.push_back(item);
     s_itemsKeys.push_back(bagIndex);
     if (bagIndex >= 0) {
@@ -1018,6 +1027,25 @@ void endItemsWindow(pc::BattleItemsFocus focus, const status::HaveStatusInfo* sl
 bool itemsWindowOpen()
 {
     return s_itemsOpen;
+}
+
+void storeItemsChosen(bool whose)
+{
+    // The member (or the bag) and the item chosen so far, out of focus.
+    TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
+    status::g_Party.setPlayerMode();
+    if (whose) {
+        storeItemsWhose(control->activeFukuro_ ? status::g_Party.getCount() : control->activeChara_);
+    }
+    storeItemsList(control->activeChara_, control->activeFukuro_ != 0, control->activeItemPage_, control->activeItem_);
+}
+
+void setItemsChosenDetail(int item)
+{
+    TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
+    status::g_Party.setPlayerMode();
+    setItemsDetail(item, control->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_,
+                   control->activeFukuro_ ? control->getActiveItemIndexToAll() : -1);
 }
 
 void drawFieldItems(int chara, bool bag, int page, int active, int giver)

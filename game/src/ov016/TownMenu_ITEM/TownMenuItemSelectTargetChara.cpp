@@ -59,19 +59,13 @@ THUMB void TownMenuItemSelectTargetChara::menuDraw()
 {
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
-        // To whom (the members and the bag), under the item's name; the giver slides out.
-        status::g_Party.setPlayerMode();
+        // To whom (the members and the bag), the item still chosen in the list; the giver slides out.
+        beginItemsWindow();
+        storeItemsChosen(false);
         beginFieldMenu(pc::BattleMenuKind::list, 1);
-        setBattleTitle(giveItemID_ + 0x40000000);
-        const int count = status::g_Party.getCount();
-        for (int i = 0; i < count; i++) {
-            addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
-        }
-        if (status::g_Party.fukuro_ != 0) {
-            addBattleEntry(0x5000005b, (short)count, true);
-        }
-        setBattleCursor(menuItem_.active_);
-        endFieldMenu(TownMenu_ROOT::ROOT_ITEM, TownMenuPlayerControl::getSingleton()->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_);
+        addItemsWhose(menuItem_.active_);
+        setItemsChosenDetail(giveItemID_);
+        endItemsWindow(pc::BattleItemsFocus::whose, TownMenuPlayerControl::getSingleton()->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_);
         return;
     }
 #endif

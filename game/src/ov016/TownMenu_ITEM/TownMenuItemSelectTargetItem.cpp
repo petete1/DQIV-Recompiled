@@ -71,6 +71,9 @@ THUMB void TownMenuItemSelectTargetItem::menuDraw()
     int targetChara = TownMenuPlayerControl::getSingleton()->targetChara_;
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
+        beginItemsWindow();
+        status::g_Party.setPlayerMode();
+        storeItemsWhose(TownMenuPlayerControl::getSingleton()->targetFukuro_ ? status::g_Party.getCount() : targetChara);
         drawFieldItems(targetChara, TownMenuPlayerControl::getSingleton()->targetFukuro_ != 0, startPage_, menuItem_.active_,
                        TownMenuPlayerControl::getSingleton()->activeChara_);
         return;

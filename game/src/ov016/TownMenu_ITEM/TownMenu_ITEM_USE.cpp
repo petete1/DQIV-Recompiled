@@ -81,6 +81,9 @@ THUMB void TownMenu_ITEM_USE::menuDraw()
         TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
         status::g_Party.setPlayerMode();
         const status::HaveStatusInfo* user = control->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_;
+        beginItemsWindow();
+        storeItemsChosen(false);
+        setItemsChosenDetail(itemID_);
         drawBattlePartyTargetsPaged(itemID_ + 0x40000000, TownMenu_ROOT::ROOT_ITEM, user, page_, charaItem_.active_);
         return;
     }

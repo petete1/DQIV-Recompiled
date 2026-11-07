@@ -70,6 +70,9 @@ THUMB void TownMenuItemSelectItem::menuDraw()
     }
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
+        beginItemsWindow();
+        status::g_Party.setPlayerMode();
+        storeItemsWhose(TownMenuPlayerControl::getSingleton()->activeFukuro_ ? status::g_Party.getCount() : chara);
         drawFieldItems(chara, TownMenuPlayerControl::getSingleton()->activeFukuro_ != 0, page_, menuItem_.active_, -1);
         return;
     }

@@ -54,17 +54,16 @@ THUMB void TownMenuItemSelectChara::menuDraw()
     status::g_Party.setPlayerMode();
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
-        // The members and the bag (drawCharaSelectWindow), one column; the chosen member slides out.
-        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        // The members and the bag; the list previews the one under the cursor, whose card slides out.
         const int count = status::g_Party.getCount();
-        for (int i = 0; i < count; i++) {
-            addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+        const int hovered = menuItem_.active_;
+        beginItemsWindow();
+        if (hovered < count || status::g_Party.fukuro_ != 0) {
+            storeItemsList(hovered < count ? hovered : 0, hovered >= count, 0, -1);
         }
-        if (status::g_Party.fukuro_ != 0) {
-            addBattleEntry(0x5000005b, (short)count, true);
-        }
-        setBattleCursor(menuItem_.active_);
-        endFieldMenu(TownMenu_ROOT::ROOT_ITEM, menuItem_.active_ < count ? &status::g_Party.getPlayerStatus(menuItem_.active_)->haveStatusInfo_ : NULL);
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        addItemsWhose(hovered);
+        endItemsWindow(pc::BattleItemsFocus::whose, hovered < count ? &status::g_Party.getPlayerStatus(hovered)->haveStatusInfo_ : NULL);
         return;
     }
 #endif

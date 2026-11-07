@@ -106,13 +106,16 @@ THUMB void TownMenuItemSelectCommand::menuDraw()
         TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
         int list[6];
         const int count = getItemUseCommandList(commandFlag_, list);
+        beginItemsWindow();
+        storeItemsChosen(true);
         beginFieldMenu(pc::BattleMenuKind::list, 1);
         setBattleTitle(itemID_ + 0x40000000);
         for (int i = 0; i < count; i++) {
             addBattleEntry(list[i], (short)i, true);
         }
         setBattleCursor(menuItem_.active_);
-        endFieldMenu(TownMenu_ROOT::ROOT_ITEM, control->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_);
+        setItemsChosenDetail(itemID_);
+        endItemsWindow(pc::BattleItemsFocus::popup, control->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_);
         return;
     }
 #endif

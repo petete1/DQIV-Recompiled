@@ -80,6 +80,9 @@ void storeItemsList(int chara, bool bag, int page, int chosen);  // a member's o
 // The detail of item: owner its holder (NULL: the bag; no comparison), bagIndex the bag's slot (-1: a member's).
 void setItemsDetail(int item, status::HaveStatusInfo* owner, int bagIndex);
 void endItemsWindow(pc::BattleItemsFocus focus, const status::HaveStatusInfo* slid);
+// TownMenuPlayerControl's chosen member (whose: also the whose pane) and item, out of focus; its detail.
+void storeItemsChosen(bool whose);
+void setItemsChosenDetail(int item);
 // The spells actions[0..num), their kind icons, the chosen one's description and "cost/casterMp".
 void addBattleSpells(const int* actions, int num, int active, int casterMp);
 // The battle message window (Classic): its lines as the game rendered them.
