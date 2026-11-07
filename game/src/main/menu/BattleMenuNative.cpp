@@ -546,28 +546,34 @@ void drawBattleSpells(const int* actions, int count, int page, int active)
     setBattleTitle(0x80000005);
     int top;
     const int num = pageEntries(count, page, top);
+    setBattlePage(page, (count - 1) / 6 + 1);
+    addBattleSpells(actions + top, num, active,
+                    status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_.getMp());
+    endBattleMenu();
+}
+
+void addBattleSpells(const int* actions, int num, int active, int casterMp)
+{
     for (int i = 0; i < num; i++) {
-        addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true);
+        addBattleEntry(getActionNameMessage(actions[i]), (short)i, true);
         static std::vector<std::uint32_t> s_kinds[5];
-        const int kind = (int)spellKind(actions[top + i]);
+        const int kind = (int)spellKind(actions[i]);
         if (s_kinds[kind].empty()) {
             s_kinds[kind] = pc::battleSpellIcon((pc::BattleSpellKind)kind);
         }
         s_building.entries.back().icon = s_kinds[kind];
         s_keys.push_back(kind);
     }
-    setBattlePage(page, (count - 1) / 6 + 1);
     if (active >= 0 && active < num) {
-        const int action = actions[top + active];
+        const int action = actions[active];
         setBattleHelp(status::UseAction::getMenuMessage(action));
         // The MP cost, unless it takes all the MP (0xff, 1000: drawMagicCommandHeader).
         const int mp = status::UseAction::getUseMp(action);
         if (mp > 0 && mp != 0xff && mp != 1000) {
-            setBattleCost(mp, status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_.getMp());
+            setBattleCost(mp, casterMp);
         }
     }
     setBattleCursor((short)active);
-    endBattleMenu();
 }
 
 void drawBattleItems(const int* items, int count, int page, int active)
@@ -878,15 +884,9 @@ void drawFieldItems(int chara, bool bag, int page, int active, int giver)
     endFieldMenu(TownMenu_ROOT::ROOT_ITEM, giver >= 0 ? &status::g_Party.getPlayerStatus(giver)->haveStatusInfo_ : owner);
 }
 
-void drawBattlePartyTargetsPaged(int title, int page, int active)
+void drawBattlePartyTargetsPaged(int title, int rootCommand, const status::HaveStatusInfo* user, int page, int active)
 {
     // The party in battle order, 4 a page (drawPartyHpMpList), under the item or spell.
-    const status::HaveStatusInfo* user = NULL;
-    TownMenuPlayerControl* control = TownMenuPlayerControl::getSingleton();
-    status::g_Party.setPlayerMode();
-    if (!control->activeFukuro_) {
-        user = &status::g_Party.getPlayerStatus(control->activeChara_)->haveStatusInfo_;
-    }
     status::g_Party.setBattleMode();
     const int count = status::g_Party.getCount();
     beginFieldMenu(pc::BattleMenuKind::targetParty, 1);
@@ -898,10 +898,11 @@ void drawBattlePartyTargetsPaged(int title, int page, int active)
         setBattlePage(page, (count - 1) / 4 + 1);
     }
     setBattleCursor((short)active);
-    endFieldMenu((title & 0xf0000000) == 0x40000000 ? TownMenu_ROOT::ROOT_ITEM : TownMenu_ROOT::ROOT_MAGIC, user);
+    status::g_Party.setPlayerMode();
+    endFieldMenu(rootCommand, user);
 }
 
-void drawFieldTowns(int rootCommand, int chara, int page, const unsigned char* towns, int count, int active)
+void drawFieldTowns(int rootCommand, const status::HaveStatusInfo* user, int page, const unsigned char* towns, int count, int active)
 {
     // drawRuraTownList's towns, 8 a page in two columns.
     beginFieldMenu(pc::BattleMenuKind::list, 2);
@@ -912,8 +913,7 @@ void drawFieldTowns(int rootCommand, int chara, int page, const unsigned char* t
         setBattlePage(page, (count - 1) / 8 + 1);
     }
     setBattleCursor((short)active);
-    status::g_Party.setPlayerMode();
-    endFieldMenu(rootCommand, chara >= 0 ? &status::g_Party.getPlayerStatus(chara)->haveStatusInfo_ : NULL);
+    endFieldMenu(rootCommand, user);
 }
 #endif
 

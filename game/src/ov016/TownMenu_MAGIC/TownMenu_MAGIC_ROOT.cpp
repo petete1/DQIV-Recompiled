@@ -21,6 +21,10 @@
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
+
 THUMB void TownMenu_MAGIC_ROOT::menuSetup()
 {
     status::g_Party.setBattleMode();
@@ -73,6 +77,29 @@ THUMB void TownMenu_MAGIC_ROOT::menuDraw()
         mp1 = statusInfo.getMp();
         mp2 = status::UseAction::getUseMp(magicArray_[activeMagic_]);
     }
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        // First who casts (the members, one column), then their spells as in battle; the caster slides out.
+        const int count = status::g_Party.getCount();
+        if (mode_ == 0) {
+            beginFieldMenu(pc::BattleMenuKind::list, 1);
+            for (int i = 0; i < count; i++) {
+                addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+            }
+            setBattleCursor(charaItem_.active_);
+        } else {
+            int actions[16];
+            for (int i = 0; i < magicNumMax_ && i < 16; i++) {
+                actions[i] = magicArray_[i];
+            }
+            beginFieldMenu(pc::BattleMenuKind::spells, 2);
+            setBattleTitle(statusInfo.haveStatus_.playerIndex_ + 0x50000000);
+            addBattleSpells(actions, magicNumMax_ < 16 ? magicNumMax_ : 16, activeMagic_, statusInfo.getMp());
+        }
+        endFieldMenu(TownMenu_ROOT::ROOT_MAGIC, &statusInfo);
+        return;
+    }
+#endif
     drawMagicRootScreen(mp1, mp2, magicArray_[activeMagic_], activeChara_, mode_);
     if (!g_TownMenuMessage.isOpen()) {
         if (mode_ == 0) {
@@ -125,7 +152,11 @@ THUMB void TownMenu_MAGIC_ROOT::menuUpdate()
     }
     if (mode_ == 0) {
         charaNavigator_.setup(5, 2, status::g_Party.getCount());
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(charaItem_, charaNavigator_) : MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#endif
         if (result != 0) {
             if (result == 2) {
                 if (magicNumMax_ == 0) {
@@ -154,7 +185,11 @@ THUMB void TownMenu_MAGIC_ROOT::menuUpdate()
         return;
     }
     magicNavigator_.setup(2, 4, magicNumMax_);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(magicItem_, magicNavigator_) : MenuUpdate_Assist::menuSelect(magicItem_, magicNavigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(magicItem_, magicNavigator_);
+#endif
     if (result != 0) {
         activeMagic_ = magicItem_.active_;
         TownMenuPlayerControl::getSingleton()->setActiveMagic(activeMagic_);

@@ -64,10 +64,12 @@ void endFieldMenu(int rootCommand, const status::HaveStatusInfo* active);
 void addBattleItems(const int* items, int count, int page, int active, status::HaveStatusInfo* owner);
 // Field item lists: a member's (or the bag's) items; giver >= 0: a swap's target list with an empty slot.
 void drawFieldItems(int chara, bool bag, int page, int active, int giver);
-// The party, 4 a page, under an item's (0x4...) or a spell's name.
-void drawBattlePartyTargetsPaged(int title, int page, int active);
-// The towns of a Chimaera Wing or Zoom (drawRuraTownList), under the root command; chara -1: the bag.
-void drawFieldTowns(int rootCommand, int chara, int page, const unsigned char* towns, int count, int active);
+// The party, 4 a page, under an item's or a spell's name (user: the card slid out, may be NULL).
+void drawBattlePartyTargetsPaged(int title, int rootCommand, const status::HaveStatusInfo* user, int page, int active);
+// The towns of a Chimaera Wing or Zoom (drawRuraTownList), under the root command.
+void drawFieldTowns(int rootCommand, const status::HaveStatusInfo* user, int page, const unsigned char* towns, int count, int active);
+// The spells actions[0..num), their kind icons, the chosen one's description and "cost/casterMp".
+void addBattleSpells(const int* actions, int num, int active, int casterMp);
 // The battle message window (Classic): its lines as the game rendered them.
 // True when published: the DS window is then not drawn.
 struct MessageWindow;

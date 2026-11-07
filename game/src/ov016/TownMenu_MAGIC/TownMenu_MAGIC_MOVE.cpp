@@ -17,6 +17,10 @@
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
+
 THUMB void TownMenu_MAGIC_MOVE::menuSetup()
 {
     status::g_Party.setBattleMode();
@@ -70,6 +74,13 @@ THUMB void TownMenu_MAGIC_MOVE::menuExecute()
 THUMB void TownMenu_MAGIC_MOVE::menuDraw()
 {
     status::g_Party.setBattleMode();
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        drawFieldTowns(TownMenu_ROOT::ROOT_MAGIC, &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_, pageStart_, moveTown_, moveCount_,
+                       menuItem_.active_);
+        return;
+    }
+#endif
     drawWarpTownSelectScreen(status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_.getMp(), status::UseAction::getUseMp(0xcb), activeChara_, pageStart_, moveTown_);
     if (!g_TownMenuMessage.isOpen()) {
         menuItem_.drawActive();
@@ -109,7 +120,11 @@ THUMB void TownMenu_MAGIC_MOVE::menuUpdate()
         return;
     }
     navigator_.setup(2, 4, moveCount_);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             moveTown();
