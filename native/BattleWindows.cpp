@@ -245,12 +245,14 @@ BattleGroupLayout layoutBattleParty(const BattleMenuState& state,int windowWidth
     layout.picture={windowWidth-(margin+partyWidth+battleCardSlide)*s,windowHeight-(margin+h)*s,(partyWidth+battleCardSlide+margin)*s,h*s};
     return layout;
 }
-std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout,std::span<const float> slides) {
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const BattleGroupLayout& layout,std::span<const float> slides,
+    std::span<const float> backs) {
     if(layout.picture.w<=0)return {};
     const int pictureWidth=partyWidth+battleCardSlide+margin,pictureHeight=int(state.party.size())*partyRow;
     std::vector<std::uint32_t> picture(std::size_t(pictureWidth)*pictureHeight,0);
-    // Each card is drawn on its own, then placed: the active one slid out to the left.
-    const int width=partyWidth+margin,height=partyRow;
+    // Each card is drawn on its own, then placed: the active one slid out to the left,
+    // its background still out to the edge.
+    const int width=pictureWidth,height=partyRow;
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     std::array<std::uint32_t,16> white;white.fill(0xffffffff);
     // The palette the text inks map through: the menu text palette of the state.
@@ -266,8 +268,10 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
         // The strip, while the member can still act this round: a light dark brown (a little
         // lighter for the member choosing), fading in over its left part.
         const std::uint32_t strip=row.active?0x4a3c2c:0x2a2018;
-        if(row.ready)for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
-            const unsigned alpha=x<stripFade?0x80u*unsigned(x)/stripFade:0x80u;
+        const float back=std::clamp(r<backs.size()?backs[r]:row.ready?1.f:0.f,0.f,1.f);
+        const unsigned full=unsigned(std::lround(0x80*back));
+        if(full)for(int y=top;y<top+partyRow-1;++y)for(int x=0;x<width;++x) {
+            const unsigned alpha=x<stripFade?full*unsigned(x)/stripFade:full;
             auto part=[&](unsigned shift){return (((strip>>shift)&255)*alpha/255)<<shift;};
             out[std::size_t(y)*width+x]=(alpha<<24)|part(16)|part(8)|part(0);
         }
@@ -293,7 +297,7 @@ std::vector<std::uint32_t> composeBattleParty(const BattleMenuState& state,const
         }
         const float slide=r<slides.size()?std::clamp(slides[r],0.f,1.f):0.f;
         const int x=battleCardSlide-int(std::lround(slide*battleCardSlide));
-        for(int y=0;y<height;++y)std::copy_n(out.data()+std::size_t(y)*width,width,picture.data()+std::size_t(int(r)*partyRow+y)*pictureWidth+x);
+        for(int y=0;y<height;++y)std::copy_n(out.data()+std::size_t(y)*width,width-x,picture.data()+std::size_t(int(r)*partyRow+y)*pictureWidth+x);
     }
     return picture;
 }

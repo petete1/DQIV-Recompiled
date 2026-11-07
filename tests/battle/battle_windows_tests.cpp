@@ -377,6 +377,23 @@ void stripOnlyWhenReady() {
     check((pixels[std::size_t(25)*w+w-2]>>24)!=0,"a member who can still act has the background, out to the edge");
     check((pixels[std::size_t(50+25)*w+w-2]>>24)==0,"no background once acted, or unable to act");
 }
+void slidCardBackgroundToEdge() {
+    auto state=partyOf(1);state.party[0].ready=true;state.party[0].active=true;
+    const auto layout=pc::layoutBattleParty(state,1920,1080);
+    const std::array<float,1> slides{1.f};
+    const auto pixels=pc::composeBattleParty(state,layout,slides);
+    const int w=layout.picture.w/layout.scale;
+    check((pixels[std::size_t(25)*w+w-1]>>24)==0x80,"the slid card's background still reaches the edge");
+}
+void backgroundFades() {
+    auto state=partyOf(2);state.party[0].ready=true;state.party[1].ready=false;
+    const auto layout=pc::layoutBattleParty(state,1920,1080);
+    const std::array<float,2> slides{0.f,0.f},backs{0.5f,0.5f};
+    const auto pixels=pc::composeBattleParty(state,layout,slides,backs);
+    const int w=layout.picture.w/layout.scale;
+    check((pixels[std::size_t(25)*w+w-2]>>24)==0x40,"a background half faded in");
+    check((pixels[std::size_t(50+25)*w+w-2]>>24)==0x40,"a background half faded out");
+}
 void plateLook() {
     pc::BattlePlate plate;plate.text=ink(40);plate.tone=1;
     int w=0,h=0;
@@ -414,6 +431,8 @@ int main() {
     partyInsideWindow();
     barWidths();
     activeCardSlidesOut();
+    slidCardBackgroundToEdge();
+    backgroundFades();
     stripOnlyWhenReady();
     plateLook();
     messageInsideWindow();

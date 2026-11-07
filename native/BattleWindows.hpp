@@ -69,8 +69,10 @@ struct BattleGroupLayout {int scale=1;BattleRect picture;};
 BattleGroupLayout layoutBattleParty(const BattleMenuState&,int windowWidth,int windowHeight);
 // How far (DS pixels) the active member's card slides out to the left.
 inline constexpr int battleCardSlide=12;
-// slides: per row, 0 in place .. 1 slid out (missing rows: 0).
-std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&,std::span<const float> slides={});
+// slides: per row, 0 in place .. 1 slid out (missing rows: 0); backs: per row, the
+// background's opacity 0..1 (missing rows: 1 when ready, else 0).
+std::vector<std::uint32_t> composeBattleParty(const BattleMenuState&,const BattleGroupLayout&,std::span<const float> slides={},
+    std::span<const float> backs={});
 // The message window: bottom centre of the room left of the party panel, as
 // wide as its widest line and 240 DS pixels at least (that room at most), as
 // tall as the game's, moved by its shake; picture.w 0 when not shown.
