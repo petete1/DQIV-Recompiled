@@ -6,6 +6,11 @@ namespace pc {
 namespace {
 // DS pixels.
 constexpr int margin=8,gap=4,pad=8,row=16,cursorWidth=14,columnGap=16,border=2,rightGap=8;
+// A list's header (title, pager, a line under them); the description (10-dot lines, its
+// text 200 wide at most, beside the list when that leaves this much, else above it).
+constexpr int headerHeight=row+4,helpRow=12,helpSpace=3,helpWidth=200,helpBeside=96;
+// The party panel's room at the right (BattleWindows' party constants below).
+constexpr int partyRoom=132+12;
 // The DQ11-like look: see-through brown panels (premultiplied), a tan border inset 2 pixels, cream text.
 constexpr std::uint32_t fill=0xe0281810,tan=0xffb89870,cream=0xfff4ead8,gold=0xfff0c040,goldEdge=0xff806010;
 // What a window shows, in DS pixels relative to the picture.
@@ -16,6 +21,8 @@ struct Plan {
     Box titleBox;bool titleOnBorder=false;   // where the title text goes
     int labelWidth=0,rightWidth=0;          // a column's label and right parts
     int footerY=-1;                          // the footer row (picture coordinates)
+    int headerY=-1;                          // a list's header row
+    Box help;bool described=false;           // the description's text area; windows[1] is its window
 };
 bool listed(BattleMenuKind kind) {return kind!=BattleMenuKind::none&&kind!=BattleMenuKind::message;}
 // The commands and root windows carry their entries; the others show the
@@ -30,42 +37,64 @@ Plan plan(const BattleMenuState& state,int width) {
         p.picture={margin,0,p.windows[0].w,h};
         return p;
     }
-    int left=0;
-    const bool nameWindow=!ownWindow(state.kind)&&state.title.width>0;
-    if(nameWindow) {
-        const int w=state.title.width+2*pad;
-        p.windows.push_back({0,0,w,state.title.height+2*pad});p.titleBox={pad,pad,state.title.width,state.title.height};
-        left=w+gap;
-    }
     const int columns=std::max(1,state.columns),count=int(state.entries.size());
     for(const auto& e:state.entries) {
         p.labelWidth=std::max(p.labelWidth,e.label.width);p.rightWidth=std::max(p.rightWidth,e.right.width);
     }
     auto columnWidth=[&] {return cursorWidth+p.labelWidth+(p.rightWidth?rightGap+p.rightWidth:0);};
     // Cut the labels so the window fits the game window.
-    const int room=width-2*margin-left-2*pad-(columns-1)*columnGap;
+    const int room=width-2*margin-2*pad-(columns-1)*columnGap;
     if(columnWidth()*columns>room)p.labelWidth=std::max(0,room/columns-cursorWidth-(p.rightWidth?rightGap+p.rightWidth:0));
     const int rows=(count+columns-1)/columns;
-    const bool footer=state.footer.width>0||state.pages>1;
+    const bool footer=state.footer.width>0;
+    // Lists: the title and the pager in a row of their own; root and commands: the title on the border.
+    const bool header=!ownWindow(state.kind)&&(state.title.width>0||state.pages>1);
+    const int pagerWidth=state.pages>1?state.pageText.width+18:0;
     int titleHeight=0;
     if(ownWindow(state.kind)&&state.title.width>0) {p.titleOnBorder=true;titleHeight=state.title.height/2;}
-    const int innerWidth=std::max(columns*columnWidth()+(columns-1)*columnGap,ownWindow(state.kind)?state.title.width+4:0);
-    const int w=innerWidth+2*pad,h=titleHeight+2*pad+std::max(rows,1)*row+(footer?row:0);
-    p.windows.push_back({left,0,w,h});
-    if(p.titleOnBorder)p.titleBox={left+pad,0,state.title.width,state.title.height};
+    const int top=titleHeight+(header?headerHeight:0);
+    const int innerWidth=std::max({columns*columnWidth()+(columns-1)*columnGap,ownWindow(state.kind)?state.title.width+4:0,
+        header?state.title.width+(pagerWidth?pagerWidth+columnGap:0):0});
+    const int w=innerWidth+2*pad,h=top+2*pad+std::max(rows,1)*row+(footer?row:0);
+    p.windows.push_back({0,0,w,h});
+    if(p.titleOnBorder)p.titleBox={pad,0,state.title.width,state.title.height};
+    if(header) {p.headerY=titleHeight+pad;p.titleBox={pad,p.headerY+(row-state.title.height)/2,state.title.width,state.title.height};}
     for(int i=0;i<count;++i)
-        p.entries.push_back({left+pad+(i%columns)*(columnWidth()+columnGap),titleHeight+pad+(i/columns)*row,columnWidth(),row});
-    if(footer)p.footerY=titleHeight+pad+std::max(rows,1)*row;
-    // Every window ends on the same bottom line.
+        p.entries.push_back({pad+(i%columns)*(columnWidth()+columnGap),top+pad+(i/columns)*row,columnWidth(),row});
+    if(footer)p.footerY=top+pad+std::max(rows,1)*row;
+    // The description: at the right of the list when there is room left of the party panel, else above it.
+    if(!state.help.empty()||state.cost.width>0) {
+        const int right=state.party.empty()?width-margin:width-margin-partyRoom-gap;
+        const int beside=std::min(helpWidth,right-margin-w-gap-2*pad);
+        const int textWidth=beside>=helpBeside?beside:w-2*pad;
+        const int lines=state.help.empty()?0:int(wrapBattleWords(state.help,textWidth,helpSpace).size());
+        const int dh=2*pad+lines*helpRow+(state.cost.width>0?row+4:0);
+        p.described=true;
+        if(beside>=helpBeside)p.windows.push_back({w+gap,0,textWidth+2*pad,std::max(h,dh)});
+        else p.windows.push_back({0,-(dh+gap),w,dh});
+        const auto& d=p.windows.back();
+        p.help={d.x+pad,d.y+pad,textWidth,d.h-2*pad};
+    }
+    // Windows side by side end on the same bottom line; then all moves down to start at 0.
     int bottom=0;
-    for(const auto& box:p.windows)bottom=std::max(bottom,box.h);
-    for(auto& box:p.windows)box.y=bottom-box.h;
-    if(nameWindow)p.titleBox.y=p.windows.front().y+pad;
-    const int shift=p.windows.back().y;
+    for(const auto& box:p.windows)if(box.y>=0)bottom=std::max(bottom,box.h);
+    auto& list=p.windows.front();
+    const int shift=bottom-list.h;
+    list.y=shift;
+    if(p.described&&p.windows[1].y>=0) {p.windows[1].y=bottom-p.windows[1].h;p.help.y=p.windows[1].y+pad;}
     for(auto& e:p.entries)e.y+=shift;
-    if(p.titleOnBorder)p.titleBox.y+=shift;
+    if(p.titleOnBorder||header)p.titleBox.y+=shift;
     if(p.footerY>=0)p.footerY+=shift;
-    p.picture={margin,0,p.windows.back().x+p.windows.back().w,bottom};
+    if(p.headerY>=0)p.headerY+=shift;
+    if(p.described&&p.windows[1].y<0) {p.windows[1].y+=shift;p.help.y+=shift;}
+    int topmost=0,rightmost=0;
+    for(const auto& box:p.windows) {topmost=std::min(topmost,box.y);rightmost=std::max(rightmost,box.x+box.w);}
+    for(auto& box:p.windows)box.y-=topmost;
+    for(auto& e:p.entries)e.y-=topmost;
+    p.titleBox.y-=topmost;p.help.y-=topmost;
+    if(p.footerY>=0)p.footerY-=topmost;
+    if(p.headerY>=0)p.headerY-=topmost;
+    p.picture={margin,0,rightmost,bottom-topmost};
     return p;
 }
 void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText& text,int x,int y,int maxWidth,
@@ -101,12 +130,16 @@ void frame(std::vector<std::uint32_t>& out,int width,const Box& box,bool curls=t
         out[std::size_t(box.y+y)*width+box.x+x]=colour;
     }
 }
-// ▶ (or ◀) of the page marks: 5 wide, 9 tall.
+// ▶ (or ◀) of the pager: 5 wide, 9 tall, gold.
 void triangle(std::vector<std::uint32_t>& out,int width,int x,int y,bool right) {
     for(int ty=0;ty<9;++ty) {
         const int span=5-std::abs(ty-4);
-        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+4-tx)]=tan;
+        for(int tx=0;tx<span;++tx)out[std::size_t(y+ty)*width+(right?x+tx:x+4-tx)]=gold;
     }
+}
+// A tan line across a window's inside.
+void rule(std::vector<std::uint32_t>& out,int width,int x,int y,int w) {
+    for(int i=0;i<w;++i)out[std::size_t(y)*width+x+i]=tan;
 }
 // The cursor: a golden hand pointing right, 11 wide, 7 tall.
 void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
@@ -119,12 +152,28 @@ void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
 }
 
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
+std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space) {
+    std::vector<int> starts;
+    int x=0;
+    for(int i=0;i<int(words.size());++i) {
+        const int w=words[std::size_t(i)].width;
+        if(w==0) {starts.push_back(i+1);x=0;continue;}  // a break: the next word starts a line
+        if(starts.empty()||(x>0&&x+space+w>width)) {
+            if(starts.empty()||starts.back()!=i)starts.push_back(i);
+            x=w;
+        } else x+=(x>0?space:0)+w;
+    }
+    // A break at the very end starts no line.
+    while(!starts.empty()&&starts.back()>=int(words.size()))starts.pop_back();
+    return starts;
+}
 int battleScale(int windowHeight) {return std::max(1,windowHeight/270);}
 BattleMenuLayout layoutBattleMenu(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleMenuLayout layout;layout.scale=battleScale(windowHeight);
     const int s=layout.scale;
     const auto p=plan(state,windowWidth/s);
     if(p.windows.empty())return layout;
+    layout.planWidth=windowWidth/s;
     const int top=windowHeight/s-margin-p.picture.h;
     layout.picture={p.picture.x*s,top*s,p.picture.w*s,p.picture.h*s};
     auto place=[&](const Box& b) {return BattleRect{(p.picture.x+b.x)*s,(top+b.y)*s,b.w*s,b.h*s};};
@@ -151,8 +200,8 @@ int moveBattleCursor(const BattleMenuState& state,int cursor,int direction) {
 std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const BattleMenuLayout& layout,int blinkFrame) {
     if(layout.windows.empty())return {};
     const int s=layout.scale,width=layout.picture.w/s,height=layout.picture.h/s;
-    // The same plan as the layout: labels already cut to the picture fit it again.
-    const auto p=plan(state,width+2*margin);
+    // The same plan as the layout.
+    const auto p=plan(state,layout.planWidth>0?layout.planWidth:width+2*margin);
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     // The layout's windows in DS pixels relative to the picture.
     for(const auto& w:layout.windows)
@@ -173,20 +222,37 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
             blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
         if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);
     }
-    if(p.footerY>=0) {
-        const auto& list=p.windows.back();
-        const int y=p.footerY+dy;
-        if(state.footer.width>0)blit(out,width,height,state.footer,list.x+pad+cursorWidth,y+(row-state.footer.height)/2,
+    const auto& list=p.windows.front();
+    if(p.footerY>=0&&state.footer.width>0)
+        blit(out,width,height,state.footer,list.x+pad+cursorWidth,p.footerY+dy+(row-state.footer.height)/2,
             list.w-2*pad-cursorWidth,state.palette,false);
+    if(p.headerY>=0) {
+        const int y=p.headerY+dy;
+        rule(out,width,list.x+pad-2,y+row+1,list.w-2*pad+4);
         if(state.pages>1) {
-            // ◀ one dot per page (the current one larger) ▶, at the right.
-            int x=list.x+list.w-pad-(state.pages*4+14);
-            triangle(out,width,x,y+(row-9)/2,false);x+=7;
-            for(int i=0;i<state.pages;++i,x+=4) {
-                const int size=i==state.page?3:1,cy=y+row/2-size/2;
-                for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx)out[std::size_t(cy+yy)*width+x+xx]=tan;
-            }
-            triangle(out,width,x+1,y+(row-9)/2,true);
+            // ◀ 1/3 ▶ at the right of the header.
+            int x=list.x+list.w-pad-state.pageText.width-18;
+            triangle(out,width,x,y+(row-9)/2,false);x+=9;
+            blit(out,width,height,state.pageText,x,y+(row-state.pageText.height)/2,state.pageText.width,state.palette,false);
+            triangle(out,width,x+state.pageText.width+4,y+(row-9)/2,true);
+        }
+    }
+    if(p.described) {
+        const auto& box=p.help;const int y0=box.y+dy;
+        const int costHeight=state.cost.width>0?row+4:0,textBottom=y0+box.h-costHeight;
+        const auto lines=wrapBattleWords(state.help,box.w,helpSpace);
+        for(std::size_t l=0;l<lines.size();++l) {
+            const int y=y0+int(l)*helpRow;
+            if(y+helpRow>textBottom)break;
+            const int end=l+1<lines.size()?lines[l+1]:int(state.help.size());
+            for(int i=lines[l],x=box.x;i<end;x+=state.help[std::size_t(i)].width+helpSpace,++i)
+                blit(out,width,height,state.help[std::size_t(i)],x,y,box.x+box.w-x,state.palette,false);
+        }
+        if(costHeight) {
+            const int y=y0+box.h-row;
+            rule(out,width,box.x-2,y-3,box.w+4);
+            blit(out,width,height,state.costLabel,box.x,y+(row-state.costLabel.height)/2,box.w,state.palette,false);
+            blit(out,width,height,state.cost,box.x+box.w-state.cost.width,y+(row-state.cost.height)/2,state.cost.width,state.palette,false);
         }
     }
     return out;

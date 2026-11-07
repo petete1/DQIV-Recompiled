@@ -45,6 +45,9 @@ struct BattleMenuState {
     int columns=1;                    // 1 list, 2 two columns
     int cursor=-1;                    // entries index of the game's active_
     int page=0,pages=1;
+    BattleText pageText;              // "1/3" of the pager in a list's header (pages > 1)
+    std::vector<BattleText> help;     // the description's words (10-dot; an empty one breaks the line)
+    BattleText costLabel,cost;        // at the description's bottom: "MP" and "cost/MP" (may be empty)
     bool waiting=true;
     std::array<std::uint32_t,16> palette{};  // ARGB of BG palette 15
     std::uint32_t revision=0;         // changes whenever anything above changes
@@ -53,6 +56,9 @@ struct BattleMenuState {
     BattleMessage message;                           // the battle message window (Classic)
     std::vector<BattlePlate> plates;                 // the monster name plates (Classic)
 };
+// The words in lines at most width wide (a word of width 0 breaks the line):
+// the index of each line's first word.
+std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space);
 // Filled by the game each frame (kind none when no battle menu draws).
 BattleMenuState& battleMenuState();
 struct BattleRect {int x=0,y=0,w=0,h=0;}; // game window pixels
@@ -61,6 +67,7 @@ struct BattleMenuLayout {
     std::vector<BattleRect> windows;      // frames, in drawing order
     std::vector<BattleRect> entries;      // one per state entry (hit areas)
     BattleRect picture;                   // where the composed picture goes
+    int planWidth=0;                      // the game window's width in DS pixels, as laid out
 };
 int battleScale(int windowHeight);
 // A group drawn on its own (the party panel, the message window): where its picture goes.

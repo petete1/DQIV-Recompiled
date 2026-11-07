@@ -31,8 +31,9 @@ struct TOUCHRECT;
 // Target menus: one entry per monster group (the first of its touch
 // rectangles, as the game's own group-to-group moves land), or per member;
 // the windows show the active member's name beside them.
-void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active);
-void drawBattlePartyTargets(int count, int active);
+// title: the list header's text (the command chosen).
+void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active, int title);
+void drawBattlePartyTargets(int count, int active, int title);
 // After MenuItem::execInput in a menu that reads it directly (targets, use or
 // equip): the pointer and the direction keys choose an entry of the list,
 // reported as the item's own "changed" result (a target menu then switches

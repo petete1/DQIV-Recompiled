@@ -24,7 +24,7 @@ THUMB void BattleMenu_MAGIC2PARTY::menuDraw()
 {
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
-        drawBattlePartyTargets(partyMax_, menuItem_.active_);
+        drawBattlePartyTargets(partyMax_, menuItem_.active_, 0x80000005);
         return;
     }
 #endif

@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace {
 int failures=0;
@@ -43,13 +44,55 @@ void rootAtBottomLeft() {
     check(layout.windows[0].x==8*4,"root window 8 DS pixels from the left");
     check(layout.windows[0].y+layout.windows[0].h==1080-8*4,"root window 8 DS pixels from the bottom");
 }
-void listBesideCommands() {
-    auto state=menu(pc::BattleMenuKind::spells,8,2);state.title=ink(30);
+void listHeader() {
+    auto state=menu(pc::BattleMenuKind::spells,6,2);state.title=ink(30);state.pages=3;state.pageText=ink(20);
     const auto layout=pc::layoutBattleMenu(state,1920,1080);
-    check(layout.windows.size()==2,"spells show the commands window and the list");
+    check(layout.windows.size()==1,"the title and pager in the list's own window");
+    if(layout.windows.empty()||layout.entries.empty())return;
+    check(layout.entries[0].y>=layout.windows[0].y+(8+16)*4,"the entries under the header row");
+    check(layout.entries.size()==6,"one hit area per entry");
+}
+pc::BattleMenuState described(int labelWidth) {
+    auto state=menu(pc::BattleMenuKind::spells,6,2,labelWidth);state.title=ink(30);
+    for(int i=0;i<8;++i)state.help.push_back(ink(30,10));
+    state.costLabel=ink(12,10);state.cost=ink(20,10);
+    for(int i=0;i<4;++i)state.party.push_back({});
+    return state;
+}
+void descriptionBeside() {
+    const auto state=described(40);
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    check(layout.windows.size()==2,"the list and its description");
     if(layout.windows.size()<2)return;
-    check(layout.windows[1].x>=layout.windows[0].x+layout.windows[0].w+4*4,"the list opens beside the commands");
-    check(layout.entries.size()==8,"one hit area per entry");
+    const auto& list=layout.windows[0];const auto& desc=layout.windows[1];
+    check(desc.x>=list.x+list.w+4*2,"the description at the right of the list");
+    check(desc.y+desc.h==list.y+list.h,"on the same bottom line");
+    const auto party=pc::layoutBattleParty(state,1280,720);
+    check(desc.x+desc.w<=party.picture.x,"clear of the party panel");
+}
+void descriptionDrawn() {
+    const auto state=described(40);
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    if(layout.windows.size()<2) {check(false,"the list and its description");return;}
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    const int s=layout.scale,w=layout.picture.w/s;
+    const auto& d=layout.windows[1];
+    const int x=(d.x-layout.picture.x)/s+8+2,y=(d.y-layout.picture.y)/s+8+2;
+    check(pixels[std::size_t(y)*w+x]==0xfff4ead8u,"the description's words drawn in it");
+}
+void descriptionAboveWhenNarrow() {
+    const auto state=described(100);
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    if(layout.windows.size()<2) {check(false,"the list and its description");return;}
+    const auto& list=layout.windows[0];const auto& desc=layout.windows[1];
+    check(desc.y+desc.h+4*4<=list.y&&desc.x==list.x,"no room at the right: above the list");
+    check(inside(layout.picture,1920,1080),"inside the window");
+}
+void wordsWrap() {
+    const std::vector<pc::BattleText> words{ink(30),ink(30),ink(30),pc::BattleText{},ink(10)};
+    const auto lines=pc::wrapBattleWords(words,70,3);
+    check(lines==std::vector<int>({0,2,4}),"two words a line, then a forced break");
+    check(pc::wrapBattleWords(std::vector<pc::BattleText>{ink(100)},70,3)==std::vector<int>({0}),"a long word alone on its line");
 }
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
@@ -406,7 +449,11 @@ void plateLook() {
 int main() {
     scaleSteps();
     rootAtBottomLeft();
-    listBesideCommands();
+    listHeader();
+    descriptionBeside();
+    descriptionAboveWhenNarrow();
+    descriptionDrawn();
+    wordsWrap();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

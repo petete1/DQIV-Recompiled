@@ -43,7 +43,7 @@ THUMB void BattleMenu_MAGIC2ENEMY::menuDraw()
 {
 #ifdef DQIV_NATIVE
     if (classicBattleMenus()) {
-        drawBattleEnemyTargets(touchRect_, enemyNumMax_, menuItem_.active_);
+        drawBattleEnemyTargets(touchRect_, enemyNumMax_, menuItem_.active_, 0x80000005);
         return;
     }
 #endif

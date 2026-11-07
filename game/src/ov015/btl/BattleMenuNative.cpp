@@ -20,6 +20,7 @@
 #include "main/dss/UnkMemory.hpp"
 #include "main/menu/MenuUpdateAssist.hpp"
 #include "main/status/UseAction.hpp"
+#include "main/status/UseItem.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/CharacterStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
@@ -29,6 +30,7 @@
 #include "main/text/TextAPI.hpp"
 #include "GameServices.hpp"
 #include "Settings.hpp"
+#include <cstring>
 #include <map>
 #include <string>
 #include <utility>
@@ -239,12 +241,72 @@ void addBattleEntry(int text, short index, bool enabled, int right, int rightKin
     s_keys.push_back(rightKind);
 }
 
+// A text of numbers ("1/3"), in the game's digits.
+pc::BattleText numbersText(const char* ascii, int fontSize)
+{
+    const std::string key = std::string(fontSize == 10 ? "#10:" : "#12:") + ascii + char('0' + TextAPI::m_lang);
+    auto found = s_texts.find(key);
+    if (found != s_texts.end()) {
+        return found->second;
+    }
+    char text[0x100];
+    translateText(g_fullWidthCharTable, g_asciiCharTable, text, sizeof(text), ascii);
+    return s_texts[key] = drawText(text, fontSize);
+}
+
 void setBattlePage(int page, int pages)
 {
     s_building.page = page;
     s_building.pages = pages;
+    if (pages > 1) {
+        char buf[0x40];
+        dss::sprintf_s(buf, sizeof(buf), "%d/%d", page + 1, pages);
+        s_building.pageText = numbersText(buf, 12);
+    }
     s_keys.push_back(page);
     s_keys.push_back(pages);
+}
+
+// The description window: the game's help message (as the DS shows under the list), in
+// words the windows wrap to their width; the line breaks the DS needed are spaces again.
+void setBattleHelp(int message)
+{
+    char buf[0x400];
+    buf[0] = 0;
+    extractText(message, buf, sizeof(buf));
+    const bool spaced = std::strchr(buf, ' ') != NULL;
+    std::string word;
+    auto flush = [&]() {
+        if (!word.empty()) {
+            const std::string key = "10:" + word;
+            auto found = s_texts.find(key);
+            s_building.help.push_back(found != s_texts.end() ? found->second : (s_texts[key] = drawText(word.c_str(), 10)));
+            word.clear();
+        }
+    };
+    for (const char* c = buf; *c; c++) {
+        if (*c == ' ' || (*c == '\n' && spaced)) {
+            flush();
+        } else if (*c == '\n') {
+            flush();
+            s_building.help.push_back(pc::BattleText());   // no spaces to wrap at (Japanese): keep the DS lines
+        } else {
+            word += *c;
+        }
+    }
+    flush();
+    s_keys.push_back(message);
+}
+
+// The cost line at the description's bottom: "MP" and "cost/the caster's MP".
+void setBattleCost(int cost, int have)
+{
+    char buf[0x40];
+    dss::sprintf_s(buf, sizeof(buf), "%d/%d", cost, have);
+    s_building.costLabel = battleText(0xa0000002, 10);
+    s_building.cost = numbersText(buf, 10);
+    s_keys.push_back(cost);
+    s_keys.push_back(have);
 }
 
 void setBattleCursor(short active)
@@ -272,9 +334,10 @@ void endBattleMenu()
 }
 
 
-void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active)
+void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active, int title)
 {
     beginBattleMenu(pc::BattleMenuKind::targetEnemy, 1);
+    setBattleTitle(title);
     const int group = rects[active].group;
     int cursor = active;
     for (int i = 0; i < count; i++) {
@@ -296,9 +359,10 @@ void drawBattleEnemyTargets(const TOUCHRECT* rects, int count, int active)
     drawMonsterNamePlates(group);
 }
 
-void drawBattlePartyTargets(int count, int active)
+void drawBattlePartyTargets(int count, int active, int title)
 {
     beginBattleMenu(pc::BattleMenuKind::targetParty, 1);
+    setBattleTitle(title);
     for (int i = 0; i < count; i++) {
         addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
     }
@@ -346,17 +410,24 @@ int pageEntries(int count, int page, int& top)
 
 void drawBattleSpells(const int* actions, int count, int page, int active)
 {
-    // The caster's MP is on their party card: only the costs here.
+    // The chosen spell's description and MP cost in a window of their own.
     beginBattleMenu(pc::BattleMenuKind::spells, 2);
+    setBattleTitle(0x80000005);
     int top;
     const int num = pageEntries(count, page, top);
     for (int i = 0; i < num; i++) {
-        // The MP cost, unless it takes all the MP (0xff, 1000: drawMagicCommandHeader).
-        const int mp = status::UseAction::getUseMp(actions[top + i]);
-        const bool shown = mp > 0 && mp != 0xff && mp != 1000;
-        addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true, shown ? mp : 0, shown ? 1 : 0);
+        addBattleEntry(getActionNameMessage(actions[top + i]), (short)i, true);
     }
     setBattlePage(page, (count - 1) / 6 + 1);
+    if (active >= 0 && active < num) {
+        const int action = actions[top + active];
+        setBattleHelp(status::UseAction::getMenuMessage(action));
+        // The MP cost, unless it takes all the MP (0xff, 1000: drawMagicCommandHeader).
+        const int mp = status::UseAction::getUseMp(action);
+        if (mp > 0 && mp != 0xff && mp != 1000) {
+            setBattleCost(mp, status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_.getMp());
+        }
+    }
     setBattleCursor((short)active);
     endBattleMenu();
 }
@@ -364,6 +435,7 @@ void drawBattleSpells(const int* actions, int count, int page, int active)
 void drawBattleItems(const int* items, int count, int page, int active)
 {
     beginBattleMenu(pc::BattleMenuKind::items, 2);
+    setBattleTitle(0x80000006);
     status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(btl::BattleMenuPlayerControl::getSingleton()->activeChara_)->haveStatusInfo_;
     int top;
     const int num = count > 0 ? pageEntries(count, page, top) : 0;
@@ -372,6 +444,9 @@ void drawBattleItems(const int* items, int count, int page, int active)
         addBattleEntry(items[top + i] + 0x40000000, (short)i, true, info->haveItem_.isEquipment(i + top) ? 0xa0000041 : 0);
     }
     setBattlePage(page, count > 0 ? (count - 1) / 6 + 1 : 1);
+    if (active >= 0 && active < num) {
+        setBattleHelp(status::UseItem::getMenuMessage(items[top + active]));
+    }
     setBattleCursor((short)active);
     endBattleMenu();
 }
