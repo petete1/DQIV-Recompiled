@@ -1,6 +1,7 @@
 #include "BattleWindows.hpp"
 #include <algorithm>
 #include <cmath>
+#include <memory>
 
 namespace pc {
 namespace {
@@ -29,7 +30,9 @@ struct Plan {
     int iconWidth=0;                         // the icons' column before the labels (0 without icons)
     int footerY=-1;                          // the footer row (picture coordinates)
     int headerY=-1;                          // a list's header row
-    Box help;bool described=false;           // the description's text area; windows[1] is its window
+    Box help;bool described=false;           // the description's text area; the window after the list's
+    int listIndex=0;                         // the list's window (1 under field parent commands)
+    std::shared_ptr<const Plan> parent;      // a field list's parent commands (their own plan, at the top)
 };
 bool listed(BattleMenuKind kind) {return kind!=BattleMenuKind::none&&kind!=BattleMenuKind::message;}
 // The commands and root windows carry their entries; the others show the
@@ -79,30 +82,51 @@ Plan plan(const BattleMenuState& state,int width) {
         const int dh=2*pad+lines*helpRow+(state.cost.width>0?row+4:0);
         p.described=true;
         if(beside>=helpBeside)p.windows.push_back({w+gap,0,textWidth+2*pad,std::max(h,dh)});
+        else if(state.field)p.windows.push_back({0,h+gap,w,dh});  // the field: below the list
         else p.windows.push_back({0,-(dh+gap),w,dh});
         const auto& d=p.windows.back();
         p.help={d.x+pad,d.y+pad,textWidth,d.h-2*pad};
     }
-    // Windows side by side end on the same bottom line; then all moves down to start at 0.
-    int bottom=0;
-    for(const auto& box:p.windows)if(box.y>=0)bottom=std::max(bottom,box.h);
-    auto& list=p.windows.front();
-    const int shift=bottom-list.h;
-    list.y=shift;
-    if(p.described&&p.windows[1].y>=0) {p.windows[1].y=bottom-p.windows[1].h;p.help.y=p.windows[1].y+pad;}
-    for(auto& e:p.entries)e.y+=shift;
-    if(p.titleOnBorder||header)p.titleBox.y+=shift;
-    if(p.footerY>=0)p.footerY+=shift;
-    if(p.headerY>=0)p.headerY+=shift;
-    if(p.described&&p.windows[1].y<0) {p.windows[1].y+=shift;p.help.y+=shift;}
-    int topmost=0,rightmost=0;
-    for(const auto& box:p.windows) {topmost=std::min(topmost,box.y);rightmost=std::max(rightmost,box.x+box.w);}
-    for(auto& box:p.windows)box.y-=topmost;
-    for(auto& e:p.entries)e.y-=topmost;
-    p.titleBox.y-=topmost;p.help.y-=topmost;
-    if(p.footerY>=0)p.footerY-=topmost;
-    if(p.headerY>=0)p.headerY-=topmost;
-    p.picture={margin,0,rightmost,bottom-topmost};
+    // Battle: windows side by side end on the same bottom line; then all moves down to start
+    // at 0. The field: they start on the same top line.
+    auto shiftAll=[&](int by) {
+        for(auto& box:p.windows)box.y+=by;
+        for(auto& e:p.entries)e.y+=by;
+        p.titleBox.y+=by;p.help.y+=by;
+        if(p.footerY>=0)p.footerY+=by;
+        if(p.headerY>=0)p.headerY+=by;
+    };
+    if(!state.field) {
+        int bottom=0;
+        for(const auto& box:p.windows)if(box.y>=0)bottom=std::max(bottom,box.h);
+        auto& list=p.windows.front();
+        const int shift=bottom-list.h;
+        list.y=shift;
+        if(p.described&&p.windows[1].y>=0) {p.windows[1].y=bottom-p.windows[1].h;p.help.y=p.windows[1].y+pad;}
+        for(auto& e:p.entries)e.y+=shift;
+        if(p.titleOnBorder||header)p.titleBox.y+=shift;
+        if(p.footerY>=0)p.footerY+=shift;
+        if(p.headerY>=0)p.headerY+=shift;
+        if(p.described&&p.windows[1].y<0) {p.windows[1].y+=shift;p.help.y+=shift;}
+    }
+    int topmost=0;
+    for(const auto& box:p.windows)topmost=std::min(topmost,box.y);
+    shiftAll(-topmost);
+    // A field list: the root commands it came from stay above it, the hand still on the choice.
+    if(state.field&&!state.parent.empty()) {
+        BattleMenuState commands;
+        commands.kind=BattleMenuKind::commands;commands.columns=2;commands.field=true;
+        commands.entries=state.parent;commands.cursor=state.parentCursor;commands.waiting=false;
+        const auto above=std::make_shared<const Plan>(plan(commands,width));
+        if(!above->windows.empty()) {
+            shiftAll(above->picture.h+gap);
+            p.windows.insert(p.windows.begin(),above->windows.front());
+            p.listIndex=1;p.parent=above;
+        }
+    }
+    int rightmost=0,bottom=0;
+    for(const auto& box:p.windows) {rightmost=std::max(rightmost,box.x+box.w);bottom=std::max(bottom,box.y+box.h);}
+    p.picture={margin,0,rightmost,bottom};
     return p;
 }
 void blit(std::vector<std::uint32_t>& out,int width,int height,const BattleText& text,int x,int y,int maxWidth,
@@ -184,6 +208,27 @@ void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
 }
 
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
+BattleGroupLayout layoutBattleGold(const BattleMenuState& state,int windowWidth,int windowHeight) {
+    BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
+    if(state.gold.width<=0)return layout;
+    const int s=layout.scale,w=2*pad+state.gold.width+3+state.goldUnit.width,h=row+2*pad;
+    layout.picture={windowWidth-(margin+w)*s,margin*s,w*s,h*s};
+    return layout;
+}
+std::vector<std::uint32_t> composeBattleGold(const BattleMenuState& state,const BattleGroupLayout& layout) {
+    if(layout.picture.w<=0)return {};
+    const int s=layout.scale,w=layout.picture.w/s,h=layout.picture.h/s;
+    std::vector<std::uint32_t> out(std::size_t(w)*h,0);
+    frame(out,w,{0,0,w,h});
+    // The amount, then the unit, at the right.
+    const int unitX=w-pad-state.goldUnit.width,goldX=unitX-3-state.gold.width;
+    blit(out,w,h,state.gold,goldX,(h-state.gold.height)/2,state.gold.width,state.palette,false);
+    blit(out,w,h,state.goldUnit,unitX,(h-state.goldUnit.height)/2,state.goldUnit.width,state.palette,false);
+    return out;
+}
+std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight) {
+    return {6.f,canvasHeight-6.f-insetHeight,insetWidth,insetHeight};
+}
 std::vector<std::uint32_t> battleSpellIcon(BattleSpellKind kind) {
     // A coloured disc with a light rim at the top left, a dark one at the bottom right, and a
     // white symbol (10x10) with a shadow: flame, cross, arrow up, arrow down, wing.
@@ -239,7 +284,7 @@ BattleMenuLayout layoutBattleMenu(const BattleMenuState& state,int windowWidth,i
     const auto p=plan(state,windowWidth/s);
     if(p.windows.empty())return layout;
     layout.planWidth=windowWidth/s;
-    const int top=windowHeight/s-margin-p.picture.h;
+    const int top=state.field?margin:windowHeight/s-margin-p.picture.h;
     layout.picture={p.picture.x*s,top*s,p.picture.w*s,p.picture.h*s};
     auto place=[&](const Box& b) {return BattleRect{(p.picture.x+b.x)*s,(top+b.y)*s,b.w*s,b.h*s};};
     for(const auto& b:p.windows)layout.windows.push_back(place(b));
@@ -279,17 +324,21 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
                 if(t.x+x>=0&&t.x+x<width&&t.y+dy+y>=0&&t.y+dy+y<height)out[std::size_t(t.y+dy+y)*width+t.x+x]=fill;
         blit(out,width,height,state.title,t.x,t.y+dy,state.kind==BattleMenuKind::message?t.w:state.title.width,state.palette,false);
     }
-    for(std::size_t i=0;i<state.entries.size()&&i<p.entries.size();++i) {
-        const auto& e=state.entries[i];const auto& b=p.entries[i];
-        const int textY=b.y+dy+(row-e.label.height)/2;
-        if(iconSide(e.icon))
-            icon(out,width,height,e.icon,b.x+cursorWidth,b.y+dy+(row-iconSize)/2,!e.enabled);
-        blit(out,width,height,e.label,b.x+cursorWidth+p.iconWidth,textY,p.labelWidth,state.palette,!e.enabled);
-        if(e.right.width>0)
-            blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
-        if(int(i)==state.cursor&&(!state.waiting||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);
-    }
-    const auto& list=p.windows.front();
+    auto entries=[&](const Plan& q,const std::vector<BattleMenuEntry>& list,int cursor,bool blinking) {
+        for(std::size_t i=0;i<list.size()&&i<q.entries.size();++i) {
+            const auto& e=list[i];const auto& b=q.entries[i];
+            const int textY=b.y+dy+(row-e.label.height)/2;
+            if(iconSide(e.icon))
+                icon(out,width,height,e.icon,b.x+cursorWidth,b.y+dy+(row-iconSize)/2,!e.enabled);
+            blit(out,width,height,e.label,b.x+cursorWidth+q.iconWidth,textY,q.labelWidth,state.palette,!e.enabled);
+            if(e.right.width>0)
+                blit(out,width,height,e.right,b.x+b.w-e.right.width,b.y+dy+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
+            if(int(i)==cursor&&(!blinking||blinkFrame%30<20))hand(out,width,b.x+1,b.y+dy+(row-7)/2);
+        }
+    };
+    entries(p,state.entries,state.cursor,state.waiting);
+    if(p.parent)entries(*p.parent,state.parent,state.parentCursor,false);
+    const auto& list=p.windows[std::size_t(p.listIndex)];
     if(p.footerY>=0&&state.footer.width>0)
         blit(out,width,height,state.footer,list.x+pad+cursorWidth,p.footerY+dy+(row-state.footer.height)/2,
             list.w-2*pad-cursorWidth,state.palette,false);

@@ -9,7 +9,8 @@ namespace pc {
 // show; these windows lay it out along the bottom of the game window, like the
 // console games, and compose one picture for the interface layer.
 enum class BattleMenuKind {none,root,commands,targetEnemy,targetParty,spells,items,
-    tacticsMember,tacticsSelect,formation,message,stadiumAbort};
+    tacticsMember,tacticsSelect,formation,message,stadiumAbort,
+    list};  // list: a field one-column list (whose items, item commands, towns, casters)
 // A text drawn by the game's font: palette indices (0 transparent), one byte per pixel.
 struct BattleText {std::vector<std::uint8_t> ink;int width=0,height=0;};
 struct BattleMenuEntry {
@@ -56,7 +57,14 @@ struct BattleMenuState {
     std::array<std::uint32_t,256> portraitPalette{}; // ARGB of the faces' palette
     BattleMessage message;                           // the battle message window (Classic)
     std::vector<BattlePlate> plates;                 // the monster name plates (Classic)
+    bool field=false;                                // a field menu: placed from the top left
+    std::vector<BattleMenuEntry> parent;             // the root commands shown above a field list (2 columns)
+    int parentCursor=-1;                             // the chosen command (a still hand)
+    BattleText gold,goldUnit;                        // "1259" and "G"; empty gold: no gold panel
 };
+// The world map inset at the bottom left while a field menu shows, canvas units (canvas
+// canvasHeight high): {x,y,w,h}.
+std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight);
 // The words in lines at most width wide (a word of width 0 breaks the line):
 // the index of each line's first word.
 std::vector<int> wrapBattleWords(std::span<const BattleText> words,int width,int space);
@@ -76,6 +84,9 @@ struct BattleMenuLayout {
 int battleScale(int windowHeight);
 // A group drawn on its own (the party panel, the message window): where its picture goes.
 struct BattleGroupLayout {int scale=1;BattleRect picture;};
+// The field menu's gold panel: top right, 8 DS pixels in; picture.w 0 without gold.
+BattleGroupLayout layoutBattleGold(const BattleMenuState&,int windowWidth,int windowHeight);
+std::vector<std::uint32_t> composeBattleGold(const BattleMenuState&,const BattleGroupLayout&);
 // The party panel: right edge and bottom, 8 DS pixels in; picture.w 0 without a party.
 BattleGroupLayout layoutBattleParty(const BattleMenuState&,int windowWidth,int windowHeight);
 // How far (DS pixels) the active member's card slides out to the left.

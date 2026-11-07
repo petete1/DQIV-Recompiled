@@ -6,6 +6,7 @@
 #include "NitroVideo.hpp"
 #include "HdPictures.hpp"
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -112,6 +113,64 @@ void itemIcons() {
     const int y=(layout.entries[0].y-layout.picture.y)/layout.scale+8;
     int green=0;for(int x=0;x<w;++x)green+=pixels[std::size_t(y)*w+x]==0xff00ff00u;
     check(green==32,"the 32x32 item icons, shrunk to 16 wide (two entries)");
+}
+pc::BattleMenuState fieldList(int labelWidth=40) {
+    auto state=menu(pc::BattleMenuKind::items,4,2,labelWidth);state.field=true;state.title=ink(30);
+    for(int i=0;i<6;++i)state.parent.push_back(entry(40,short(i)));
+    state.parentCursor=2;
+    return state;
+}
+void fieldAtTopLeft() {
+    auto state=menu(pc::BattleMenuKind::commands,6,2);state.field=true;
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    if(layout.windows.empty()) {check(false,"the field commands window");return;}
+    check(layout.windows[0].x==8*4&&layout.windows[0].y==8*4,"the field commands at the top left, 8 in");
+}
+void listBelowParent() {
+    const auto layout=pc::layoutBattleMenu(fieldList(),1920,1080);
+    if(layout.windows.size()<2) {check(false,"the parent commands and the list");return;}
+    const auto& parent=layout.windows[0];const auto& list=layout.windows[1];
+    check(parent.y==8*4,"the commands stay at the top");
+    check(list.y>=parent.y+parent.h+4*4&&list.x==parent.x,"the list 4 below the commands, left aligned");
+    check(layout.entries.size()==4,"hit areas for the list only");
+}
+void goldTopRight() {
+    pc::BattleMenuState state;state.field=true;state.gold=ink(30);state.goldUnit=ink(8);state.palette.fill(0xffffffff);
+    const auto layout=pc::layoutBattleGold(state,1920,1080);
+    check(layout.picture.x+layout.picture.w==1920-8*4&&layout.picture.y==8*4,"the gold panel at the top right, 8 in");
+    check(pc::composeBattleGold(state,layout).size()==std::size_t(layout.picture.w/4)*(layout.picture.h/4),"a gold picture at DS scale");
+    check(inside(pc::layoutBattleGold(state,640,480).picture,640,480),"the gold panel inside a small window");
+    state.gold={};
+    check(pc::layoutBattleGold(state,1920,1080).picture.w==0,"no gold, no panel");
+}
+void fieldInsideSmallWindow() {
+    auto state=fieldList();
+    for(int i=0;i<4;++i) {state.help.push_back(ink(30,10));state.party.push_back({});}
+    state.gold=ink(30);state.goldUnit=ink(8);
+    const auto layout=pc::layoutBattleMenu(state,640,480);
+    bool all=layout.windows.size()>=3;
+    for(const auto& w:layout.windows)all=all&&inside(w,640,480);
+    check(all,"the field windows stay inside 640x480");
+    check(inside(pc::layoutBattleGold(state,640,480).picture,640,480),"the gold too");
+}
+void fieldListPaged() {
+    auto state=menu(pc::BattleMenuKind::list,6,1);state.field=true;state.title=ink(30);state.pages=3;state.pageText=ink(20);
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    check(layout.windows.size()==1,"a field list in one window");
+    if(layout.windows.empty()||layout.entries.empty())return;
+    check(layout.entries[0].y>=layout.windows[0].y+(8+16)*4,"its entries under the header");
+}
+void fieldDescriptionBelow() {
+    auto state=fieldList(100);
+    for(int i=0;i<4;++i) {state.help.push_back(ink(30,10));state.party.push_back({});}
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    if(layout.windows.size()<3) {check(false,"commands, list and description");return;}
+    const auto& list=layout.windows[1];const auto& desc=layout.windows[2];
+    check(desc.y>=list.y+list.h+4*4&&desc.x==list.x,"no room at the right: the description below the list");
+}
+void mapBottomLeft() {
+    const auto r=pc::fieldMapInset(384,153.6f,115.2f);
+    check(r[0]==6&&std::abs(r[1]-(384-6-115.2f))<0.01f&&r[2]==153.6f&&r[3]==115.2f,"the map at the bottom left, 6 in");
 }
 void menusLabel() {
     check(std::string(pc::settingLabel(pc::settingBattleMenus,1))=="Menus","the setting is called Menus (English)");
@@ -499,6 +558,13 @@ int main() {
     itemIcons();
     spellIcons();
     menusLabel();
+    fieldAtTopLeft();
+    listBelowParent();
+    goldTopRight();
+    fieldInsideSmallWindow();
+    fieldListPaged();
+    fieldDescriptionBelow();
+    mapBottomLeft();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();
