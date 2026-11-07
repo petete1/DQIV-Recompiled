@@ -359,6 +359,131 @@ int moveBattleCursor(const BattleMenuState& state,int cursor,int direction) {
     }
     return cursor;
 }
+namespace {
+// A 32x32 icon at full size (ARGB, straight alpha) over the panel.
+void bigIcon(std::vector<std::uint32_t>& out,int width,int height,const std::vector<std::uint32_t>& src,int x,int y) {
+    if(src.size()!=32*32)return;
+    for(int ty=0;ty<32;++ty)for(int tx=0;tx<32;++tx) {
+        const auto c=src[std::size_t(ty)*32+tx];const unsigned a=c>>24;
+        const int px=x+tx,py=y+ty;
+        if(!a||px<0||py<0||px>=width||py>=height)continue;
+        auto& under=out[std::size_t(py)*width+px];
+        if(a==255) {under=c;continue;}
+        auto mix=[&](unsigned shift){return ((((c>>shift)&255)*a+((under>>shift)&255)*(255-a))/255)<<shift;};
+        under=(std::min(255u,a+((under>>24)*(255-a))/255)<<24)|mix(16)|mix(8)|mix(0);
+    }
+}
+// A member's face strip: the portrait's 32x16 at the eyes, its left 8 columns fading in.
+void drawFace(std::vector<std::uint32_t>& out,int width,int height,const BattleMenuState& state,const std::vector<std::uint8_t>& face,int x,int y) {
+    if(face.size()!=48*48)return;
+    for(int ty=0;ty<16;++ty)for(int tx=0;tx<32;++tx) {
+        const auto index=face[std::size_t(14+ty)*48+8+tx];
+        const int px=x+tx,py=y+ty;
+        if(!index||px<0||py<0||px>=width||py>=height)continue;
+        const auto c=state.portraitPalette[index];
+        auto& under=out[std::size_t(py)*width+px];
+        if(tx>=8) {under=c;continue;}
+        const unsigned k=255*unsigned(tx+1)/9;
+        auto mix=[&](unsigned shift){return ((((c>>shift)&255)*k+((under>>shift)&255)*(255-k))/255)<<shift;};
+        under=mix(24)|mix(16)|mix(8)|mix(0);
+    }
+}
+template<class Pointer,class Entries>
+void composeItems(std::vector<std::uint32_t>& out,int width,int height,const BattleMenuState& state,const Plan& p,
+    Pointer& pointer,Entries& entries) {
+    const auto& items=state.items;const auto focus=items.focus;
+    const auto& big=p.windows[0];
+    frame(out,width,big);
+    for(std::size_t i=1;i<4&&i<p.windows.size();++i)frame(out,width,p.windows[i],false);
+    blit(out,width,height,items.title,big.x+(big.w-items.title.width)/2,big.y+(headerHeight-items.title.height)/2+1,big.w-2*pad,state.palette,false);
+    rule(out,width,big.x+pad,big.y+headerHeight,big.w-2*pad);
+    // Whose items: names and faces; the focused pane's cursor moves, the others' stay still.
+    const bool whoseFocus=focus==BattleItemsFocus::whose;
+    const auto& whose=whoseFocus?state.entries:items.whose.entries;
+    const int whoseCursor=whoseFocus?state.cursor:items.whose.cursor;
+    for(std::size_t i=0;i<whose.size()&&i<p.whoseRows.size();++i) {
+        const auto& e=whose[i];const auto& b=p.whoseRows[i];
+        drawFace(out,width,height,state,e.face,b.x+b.w-faceStrip,b.y+(itemsRow-16)/2);
+        blit(out,width,height,e.label,b.x+cursorWidth,b.y+(itemsRow-e.label.height)/2,b.w-cursorWidth-faceStrip-2,state.palette,!e.enabled);
+        if(int(i)==whoseCursor)pointer(b.x-3,b.y+(itemsRow-16)/2,whoseFocus&&state.waiting,!whoseFocus);
+    }
+    // The list: its header, then "E", the icon and the name.
+    const bool listFocus=focus==BattleItemsFocus::list;
+    const auto& list=listFocus?state.entries:items.list.entries;
+    const int listCursor=listFocus?state.cursor:items.list.cursor;
+    const auto& title=listFocus?state.title:items.list.title;
+    const auto& pageText=listFocus?state.pageText:items.list.pageText;
+    const int pages=listFocus?state.pages:items.list.pages;
+    const auto& box=p.windows[2];
+    blit(out,width,height,title,box.x+pad,p.headerY+(row-title.height)/2,box.w-2*pad-(pages>1?pageText.width+22:0),state.palette,false);
+    rule(out,width,box.x+pad-2,p.headerY+row+1,box.w-2*pad+4);
+    if(pages>1) {
+        int x=box.x+box.w-pad-pageText.width-18;
+        triangle(out,width,x,p.headerY+(row-9)/2,false);x+=9;
+        blit(out,width,height,pageText,x,p.headerY+(row-pageText.height)/2,pageText.width,state.palette,false);
+        triangle(out,width,x+pageText.width+4,p.headerY+(row-9)/2,true);
+    }
+    for(std::size_t i=0;i<list.size()&&i<p.listRows.size();++i) {
+        const auto& e=list[i];const auto& b=p.listRows[i];
+        const int x=b.x+cursorWidth;
+        if(e.right.width>0)blit(out,width,height,e.right,x,b.y+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
+        if(iconSide(e.icon))icon(out,width,height,e.icon,x+10,b.y+(row-iconSize)/2,!e.enabled);
+        const int labelX=x+10+iconSize+iconGap;
+        blit(out,width,height,e.label,labelX,b.y+(row-e.label.height)/2,b.x+b.w-labelX,state.palette,!e.enabled);
+        if(int(i)==listCursor)pointer(b.x-3,b.y+(row-16)/2,listFocus&&state.waiting,!listFocus);
+    }
+    // The detail: the kind, the icon in a frame, the description, the count and the comparison.
+    if(!items.icon.empty()&&p.windows.size()>3) {
+        const auto& d=p.windows[3];
+        const int kindY=d.y+pad/2;
+        blit(out,width,height,items.kind,d.x+std::max(pad,(d.w-items.kind.width)/2),kindY+(row-items.kind.height)/2,d.w-2*pad,state.palette,false);
+        rule(out,width,d.x+pad-2,kindY+row+1,d.w-2*pad+4);
+        const int contentTop=kindY+row+5;
+        const Box iconBox=p.detailBelow?Box{d.x+pad,contentTop,40,40}:Box{d.x+(d.w-40)/2,contentTop,40,40};
+        frame(out,width,iconBox,false);
+        bigIcon(out,width,height,items.icon,iconBox.x+4,iconBox.y+4);
+        const Box text=p.detailBelow?Box{d.x+pad+44,contentTop,d.w-2*pad-44,0}:Box{d.x+pad,contentTop+44,d.w-2*pad,0};
+        const bool compare=items.statLabel.width>0;
+        int bottom=d.y+d.h-pad;
+        if(compare) {
+            const int y=bottom-row;
+            rule(out,width,d.x+pad-2,y-3,d.w-2*pad+4);
+            blit(out,width,height,items.statLabel,d.x+pad,y+(row-items.statLabel.height)/2,d.w-2*pad,state.palette,false);
+            int x=d.x+d.w-pad;
+            if(items.statNew.width>0) {
+                x-=items.statNew.width;blit(out,width,height,items.statNew,x,y+(row-items.statNew.height)/2,items.statNew.width,state.palette,false);
+                x-=9;triangle(out,width,x+2,y+(row-9)/2,true);
+            } else if(items.statNote.width>0&&items.statNow.width>0) {
+                x-=items.statNow.width;blit(out,width,height,items.statNow,x,y+(row-items.statNow.height)/2,items.statNow.width,state.palette,false);
+                x-=4;
+            }
+            const auto& first=items.statNew.width>0?items.statNow:items.statNote;
+            x-=first.width;blit(out,width,height,first,x,y+(row-first.height)/2,first.width,state.palette,false);
+            bottom=y-4;
+        }
+        if(items.count.width>0) {
+            bottom-=row;
+            blit(out,width,height,items.count,d.x+d.w-pad-items.count.width,bottom+(row-items.count.height)/2,items.count.width,state.palette,false);
+        }
+        const auto lines=wrapBattleWords(state.help,text.w,helpSpace);
+        for(std::size_t l=0;l<lines.size();++l) {
+            const int y=text.y+int(l)*helpRow;
+            if(y+helpRow>bottom)break;
+            const int end=l+1<lines.size()?lines[l+1]:int(state.help.size());
+            for(int i=lines[l],x=text.x;i<end;x+=state.help[std::size_t(i)].width+helpSpace,++i)
+                blit(out,width,height,state.help[std::size_t(i)],x,y,text.x+text.w-x,state.palette,false);
+        }
+    }
+    // The item's commands, in their own window at the top right.
+    if(p.popup&&p.windows.size()>4) {
+        const auto& q=*p.popup;const auto& w=p.windows[4];
+        frame(out,width,w);
+        blit(out,width,height,state.title,q.titleBox.x,q.titleBox.y,w.w-2*pad,state.palette,false);
+        if(q.headerY>=0)rule(out,width,w.x+pad-2,q.headerY+row+1,w.w-2*pad+4);
+        entries(q,state.entries,state.cursor,state.waiting,false);
+    }
+}
+}
 std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const BattleMenuLayout& layout,int blinkFrame) {
     if(layout.windows.empty())return {};
     const int s=layout.scale,width=layout.picture.w/s,height=layout.picture.h/s;
@@ -366,10 +491,10 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     const auto p=plan(state,layout.planWidth>0?layout.planWidth:width+2*margin,layout.planHeight);
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     // The layout's windows in DS pixels relative to the picture.
-    for(const auto& w:layout.windows)
+    if(!p.items)for(const auto& w:layout.windows)
         frame(out,width,{(w.x-layout.picture.x)/s,(w.y-layout.picture.y)/s,w.w/s,w.h/s});
     const int dy=height-p.picture.h;  // the plan's own bottom line is the picture's
-    if(state.title.width>0) {
+    if(state.title.width>0&&!p.items) {
         const auto& t=p.titleBox;
         if(p.titleOnBorder)  // the name on the top border, over a strip of the panel colour
             for(int y=0;y<state.title.height;++y)for(int x=-2;x<state.title.width+2;++x)
@@ -399,6 +524,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
             if(int(i)==cursor)pointer(b.x-3,b.y+dy+(row-16)/2,blinking,still);
         }
     };
+    if(p.items) {composeItems(out,width,height,state,p,pointer,entries);return out;}
     entries(p,state.entries,state.cursor,state.waiting,false);
     if(p.parent)entries(*p.parent,state.parent,state.parentCursor,false,true);
     const auto& list=p.windows[std::size_t(p.listIndex)];

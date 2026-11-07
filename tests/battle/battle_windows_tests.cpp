@@ -280,6 +280,30 @@ void itemsHideGoldAndMap() {
     check(pc::layoutBattleGold(state,1920,1080).picture.w==0,"no gold with the items window");
     check(!pc::classicFieldMapShown(state),"no map with the items window");
 }
+void itemsDrawsFacesAndIcon() {
+    auto state=itemsState(pc::BattleItemsFocus::list);
+    for(auto& e:state.items.whose.entries)e.face.assign(48*48,1);
+    state.portraitPalette.fill(0xff00ff00);state.items.icon.assign(32*32,0xff0000ffu);
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    int green=0,blue=0;for(const auto p:pixels) {green+=p==0xff00ff00u;blue+=p==0xff0000ffu;}
+    check(green>=4*24*16,"a face strip on each whose row");
+    check(blue==32*32,"the big icon at full size");
+}
+void itemsStillCursorOnWhose() {
+    auto state=itemsState(pc::BattleItemsFocus::list);state.items.whose.cursor=1;
+    for(int f=0;f<5;++f)state.cursorFrames[std::size_t(f)].assign(16*16,0xff000000u|(0x10u*unsigned(f+1)));
+    state.cursorFrame=3;
+    const auto pixels=pc::composeBattleMenu(state,pc::layoutBattleMenu(state,1280,720),0);
+    int current=0,still=0;for(const auto p:pixels) {current+=p==(0xff000000u|0x40u);still+=p==(0xff000000u|0x10u);}
+    check(current==16*16&&still==16*16,"animated in the list, still on the chosen member");
+}
+void itemsEmptyList() {
+    auto state=itemsState(pc::BattleItemsFocus::list);state.entries.clear();state.cursor=-1;state.help.clear();state.items.icon.clear();
+    const auto layout=pc::layoutBattleMenu(state,1920,1080);
+    check(layout.windows.size()>=4&&layout.entries.empty(),"an empty list keeps its pane");
+    check(!pc::composeBattleMenu(state,layout,0).empty(),"and draws");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -660,6 +684,9 @@ int main() {
     itemsHitAreasFocusOnly();
     itemsWhoseFitsNine();
     itemsHideGoldAndMap();
+    itemsDrawsFacesAndIcon();
+    itemsStillCursorOnWhose();
+    itemsEmptyList();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();
