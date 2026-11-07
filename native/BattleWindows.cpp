@@ -34,7 +34,7 @@ struct Plan {
     int listIndex=0;                         // the list's window (1 under field parent commands)
     std::shared_ptr<const Plan> parent;      // a field list's parent commands (their own plan, at the top)
     // The Items window: windows 0 the window, 1 whose, 2 list, 3 detail, 4 the popup; each pane's rows.
-    bool items=false,detailBelow=false;
+    bool items=false,detailBelow=false,whoseHeader=false;
     std::vector<Box> whoseRows,listRows;
     std::shared_ptr<const Plan> popup;       // the popup's own plan (placed at windows[4])
 };
@@ -64,9 +64,14 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
     const Box listBox{pad+whoseW+gap,top,listW,headerHeight+2*pad+std::max(6,int(list.size()))*row};  // towns: 8 a page
     const Box detail=p.detailBelow?Box{listBox.x,listBox.y+listBox.h+gap,listW,bottom-(listBox.y+listBox.h+gap)}
         :Box{listBox.x+listW+gap,top,inner+pad-(listBox.x+listW+gap),bottom-top};
+    // Too short for the panes (the picture would not hold them): no window.
+    if(listBox.y+listBox.h+pad>big.h||(p.detailBelow&&detail.h<40+pad))return Plan{};
     p.windows.push_back(whoseBox);p.windows.push_back(listBox);p.windows.push_back(detail);
+    // Use's targets: their item and pager in a header of their own.
+    p.whoseHeader=focus==BattleItemsFocus::whose&&(state.pages>1||state.title.width>0);
+    const int whoseTop=whoseBox.y+pad+(p.whoseHeader?headerHeight:0);
     for(std::size_t i=0;i<whose.size();++i)
-        p.whoseRows.push_back({whoseBox.x+pad,whoseBox.y+pad+int(i)*itemsRow,whoseBox.w-2*pad,itemsRow});
+        p.whoseRows.push_back({whoseBox.x+pad,whoseTop+int(i)*itemsRow,whoseBox.w-2*pad,itemsRow});
     for(std::size_t i=0;i<list.size();++i)
         p.listRows.push_back({listBox.x+pad,listBox.y+headerHeight+pad+int(i)*row,listBox.w-2*pad,row});
     p.headerY=listBox.y+pad;
@@ -75,6 +80,7 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
         BattleMenuState commands;
         commands.kind=BattleMenuKind::list;commands.field=true;commands.entries=state.entries;commands.title=state.title;
         auto popup=plan(commands,width);
+        if(popup.picture.h>big.h)return Plan{};
         if(!popup.windows.empty()) {
             const int x=width-2*margin-popup.picture.w;
             auto& box=popup.windows.front();box.x+=x;
@@ -401,6 +407,18 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
     const bool whoseFocus=focus==BattleItemsFocus::whose;
     const auto& whose=whoseFocus?state.entries:items.whose.entries;
     const int whoseCursor=whoseFocus?state.cursor:items.whose.cursor;
+    if(p.whoseHeader) {
+        const auto& w=p.windows[1];const int y=w.y+pad;
+        const int pagerWidth=state.pages>1?state.pageText.width+22:0;
+        blit(out,width,height,state.title,w.x+pad,y+(row-state.title.height)/2,w.w-2*pad-pagerWidth,state.palette,false);
+        rule(out,width,w.x+pad-2,y+row+1,w.w-2*pad+4);
+        if(state.pages>1) {
+            int x=w.x+w.w-pad-state.pageText.width-18;
+            triangle(out,width,x,y+(row-9)/2,false);x+=9;
+            blit(out,width,height,state.pageText,x,y+(row-state.pageText.height)/2,state.pageText.width,state.palette,false);
+            triangle(out,width,x+state.pageText.width+4,y+(row-9)/2,true);
+        }
+    }
     for(std::size_t i=0;i<whose.size()&&i<p.whoseRows.size();++i) {
         const auto& e=whose[i];const auto& b=p.whoseRows[i];
         drawFace(out,width,height,state,e.face,b.x+b.w-faceStrip,b.y+(itemsRow-16)/2);
@@ -445,10 +463,11 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
         const Box text=p.detailBelow?Box{d.x+pad+44,contentTop,d.w-2*pad-44,0}:Box{d.x+pad,contentTop+44,d.w-2*pad,0};
         const bool compare=items.statLabel.width>0;
         int bottom=d.y+d.h-pad;
+        const int left=text.x;  // below the list: right of the icon, clear of it
         if(compare) {
             const int y=bottom-row;
-            rule(out,width,d.x+pad-2,y-3,d.w-2*pad+4);
-            blit(out,width,height,items.statLabel,d.x+pad,y+(row-items.statLabel.height)/2,d.w-2*pad,state.palette,false);
+            rule(out,width,left-2,y-3,d.x+d.w-pad-left+4);
+            blit(out,width,height,items.statLabel,left,y+(row-items.statLabel.height)/2,d.x+d.w-pad-left,state.palette,false);
             int x=d.x+d.w-pad;
             if(items.statNew.width>0) {
                 x-=items.statNew.width;blit(out,width,height,items.statNew,x,y+(row-items.statNew.height)/2,items.statNew.width,state.palette,false);

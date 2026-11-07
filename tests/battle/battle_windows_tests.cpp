@@ -304,6 +304,27 @@ void itemsEmptyList() {
     check(layout.windows.size()>=4&&layout.entries.empty(),"an empty list keeps its pane");
     check(!pc::composeBattleMenu(state,layout,0).empty(),"and draws");
 }
+void itemsNoWindowWhenTooShort() {
+    for(int h:{150,100,10})
+        check(pc::layoutBattleMenu(itemsState(pc::BattleItemsFocus::popup),1280,h).windows.empty(),"no items window in a window too short for its panes");
+}
+void itemsCompareClearOfIconBelow() {
+    auto state=itemsState(pc::BattleItemsFocus::list);
+    state.items.icon.assign(32*32,0xff0000ffu);state.items.statLabel=ink(40);state.items.statNow=ink(12);state.items.statNew=ink(12);
+    state.items.count=ink(12);
+    const auto pixels=pc::composeBattleMenu(state,pc::layoutBattleMenu(state,1920,1080),0);
+    int blue=0;for(const auto p:pixels)blue+=p==0xff0000ffu;
+    check(blue==32*32,"the comparison and count clear of the icon with the detail below the list");
+}
+void itemsWhoseHeaderOnUse() {
+    auto state=itemsState(pc::BattleItemsFocus::whose);state.pages=2;state.pageText=ink(20);state.title=ink(50);
+    for(int f=0;f<5;++f)state.cursorFrames[std::size_t(f)].assign(16*16,0xff000010u);
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    int gold=0;for(const auto p:pixels)gold+=p==0xfff0c040u;
+    check(gold>0,"the targets' pager in the whose pane");
+    check(layout.entries.size()==4&&layout.entries[0].y>=layout.windows[1].y+20*2,"the targets below their header");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -687,6 +708,9 @@ int main() {
     itemsDrawsFacesAndIcon();
     itemsStillCursorOnWhose();
     itemsEmptyList();
+    itemsNoWindowWhenTooShort();
+    itemsCompareClearOfIconBelow();
+    itemsWhoseHeaderOnUse();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();
