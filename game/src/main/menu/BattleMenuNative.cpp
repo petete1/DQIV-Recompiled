@@ -494,9 +494,10 @@ namespace {
 // The page of a 2×3 list (drawMagicMenu, drawItemList): its first entry and how many.
 int pageEntries(int count, int page, int& top)
 {
-    const int pageMax = (count - 1) / 6;
+    // A page past the last (a swap's empty-slot page) has none.
     top = page * 6;
-    return pageMax > page ? 6 : (count - 1) % 6 + 1;
+    const int left = count - top;
+    return left <= 0 ? 0 : left < 6 ? left : 6;
 }
 }
 
@@ -875,13 +876,18 @@ void drawFieldItems(int chara, bool bag, int page, int active, int giver)
         empty.label = numbersText("- - -", 12);
         empty.index = (short)shown;
         s_building.entries.push_back(empty);
-        if (items.empty()) {
-            setBattlePage(0, 1);
-        }
         setBattleCursor((short)active);
         s_keys.push_back(-3);
     }
-    endFieldMenu(TownMenu_ROOT::ROOT_ITEM, giver >= 0 ? &status::g_Party.getPlayerStatus(giver)->haveStatusInfo_ : owner);
+    if (giver >= 0 && !bag) {
+        setBattlePage(page, (int)items.size() / 6 + 1);  // the empty slot counts: 6 items take two pages
+    }
+    // The giver's card slides out (none when the bag gives: its index is the party's count).
+    const status::HaveStatusInfo* slid = owner;
+    if (giver >= 0) {
+        slid = TownMenuPlayerControl::getSingleton()->activeFukuro_ ? NULL : &status::g_Party.getPlayerStatus(giver)->haveStatusInfo_;
+    }
+    endFieldMenu(TownMenu_ROOT::ROOT_ITEM, slid);
 }
 
 void drawBattlePartyTargetsPaged(int title, int rootCommand, const status::HaveStatusInfo* user, int page, int active)
