@@ -27,6 +27,7 @@
 #ifdef DQIV_NATIVE
 #include "main/achievement/AchievementTriggers.hpp"
 #include "ov003/status/MonsterPartyWithDraw.hpp"
+#include "Settings.hpp"
 #endif
 
 static int endTaskIndex;
@@ -696,6 +697,11 @@ THUMB void btl::StadiumResultTask::execute()
                 lose = 0;
             }
         }
+#ifdef DQIV_NATIVE
+        if (pc::gameSettings().cheats.guaranteedJackpot) {
+            lose = 0;
+        }
+#endif
 
         g_TownMenuMessage.openMessageForBATTLE();
         TextAPI::setMACRO0(3, 0x60000000, monsterID, monsterSymbol);

@@ -5,6 +5,9 @@
 #include "main/sound/SoundManager.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 
 static short unk_02125330[6] = {0, 0, 0, 0, -910, 0};
 
@@ -165,6 +168,11 @@ ARM int Casino_Slot::startSlot()
             bingo++;
         }
     }
+#ifdef DQIV_NATIVE
+    if (pc::gameSettings().cheats.guaranteedJackpot) {
+        bingo = 8; // 7-7-7
+    }
+#endif
     m_slot_machine.resetSlot();
     m_slot_machine.setLotResult(bingoList_[bingo]);
     m_slot_machine.setStopPosition();

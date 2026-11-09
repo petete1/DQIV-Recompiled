@@ -37,6 +37,10 @@ void copy(char* destination, int size, const char* source)
     strncpy(destination, source, size - 1);
     destination[size - 1] = 0;
 }
+bool cheatPage(int page)
+{
+    return page == pc::pageCheats || page == pc::pageBattleCheats;
+}
 bool cheatAction(int row, pc::CheatAction& action)
 {
     switch (row) {
@@ -61,19 +65,24 @@ void SettingsPanel::open(bool inGame)
     buildRows();
 }
 
-void SettingsPanel::openCheats()
+void SettingsPanel::openCheats(int page)
 {
     inGame_ = true;
     cheatsOnly_ = true;
-    page_ = pc::pageCheats;
+    page_ = page;
     lastCheatRow_ = -1;
     buildRows();
 }
 
 int SettingsPanel::pageCount() const
 {
-    // The settings' pages, or the cheats alone.
-    return cheatsOnly_ ? 1 : pc::pageCheats;
+    // The settings' pages, or the cheats' alone.
+    return cheatsOnly_ ? pc::pageCount - pc::pageCheats : pc::pageCheats;
+}
+
+int SettingsPanel::firstPage() const
+{
+    return cheatsOnly_ ? pc::pageCheats : 0;
 }
 
 void SettingsPanel::buildRows()
@@ -115,6 +124,7 @@ void SettingsPanel::buildRows()
         rows_[rowCount_++] = pc::settingCheatCriticals;
         rows_[rowCount_++] = pc::settingCheatExp;
         rows_[rowCount_++] = pc::settingCheatGold;
+        rows_[rowCount_++] = pc::settingCheatJackpot;
         rows_[rowCount_++] = ROW_CHEAT_GOLD;
         rows_[rowCount_++] = ROW_CHEAT_BANK;
         rows_[rowCount_++] = ROW_CHEAT_CASINO;
@@ -124,6 +134,13 @@ void SettingsPanel::buildRows()
         rows_[rowCount_++] = ROW_CHEAT_QUANTITY;
         rows_[rowCount_++] = ROW_CHEAT_ADD;
         rows_[rowCount_++] = ROW_CHEAT_RESET;
+        break;
+    case pc::pageBattleCheats:
+        rows_[rowCount_++] = pc::settingCheatFirstStrike;
+        rows_[rowCount_++] = pc::settingCheatMonsterActions;
+        rows_[rowCount_++] = pc::settingCheatHocusPocus;
+        rows_[rowCount_++] = pc::settingCheatConfusedAllies;
+        rows_[rowCount_++] = pc::settingCheatConfusedEnemies;
         break;
     default:
         for (int i = 0; i < pc::controlCount; i++) {
@@ -186,7 +203,7 @@ void SettingsPanel::change(int row, int step)
             status::g_Game.language = (Language)pc::gameSettings().language;
             TextAPI::setLanguage(pc::gameSettings().language);
         }
-        if (page_ != pc::pageCheats) pc::requestSettingsApply();
+        if (!cheatPage(page_)) pc::requestSettingsApply();
     }
 }
 
@@ -202,14 +219,15 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
     if (item.active_ != before) {
         redraw = 1; // the chosen line shows its value between arrows
     }
-    // L and R turn the pages.
-    int page = page_;
-    if (!cheatsOnly_ && (dss::g_Pad.edge() & PAD_BUTTON_R)) {
+    // L and R turn the pages (the cheats window turns its own tabs).
+    int page = page_ - firstPage();
+    if (!tabs_ && (dss::g_Pad.edge() & PAD_BUTTON_R)) {
         page = (page + 1) % pageCount();
     }
-    if (!cheatsOnly_ && (dss::g_Pad.edge() & PAD_BUTTON_L)) {
+    if (!tabs_ && (dss::g_Pad.edge() & PAD_BUTTON_L)) {
         page = (page + pageCount() - 1) % pageCount();
     }
+    page += firstPage();
     if (page != page_) {
         page_ = page;
         buildRows();
@@ -258,7 +276,7 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
             pc::saveSettings();
         } else if (page_ == pc::pageKeyboard || page_ == pc::pageGamepad) {
             pc::startRebind(page_, row);
-        } else if (page_ == pc::pageCheats) {
+        } else if (cheatPage(page_)) {
             pc::CheatAction action;
             if (inGame_ && cheatAction(row, action)) {
                 lastCheatResult_ = pc::runCheatAction(action, cheatItem_, cheatQuantity_);
@@ -273,7 +291,7 @@ bool SettingsPanel::update(menu::MenuItem& item, int& redraw)
     }
     // On the cheats page only the switches, multipliers, item and quantity
     // change; its actions run when chosen.
-    const bool changeable = page_ == pc::pageCheats ?
+    const bool changeable = cheatPage(page_) ?
         row < pc::settingCount || row == ROW_CHEAT_ITEM || row == ROW_CHEAT_QUANTITY :
         (page_ == pc::pageGame || page_ == pc::pageDisplay) && row != ROW_BACK && row != ROW_EXIT;
     if (step != 0 && changeable) {
@@ -294,14 +312,14 @@ void SettingsPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, 
     const int language = pc::gameSettings().language;
     const char* pages[8];
     for (int page = 0; page < pageCount(); page++) {
-        pages[page] = pc::pageTitle(cheatsOnly_ ? pc::pageCheats : page, language);
+        pages[page] = pc::pageTitle(firstPage() + page, language);
     }
     int tabCount = pageCount();
     for (int tab = 1; tabs_ && tab < tabCount_ && tab < 8; tab++) {
         pages[tab] = tabs_[tab];
         tabCount = tab + 1;
     }
-    unkfunc_native_tabs(pages, tabCount, cheatsOnly_ ? 0 : page_, x, w, frame);
+    unkfunc_native_tabs(pages, tabCount, page_ - firstPage(), x, w, frame);
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     for (int i = 0; i < rowCount_; i++) {
         const int row = rows_[i];
@@ -353,7 +371,7 @@ void SettingsPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, 
         if (value[0]) {
             // The chosen line's value can be changed with left and right.
             const bool adjustable = i == item.active_ && (page_ == pc::pageGame || page_ == pc::pageDisplay ||
-                (page_ == pc::pageCheats && (row < pc::settingCount || row == ROW_CHEAT_QUANTITY)));
+                (cheatPage(page_) && (row < pc::settingCount || row == ROW_CHEAT_QUANTITY)));
             snprintf(s_value[i], sizeof(s_value[i]), adjustable ? "< %s >" : "%s", value);
             text(s_right, s_value[i], 0x18, y);
         }

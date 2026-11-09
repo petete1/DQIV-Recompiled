@@ -306,8 +306,8 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
 
 void DebugPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int, int, int, int))
 {
-    // The cheats window's tabs: the cheats, then these pages.
-    unkfunc_native_tabs(tabs_, tabCount_, page_ + 1, x, w, frame);
+    // The cheats window's tabs: the cheats' pages, then these pages.
+    unkfunc_native_tabs(tabs_, tabCount_, tabCount_ - PAGE_COUNT + page_, x, w, frame);
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     const auto& maps = pc::debugMaps();
     const auto& characters = pc::debugCharacters();

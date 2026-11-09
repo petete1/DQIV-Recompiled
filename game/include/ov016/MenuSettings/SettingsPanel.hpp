@@ -1,12 +1,13 @@
 #pragma once
 #ifdef DQIV_NATIVE
 #include "main/menu/MenuBase.hpp"
+#include "Settings.hpp"
 
 // The PC version's settings in the game's menu style, pages turned by L / R:
 // game, display, keyboard, gamepad. In a game, the game page also holds the
 // game's options (battle messages, music and sound volumes). The same panel
-// shows the cheats alone (Misc > Cheats). The menu showing it owns the
-// cursor's menu item.
+// shows the cheats' two pages alone (Misc > Cheats). The menu showing it owns
+// the cursor's menu item.
 struct SettingsPanel
 {
     enum Row {
@@ -40,8 +41,8 @@ struct SettingsPanel
     int tabCount_ = 0;
 
     void open(bool inGame);
-    // The cheats page alone, during a game.
-    void openCheats();
+    // The cheats pages alone, during a game, from `page` (pageCheats or pageBattleCheats).
+    void openCheats(int page = pc::pageCheats);
     void execute(menu::MenuItem& item);
     // True when the player leaves the settings.
     bool update(menu::MenuItem& item, int& redraw);
@@ -52,6 +53,7 @@ struct SettingsPanel
 private:
     void buildRows();
     int pageCount() const;
+    int firstPage() const;
     int step() const;
     void change(int row, int step);
 };
