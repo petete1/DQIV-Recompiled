@@ -149,7 +149,12 @@ THUMB void MaterielMenu_LOAD::menuExecute()
     MenuTemplate_materiel::MATERIEL_DIARY_MENU(&rootItem_, rootCount() + 3);
     settings_.execute(settingsItem_);
     achievements_.execute(achievementsItem_);
-    MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&dataItem_, menuMode_ == 0 ? 4 : 3);
+    // Classic: one list, the two resume saves (Continue) and the six logs.
+    if (classicBattleMenus()) {
+        MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&dataItem_, menuMode_ == 0 ? 8 : 6);
+    } else {
+        MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&dataItem_, menuMode_ == 0 ? 4 : 3);
+    }
     MenuTemplate_materiel::MATERIEL_SEXUALITY(&sexualityItem_);
     return;
 #endif
@@ -231,6 +236,10 @@ THUMB void MaterielMenu_LOAD::menuDraw()
     }
 #ifdef DQIV_NATIVE
     if (status_ == LOAD_DATASELECT && classicBattleMenus()) {
+        // The game's prompts (a DS message and Yes/No) show alone: the list would cover them.
+        if (g_TownMenuMessage.isOpen()) {
+            return;
+        }
         publishLaunchList(rootMessage[menuMode_], s_cards, menuMode_ == 0 ? 8 : 6, dataItem_.active_, s_cardsRevision);
         return;
     }
@@ -330,6 +339,9 @@ THUMB void MaterielMenu_LOAD::menuUpdate()
 #ifdef DQIV_NATIVE
             if (classicBattleMenus()) {
                 readAllCards(menuMode_);
+                // The cursor on the session page's recent log.
+                const int log = (pages() ? pages()->sessionPage() * 3 : 0) + dataItem_.active_;
+                dataItem_.active_ = menuMode_ == 0 ? log + 2 : log;
             }
 #endif
             changeStatus(LOAD_DATASELECT);
@@ -534,6 +546,9 @@ THUMB bool MaterielMenu_LOAD::messageUpdate()
 THUMB void MaterielMenu_LOAD::rootUpdate()
 {
     rootItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleListInput(rootItem_);
+#endif
     switch (rootItem_.result_) {
     case 2: {
         rootItem_.result_ = 0;
@@ -615,8 +630,10 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
 {
 #ifdef DQIV_NATIVE
     // L / R: the other page of logs.
+    const bool classic = classicBattleMenus();
+    const int rows = menuMode_ == 0 ? 8 : 6;
     const int edge = dss::g_Pad.edge();
-    if (pages() && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
+    if (!classic && pages() && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
         const int step = edge & PAD_BUTTON_R ? 1 : pc::SavePages::pageCount - 1;
         pages()->showPage((pages()->shownPage() + step) % pc::SavePages::pageCount);
         updateActiveDiary();
@@ -625,13 +642,40 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
     }
 #endif
     dataItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleListInput(dataItem_);
+#endif
     switch (dataItem_.result_) {
     case 2: {
         dataItem_.result_ = 0;
         dataItem_.lastresult_ = 0;
         int active = dataItem_.active_;
 #ifdef DQIV_NATIVE
-        if (active == 3) {
+        if (classic) {
+            // Rows: the autosave and the quick save (Continue), then logs 1-6. A resume
+            // save: its page shown, LOAD_RESUME loads that page's slot; a log: its page
+            // shown and its slot there, then the game's own handling.
+            const int row = active;
+            if (menuMode_ == 0 && row < 2) {
+                if (pages()) {
+                    pages()->showPage(row == 0 ? 1 : 0);
+                }
+                if (s_cards.size() > (size_t)row && s_cards[row].time.width > 0) {
+                    changeStatus(LOAD_RESUME);
+                } else if (pages()) {
+                    pages()->showPage(pages()->sessionPage());
+                }
+                redraw_ = 1;
+                break;
+            }
+            const int log = menuMode_ == 0 ? row - 2 : row;
+            if (pages()) {
+                pages()->showPage(log / 3);
+            }
+            updateActiveDiary();
+            dataItem_.active_ = row;
+            active = log % 3;
+        } else if (active == 3) {
             if (s_resumeUsed) {
                 changeStatus(LOAD_RESUME);
             }
@@ -680,6 +724,11 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
     case 3:
         dataItem_.result_ = 0;
         dataItem_.lastresult_ = 0;
+#ifdef DQIV_NATIVE
+        if (classic && pages()) {
+            pages()->showPage(pages()->sessionPage());
+        }
+#endif
         changeStatus(LOAD_MODESELECT);
         redraw_ = 1;
         break;
@@ -688,7 +737,7 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
         break;
     case 5:
 #ifdef DQIV_NATIVE
-        dataItem_.active_ = menuMode_ == 0 ? 3 : 2;
+        dataItem_.active_ = classic ? rows - 1 : menuMode_ == 0 ? 3 : 2;
 #else
         dataItem_.active_ = 2;
 #endif
