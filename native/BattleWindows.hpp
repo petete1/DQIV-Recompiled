@@ -56,6 +56,15 @@ struct BattleItemsWindow {
     BattleText count;                 // "×n" (the Bag), may be empty
     BattleText statLabel,statNow,statNew,statNote;  // the comparison: label now ▶ new, or label note (now)
 };
+// The launch menu (MaterielMenu_LOAD, Classic). shown: the commands (a field list) or the
+// log list; the map and gold stay off. cards non-empty: the log list in one window, the
+// pickable cards being the state's entries (card.entry their index).
+struct BattleSaveCard {
+    BattleText label,name,chapter,place,time,date;  // label: the number ("3") or "Quick save"; empty texts not drawn
+    std::vector<std::uint8_t> face;                 // 48x48 portraitPalette indices, may be empty
+    int entry=-1;                                   // its index in state.entries, -1 not pickable (drawn dimmed)
+};
+struct BattleLaunchMenu {bool shown=false;std::vector<BattleSaveCard> cards;};
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
     BattleText title,footer;          // member name (or a message); "MP left" line (may be empty)
@@ -80,6 +89,7 @@ struct BattleMenuState {
     std::array<std::vector<std::uint32_t>,5> cursorFrames;  // the game's animated cursor, 16x16 ARGB each (empty: the hand)
     int cursorFrame=0;                               // the frame showing now
     BattleItemsWindow items;                         // the Items window (field, Classic)
+    BattleLaunchMenu launch;                         // the launch menu (Classic)
 };
 // The world map inset at the bottom left while a field menu shows, canvas units (canvas
 // canvasHeight high): {x,y,w,h}.

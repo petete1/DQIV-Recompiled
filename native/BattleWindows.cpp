@@ -37,6 +37,9 @@ struct Plan {
     bool items=false,detailBelow=false,whoseHeader=false;
     std::vector<Box> whoseRows,listRows;
     std::shared_ptr<const Plan> popup;       // the popup's own plan (placed at windows[4])
+    // The launch list: windows 0 the window, then the cards shown (from card firstCard).
+    bool launch=false,moreAbove=false,moreBelow=false;
+    int firstCard=0;
 };
 bool listed(BattleMenuKind kind) {return kind!=BattleMenuKind::none&&kind!=BattleMenuKind::message;}
 // The commands and root windows carry their entries; the others show the
@@ -92,9 +95,33 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
     } else p.entries=focus==BattleItemsFocus::whose?p.whoseRows:p.listRows;
     return p;
 }
+// The launch list (Classic): the save cards in one window, scrolled to the cursor's card.
+constexpr int cardHeight=30,cardGap=2,cardFace=24;
+Plan planLaunch(const BattleMenuState& state,int width,int height) {
+    Plan p;p.launch=true;
+    const Box big{0,0,width-2*margin,height-2*margin};
+    const int top=headerHeight+gap,count=int(state.launch.cards.size());
+    const int visible=std::min(count,(big.h-top-pad+cardGap)/(cardHeight+cardGap));
+    if(visible<1||big.w<2*pad+cursorWidth+cardFace)return Plan{};
+    int cursorCard=0;
+    for(int i=0;i<count;++i)if(state.launch.cards[std::size_t(i)].entry==state.cursor&&state.cursor>=0)cursorCard=i;
+    p.firstCard=std::clamp(cursorCard-visible/2,0,count-visible);
+    p.moreAbove=p.firstCard>0;p.moreBelow=p.firstCard+visible<count;
+    p.windows.push_back(big);
+    p.entries.assign(state.entries.size(),Box{});
+    for(int i=0;i<visible;++i) {
+        const Box card{pad+cursorWidth-2,top+i*(cardHeight+cardGap),big.w-2*pad-cursorWidth+2,cardHeight};
+        p.windows.push_back(card);
+        const int entry=state.launch.cards[std::size_t(p.firstCard+i)].entry;
+        if(entry>=0&&entry<int(p.entries.size()))p.entries[std::size_t(entry)]=card;
+    }
+    p.picture={margin,0,big.w,big.h};
+    return p;
+}
 Plan plan(const BattleMenuState& state,int width,int height) {
     Plan p;
     if(state.kind==BattleMenuKind::none)return p;
+    if(state.launch.shown&&!state.launch.cards.empty())return planLaunch(state,width,height);
     if(state.items.shown)return planItems(state,width,height);
     if(state.kind==BattleMenuKind::message) {
         const int w=std::min(state.title.width+2*pad,width-2*margin),h=state.title.height+2*pad;
@@ -231,11 +258,11 @@ void icon(std::vector<std::uint32_t>& out,int width,int height,const std::vector
 }
 // A small curl in each corner, inside the border (top-left; mirrored for the others).
 constexpr const char* curl[5]={".XXX.","X....","X.XX.","X.X..","....."};
-void frame(std::vector<std::uint32_t>& out,int width,const Box& box,bool curls=true) {
+void frame(std::vector<std::uint32_t>& out,int width,const Box& box,bool curls=true,std::uint32_t inside=fill) {
     for(int y=0;y<box.h;++y)for(int x=0;x<box.w;++x) {
         const int dx=std::min(x,box.w-1-x),dy=std::min(y,box.h-1-y);
         if(dx+dy<1)continue;  // the rounded outer corners
-        std::uint32_t colour=fill;
+        std::uint32_t colour=inside;
         if((dx==border&&dy>=border)||(dy==border&&dx>=border))colour=tan;
         else if(curls&&dx>border&&dy>border&&dx-border-1<5&&dy-border-1<5&&curl[dy-border-1][dx-border-1]=='X')colour=tan;
         out[std::size_t(box.y+y)*width+box.x+x]=colour;
@@ -265,7 +292,7 @@ void hand(std::vector<std::uint32_t>& out,int width,int x,int y) {
 BattleMenuState& battleMenuState() {static BattleMenuState state;return state;}
 BattleGroupLayout layoutBattleGold(const BattleMenuState& state,int windowWidth,int windowHeight) {
     BattleGroupLayout layout;layout.scale=battleScale(windowHeight);
-    if(state.gold.width<=0||state.items.shown)return layout;
+    if(state.gold.width<=0||state.items.shown||state.launch.shown)return layout;
     const int s=layout.scale,w=2*pad+state.gold.width+3+state.goldUnit.width,h=row+2*pad;
     layout.picture={windowWidth-(margin+w)*s,margin*s,w*s,h*s};
     return layout;
@@ -282,7 +309,7 @@ std::vector<std::uint32_t> composeBattleGold(const BattleMenuState& state,const 
     return out;
 }
 bool classicFieldMapShown(const BattleMenuState& state) {
-    return state.field&&state.kind!=BattleMenuKind::none&&!state.message.shown&&!state.items.shown;
+    return state.field&&state.kind!=BattleMenuKind::none&&!state.message.shown&&!state.items.shown&&!state.launch.shown;
 }
 std::array<float,4> fieldMapInset(float canvasHeight,float insetWidth,float insetHeight) {
     return {6.f,canvasHeight-6.f-insetHeight,insetWidth,insetHeight};
@@ -503,6 +530,48 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
     }
 }
 }
+// A face halved to 24x24 (every other pixel of the 48x48 portrait).
+void smallFace(std::vector<std::uint32_t>& out,int width,int height,const BattleMenuState& state,const std::vector<std::uint8_t>& face,int x,int y) {
+    if(face.size()!=48*48)return;
+    for(int ty=0;ty<cardFace;++ty)for(int tx=0;tx<cardFace;++tx) {
+        const auto index=face[std::size_t(ty*2)*48+tx*2];
+        const int px=x+tx,py=y+ty;
+        if(index&&px>=0&&py>=0&&px<width&&py<height)out[std::size_t(py)*width+px]=state.portraitPalette[index];
+    }
+}
+// ▲ (or ▼) of a scrolled list: 9 wide, 5 tall, gold.
+void arrow(std::vector<std::uint32_t>& out,int width,int height,int x,int y,bool up) {
+    for(int ty=0;ty<5;++ty)for(int tx=4-(up?ty:4-ty);tx<=4+(up?ty:4-ty);++tx)
+        if(x+tx>=0&&x+tx<width&&y+ty>=0&&y+ty<height)out[std::size_t(y+ty)*width+x+tx]=gold;
+}
+// The chosen card's panel, lighter than the others.
+constexpr std::uint32_t chosenFill=0xe0503420;
+template<class Pointer>
+void composeLaunch(std::vector<std::uint32_t>& out,int width,int height,const BattleMenuState& state,const Plan& p,Pointer& pointer) {
+    const auto& big=p.windows[0];
+    frame(out,width,big);
+    blit(out,width,height,state.title,big.x+(big.w-state.title.width)/2,big.y+(headerHeight-state.title.height)/2+1,big.w-2*pad,state.palette,false);
+    rule(out,width,big.x+pad,big.y+headerHeight,big.w-2*pad);
+    if(p.moreAbove)arrow(out,width,height,big.x+big.w-pad-9,big.y+headerHeight-7,true);
+    if(p.moreBelow)arrow(out,width,height,big.x+big.w-pad-9,big.y+big.h-pad+1,false);
+    int labels=0,chapters=0;
+    for(const auto& c:state.launch.cards) {labels=std::max(labels,c.label.width);chapters=std::max(chapters,c.chapter.width);}
+    for(std::size_t i=1;i<p.windows.size();++i) {
+        const auto& b=p.windows[i];
+        const auto& c=state.launch.cards[std::size_t(p.firstCard)+i-1];
+        const bool chosen=c.entry>=0&&c.entry==state.cursor,dim=c.entry<0;
+        frame(out,width,b,false,chosen?chosenFill:fill);
+        smallFace(out,width,height,state,c.face,b.x+4,b.y+(b.h-cardFace)/2);
+        const int x=b.x+4+cardFace+6,right=b.x+b.w-pad,y1=b.y+3,y2=b.y+15;
+        blit(out,width,height,c.label,x,y1,labels,state.palette,dim);
+        blit(out,width,height,c.time,right-c.time.width,y1,c.time.width,state.palette,dim);
+        blit(out,width,height,c.name,x+labels+8,y1,std::max(0,right-c.time.width-8-(x+labels+8)),state.palette,dim);
+        blit(out,width,height,c.date,right-c.date.width,y2,c.date.width,state.palette,dim);
+        blit(out,width,height,c.chapter,x,y2,chapters,state.palette,dim);
+        blit(out,width,height,c.place,x+chapters+8,y2,std::max(0,right-c.date.width-8-(x+chapters+8)),state.palette,dim);
+        if(chosen)pointer(b.x-cursorWidth+1,b.y+(b.h-16)/2,state.waiting,false);
+    }
+}
 std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const BattleMenuLayout& layout,int blinkFrame) {
     if(layout.windows.empty())return {};
     const int s=layout.scale,width=layout.picture.w/s,height=layout.picture.h/s;
@@ -510,10 +579,10 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
     const auto p=plan(state,layout.planWidth>0?layout.planWidth:width+2*margin,layout.planHeight);
     std::vector<std::uint32_t> out(std::size_t(width)*height,0);
     // The layout's windows in DS pixels relative to the picture.
-    if(!p.items)for(const auto& w:layout.windows)
+    if(!p.items&&!p.launch)for(const auto& w:layout.windows)
         frame(out,width,{(w.x-layout.picture.x)/s,(w.y-layout.picture.y)/s,w.w/s,w.h/s});
     const int dy=height-p.picture.h;  // the plan's own bottom line is the picture's
-    if(state.title.width>0&&!p.items) {
+    if(state.title.width>0&&!p.items&&!p.launch) {
         const auto& t=p.titleBox;
         if(p.titleOnBorder)  // the name on the top border, over a strip of the panel colour
             for(int y=0;y<state.title.height;++y)for(int x=-2;x<state.title.width+2;++x)
@@ -544,6 +613,7 @@ std::vector<std::uint32_t> composeBattleMenu(const BattleMenuState& state,const 
         }
     };
     if(p.items) {composeItems(out,width,height,state,p,pointer,entries);return out;}
+    if(p.launch) {composeLaunch(out,width,height,state,p,pointer);return out;}
     entries(p,state.entries,state.cursor,state.waiting,false);
     if(p.parent)entries(*p.parent,state.parent,state.parentCursor,false,true);
     const auto& list=p.windows[std::size_t(p.listIndex)];

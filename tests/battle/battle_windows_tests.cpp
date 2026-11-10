@@ -325,6 +325,58 @@ void itemsWhoseHeaderOnUse() {
     check(gold>0,"the targets' pager in the whose pane");
     check(layout.entries.size()==4&&layout.entries[0].y>=layout.windows[1].y+20*2,"the targets below their header");
 }
+pc::BattleMenuState launchState(int cards,int pickable) {
+    pc::BattleMenuState state;state.kind=pc::BattleMenuKind::list;state.field=true;state.launch.shown=true;
+    state.title=ink(80);state.palette.fill(0xffffffff);state.cursor=0;
+    for(int i=0;i<cards;++i) {
+        pc::BattleSaveCard card;card.label=ink(10);card.name=ink(40);card.time=ink(30);card.date=ink(60);
+        if(i>=cards-pickable) {card.entry=int(state.entries.size());state.entries.push_back(entry(10,short(card.entry)));}
+        state.launch.cards.push_back(card);
+    }
+    return state;
+}
+void launchFitsEightAt720() {
+    const auto layout=pc::layoutBattleMenu(launchState(8,8),1280,720);
+    const int s=pc::battleScale(720);
+    check(layout.windows.size()==9,"the window and eight cards at 720p");
+    if(layout.windows.empty())return;
+    check(layout.windows[0].x==8*s&&layout.windows[0].y==8*s,"8 in at the top left");
+    check(layout.windows[0].x+layout.windows[0].w==1280-8*s,"8 in from the right");
+    check(layout.entries.size()==8,"one hit area per pickable card");
+}
+void launchScrollsToCursor() {
+    auto state=launchState(8,8);state.cursor=7;
+    const auto layout=pc::layoutBattleMenu(state,640,270);  // scale 1: 480 high still holds all eight
+    check(layout.windows.size()<9&&layout.windows.size()>1,"fewer cards shown in a short window");
+    if(layout.entries.size()<8)return;
+    const auto& last=layout.entries[7];
+    check(last.w>0&&inside(last,640,270),"the cursor's card in view");
+    check(layout.entries[0].w==0,"the first card scrolled out");
+}
+void launchDimmedNotPickable() {
+    const auto layout=pc::layoutBattleMenu(launchState(8,6),1280,720);
+    check(layout.windows.size()==9,"the resume cards still drawn");
+    check(layout.entries.size()==6,"hit areas only for the logs");
+}
+void launchWindowsInside() {
+    for(auto [w,h]:{std::pair{640,480},{1280,720},{1920,1080}}) {
+        const auto layout=pc::layoutBattleMenu(launchState(8,8),w,h);
+        bool all=!layout.windows.empty();for(auto& r:layout.windows)all=all&&inside(r,w,h);
+        check(all,"the launch windows inside the screen");
+    }
+}
+void launchHidesMapAndGold() {
+    auto state=launchState(0,0);state.gold=ink(20);
+    check(!pc::classicFieldMapShown(state),"no map behind the launch menu");
+    check(pc::layoutBattleGold(state,1280,720).picture.w==0,"no gold panel");
+}
+void launchDrawsCards() {
+    auto state=launchState(8,8);state.launch.cards[2].face.assign(48*48,5);state.portraitPalette[5]=0xff123456;
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto pixels=pc::composeBattleMenu(state,layout,0);
+    bool face=false;for(auto c:pixels)face=face||c==0xff123456;
+    check(face,"a card draws its face");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -711,6 +763,12 @@ int main() {
     itemsNoWindowWhenTooShort();
     itemsCompareClearOfIconBelow();
     itemsWhoseHeaderOnUse();
+    launchFitsEightAt720();
+    launchScrollsToCursor();
+    launchDimmedNotPickable();
+    launchWindowsInside();
+    launchHidesMapAndGold();
+    launchDrawsCards();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();
