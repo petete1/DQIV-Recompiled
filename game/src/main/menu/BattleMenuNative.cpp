@@ -38,6 +38,8 @@
 #include "main/text/TextAPI.hpp"
 #include "GameServices.hpp"
 #include "Settings.hpp"
+#include "main/status/ExcelParam.hpp"
+#include <ctime>
 #include <cstring>
 #include <map>
 #include <string>
@@ -1121,3 +1123,76 @@ void drawFieldTowns(int rootCommand, const status::HaveStatusInfo* user, int pag
 }
 #endif
 
+
+void publishLaunchCommands(int count, const int* texts, int active)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    for (int i = 0; i < count; i++) {
+        addBattleEntry(texts[i], (short)i, true);
+    }
+    setBattleCursor((short)active);
+    s_building.launch.shown = true;
+    s_keys.push_back(-3);
+    endBattleMenu();
+}
+
+void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    setBattleTitle(title);
+    // The pickable cards are the entries; their labels only key the revision.
+    for (int i = 0; i < entries; i++) {
+        pc::BattleMenuEntry entry;
+        entry.index = (short)i;
+        s_building.entries.push_back(entry);
+    }
+    setBattleCursor((short)active);
+    loadPortraitPalette(pc::battleMenuState());
+    s_building.launch.shown = true;
+    s_building.launch.cards = cards;
+    s_keys.push_back(-4);
+    s_keys.push_back(entries);
+    s_keys.push_back(revision);
+    endBattleMenu();
+}
+
+pc::BattleText battleSaveDate(long long seconds)
+{
+    if (seconds == 0) {
+        return pc::BattleText();
+    }
+    const time_t t = (time_t)seconds;
+    char ascii[32];
+    if (strftime(ascii, sizeof(ascii), "%Y-%m-%d %H:%M", localtime(&t)) == 0) {
+        return pc::BattleText();
+    }
+    return numbersText(ascii, 12);
+}
+
+pc::BattleText battlePlayTime(int frames)
+{
+    // As drawJournalSlotNumbered: 216000 frames an hour, 3600 a minute.
+    char ascii[32];
+    dss::sprintf_s(ascii, sizeof(ascii), "%03u:%02u", (unsigned)frames / 216000 % 1000, (unsigned)frames % 216000 / 3600);
+    return numbersText(ascii, 12);
+}
+
+pc::BattleText battleString(const char* utf8)
+{
+    const std::string key = std::string("$") + utf8;
+    auto found = s_texts.find(key);
+    if (found != s_texts.end()) {
+        return found->second;
+    }
+    return s_texts[key] = drawText(utf8);
+}
+
+const std::vector<std::uint8_t>& playerFace(int player)
+{
+    static const std::vector<std::uint8_t> none;
+    const param::CharInitData* charData = status::excelParam.getCharaInitData();
+    if (charData == NULL || player <= 0 || player >= 32) {
+        return none;
+    }
+    return portraitPixels(charData[player].icon);
+}

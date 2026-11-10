@@ -13,6 +13,9 @@ struct profile::CatalogView {
     int level_;                                 // 0x50
     int town_;                                  // 0x54
     int time_;                                  // 0x58
+#ifdef DQIV_NATIVE
+    int lead_;                                  // the party's first member (player index), for its face
+#endif
 };
 
 // backup memory access (header at 0, current bank at 0x200, banks of 0x3c00 bytes from 0x400)

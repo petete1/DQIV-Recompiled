@@ -565,7 +565,9 @@ void composeLaunch(std::vector<std::uint32_t>& out,int width,int height,const Ba
         const int x=b.x+4+cardFace+6,right=b.x+b.w-pad,y1=b.y+3,y2=b.y+15;
         blit(out,width,height,c.label,x,y1,labels,state.palette,dim);
         blit(out,width,height,c.time,right-c.time.width,y1,c.time.width,state.palette,dim);
-        blit(out,width,height,c.name,x+labels+8,y1,std::max(0,right-c.time.width-8-(x+labels+8)),state.palette,dim);
+        const int nameRoom=std::max(0,right-c.time.width-8-(x+labels+8)-(c.level.width?c.level.width+8:0));
+        blit(out,width,height,c.name,x+labels+8,y1,nameRoom,state.palette,dim);
+        blit(out,width,height,c.level,x+labels+8+std::min(nameRoom,c.name.width)+8,y1,c.level.width,state.palette,dim);
         blit(out,width,height,c.date,right-c.date.width,y2,c.date.width,state.palette,dim);
         blit(out,width,height,c.chapter,x,y2,chapters,state.palette,dim);
         blit(out,width,height,c.place,x+chapters+8,y2,std::max(0,right-c.date.width-8-(x+chapters+8)),state.palette,dim);

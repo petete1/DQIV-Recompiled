@@ -98,6 +98,16 @@ void clearBattleActed();
 // for the port to draw. True when published: the DS sprites are then not drawn.
 struct MenuTextDisplay;
 bool publishBattlePlate(MenuTextDisplay* text);
+// The launch menu (MaterielMenu_LOAD, Classic): its commands as a field list (texts:
+// message values or text pointers), and its log list of save cards (entries pickable).
+void publishLaunchCommands(int count, const int* texts, int active);
+void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision);
+// A save card's pieces: its date ("YYYY-MM-DD HH:MM", local; empty for 0), a play time
+// ("HHH:MM" from the game's frames), a plain UTF-8 text, and a player's face.
+pc::BattleText battleSaveDate(long long seconds);
+pc::BattleText battlePlayTime(int frames);
+pc::BattleText battleString(const char* utf8);
+const std::vector<std::uint8_t>& playerFace(int player);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

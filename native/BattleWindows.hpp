@@ -60,7 +60,7 @@ struct BattleItemsWindow {
 // log list; the map and gold stay off. cards non-empty: the log list in one window, the
 // pickable cards being the state's entries (card.entry their index).
 struct BattleSaveCard {
-    BattleText label,name,chapter,place,time,date;  // label: the number ("3") or "Quick save"; empty texts not drawn
+    BattleText label,name,level,chapter,place,time,date;  // label: the number ("3") or "Quick save"; empty texts not drawn
     std::vector<std::uint8_t> face;                 // 48x48 portraitPalette indices, may be empty
     int entry=-1;                                   // its index in state.entries, -1 not pickable (drawn dimmed)
 };

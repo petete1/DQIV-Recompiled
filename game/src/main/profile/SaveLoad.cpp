@@ -67,6 +67,9 @@ THUMB void profile::SaveLoad::fillCatalogView(PROFILE_RECORD* record, CatalogVie
         }
         view->town_ = town;
         view->time_ = record->party.PLAYTIME;
+#ifdef DQIV_NATIVE
+        view->lead_ = record->party.PARTY[0];
+#endif
     } else {
         view->useFlag_ = 0;
     }
