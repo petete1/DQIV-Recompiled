@@ -1,12 +1,14 @@
 #include "SavePages.hpp"
 #include <algorithm>
 #include <array>
+#include <ctime>
 #include <exception>
 #include <utility>
 
 namespace pc {
 namespace {
 constexpr std::uint32_t resumeStart=0xb800,resumeEnd=0xf400,tagOffset=0x1fc;
+constexpr std::uint32_t bankStart=0x400,bankSize=0x3c00,stampOffset=0xff00;
 SavePages* mounted=nullptr;
 bool pending=false,arriving=false,playing=false;
 // An empty image the game reads as three empty logs: its header magic, then zeros.
@@ -36,9 +38,27 @@ void SavePages::write(std::uint32_t offset,std::span<const std::uint8_t> source)
         const bool resume=offset>=resumeStart&&offset<resumeEnd;
         const std::uint32_t edge=offset<resumeStart?resumeStart:resume?resumeEnd:SaveStore::size;
         const auto count=std::min<std::size_t>(source.size(),edge>offset?edge-offset:source.size());
-        (resume?resumeStore(slot_):pageStore(shown_)).write(offset,source.first(count));
+        SaveStore& store=resume?resumeStore(slot_):pageStore(shown_);
+        store.write(offset,source.first(count));
+        const std::int64_t now=std::time(nullptr);
+        for(std::uint32_t bank=0;bank<4;++bank) {
+            const std::uint32_t start=bankStart+bank*bankSize;
+            if(offset>=start+bankSize||offset+count<=start) continue;
+            std::array<std::uint8_t,8> stamp{};
+            for(int i=0;i<8;++i) stamp[i]=std::uint8_t(std::uint64_t(now)>>(8*i));
+            store.write(stampOffset+8*bank,stamp);
+        }
         offset+=std::uint32_t(count);source=source.subspan(count);
     }
+}
+std::int64_t SavePages::saveTime(int page,int bank) const {
+    if(bank<0||bank>3) return 0;
+    const SaveStore& store=bank==3?resumeStore(page?ResumeSlot::autosave:ResumeSlot::quick):pageStore(page);
+    std::array<std::uint8_t,8> stamp{};
+    store.read(stampOffset+8*std::uint32_t(bank),stamp);
+    std::uint64_t value=0;
+    for(int i=7;i>=0;--i) value=value<<8|stamp[i];
+    return value==~std::uint64_t(0)?0:std::int64_t(value); // an erased cartridge reads 0xFF
 }
 void SavePages::showPage(int page) {shown_=std::clamp(page,0,pageCount-1);}
 void SavePages::setSessionPage(int page) {showPage(page);session_=shown_;}

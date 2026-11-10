@@ -27,6 +27,10 @@ public:
     // tagResume returns false when the file cannot be written.
     int resumePage(ResumeSlot slot) const;
     bool tagResume(ResumeSlot slot,int page);
+    // When bank 0-3 of page 0-1's file was last written (Unix seconds, 0: never, also when erased): each
+    // write stamps the banks it touches at 0xFF00 + 8*bank, a part the game never reads.
+    // Bank 3 is the resume save: page 0's file holds the quick save, page 1's the autosave.
+    std::int64_t saveTime(int page,int bank) const;
 private:
     SaveStore& resumeStore(ResumeSlot slot) {return slot==ResumeSlot::quick?first_:second_;}
     const SaveStore& resumeStore(ResumeSlot slot) const {return slot==ResumeSlot::quick?first_:second_;}

@@ -1,6 +1,7 @@
 // Save pages: two 64 KiB images, routed by offset (build target dqiv_save_tests).
 #include "SavePages.hpp"
 #include <array>
+#include <ctime>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -135,6 +136,43 @@ void autosaveTrigger() {
     pc::autosaveArrived();
     check(!pc::autosavePending(),"loading from the title drops a pending autosave");
 }
+void stampsLogBank() {
+    const auto d=freshDirectory("stamp");
+    pc::SavePages pages(d/"one.sav",d/"two.sav");
+    pages.showPage(1);
+    const std::array<std::uint8_t,4> data{1,2,3,4};
+    const auto before=std::int64_t(std::time(nullptr));
+    pages.write(0x400+0x3c00*2+16,data);           // bank 2, page 2
+    const auto t=pages.saveTime(1,2);
+    check(t>=before&&t<=std::int64_t(std::time(nullptr)),"a log write stamps its bank with now");
+    check(pages.saveTime(1,0)==0&&pages.saveTime(0,2)==0,"other banks and the other page keep no stamp");
+    const auto bytes=fileBytes(d/"two.sav");
+    std::int64_t onDisk=0;for(int i=7;i>=0;--i)onDisk=onDisk<<8|bytes[0xff00+16+i];
+    check(onDisk==t,"the stamp is little-endian at 0xFF00 + 8*bank");
+}
+void stampsResumeInItsSlotsFile() {
+    const auto d=freshDirectory("stampresume");
+    pc::SavePages pages(d/"one.sav",d/"two.sav");
+    pages.useResumeSlot(pc::ResumeSlot::autosave);
+    const std::array<std::uint8_t,4> data{1,2,3,4};
+    pages.write(0xb800,data);
+    check(pages.saveTime(1,3)!=0&&pages.saveTime(0,3)==0,"bank 3 stamps the autosave's file");
+}
+void headerWriteStampsNothing() {
+    const auto d=freshDirectory("stampheader");
+    pc::SavePages pages(d/"one.sav",d/"two.sav");
+    const std::array<std::uint8_t,4> data{1,2,3,4};
+    pages.write(0x200,data);
+    bool none=true;for(int b=0;b<4;++b)none=none&&pages.saveTime(0,b)==0;
+    check(none,"a header write stamps no bank");
+}
+void stampsBothBanksOfASplitWrite() {
+    const auto d=freshDirectory("stampsplit");
+    pc::SavePages pages(d/"one.sav",d/"two.sav");
+    std::vector<std::uint8_t> data(32,7);
+    pages.write(0xb800-16,data);
+    check(pages.saveTime(0,2)!=0&&pages.saveTime(0,3)!=0,"a write across bank 2 and 3 stamps both");
+}
 }
 
 int main() {
@@ -148,6 +186,10 @@ int main() {
     rejectsWrongSize();
     autosaveTrigger();
     tagFailureIsReported();
+    stampsLogBank();
+    stampsResumeInItsSlotsFile();
+    headerWriteStampsNothing();
+    stampsBothBanksOfASplitWrite();
     std::cout<<(failures?"save pages: FAILED ":"save pages: all passed ")<<failures<<'\n';
     return failures?1:0;
 }
