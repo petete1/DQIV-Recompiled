@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <span>
+#include <string>
 
 namespace pc {
 // Which file the game's bank 3 (its quick save) reads and writes.
@@ -40,6 +41,9 @@ private:
     int shown_=0,session_=0;
     ResumeSlot slot_=ResumeSlot::quick;
 };
+// A stamp as "YYYY-MM-DD HH:MM" in local time; empty for 0 or a value outside 2000-2199
+// (a file from elsewhere may hold anything there).
+std::string saveTimeText(std::int64_t seconds);
 // The pages the game uses (NitroBackup), or null.
 SavePages* mountedSavePages();
 void mountSavePages(SavePages* pages);

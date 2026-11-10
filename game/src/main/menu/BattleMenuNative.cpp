@@ -39,7 +39,7 @@
 #include "GameServices.hpp"
 #include "Settings.hpp"
 #include "main/status/ExcelParam.hpp"
-#include <ctime>
+#include "SavePages.hpp"
 #include <cstring>
 #include <map>
 #include <string>
@@ -1158,15 +1158,8 @@ void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, 
 
 pc::BattleText battleSaveDate(long long seconds)
 {
-    if (seconds == 0) {
-        return pc::BattleText();
-    }
-    const time_t t = (time_t)seconds;
-    char ascii[32];
-    if (strftime(ascii, sizeof(ascii), "%Y-%m-%d %H:%M", localtime(&t)) == 0) {
-        return pc::BattleText();
-    }
-    return numbersText(ascii, 12);
+    const std::string ascii = pc::saveTimeText(seconds);
+    return ascii.empty() ? pc::BattleText() : numbersText(ascii.c_str(), 12);
 }
 
 pc::BattleText battlePlayTime(int frames)

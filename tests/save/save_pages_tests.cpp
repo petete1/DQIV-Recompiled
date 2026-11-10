@@ -173,6 +173,13 @@ void stampsBothBanksOfASplitWrite() {
     pages.write(0xb800-16,data);
     check(pages.saveTime(0,2)!=0&&pages.saveTime(0,3)!=0,"a write across bank 2 and 3 stamps both");
 }
+void saveTimeTextFormats() {
+    check(pc::saveTimeText(0).empty(),"no stamp, no text");
+    check(pc::saveTimeText(std::int64_t(0x7fffffffffffffff)).empty(),"a garbage stamp gives no text instead of crashing");
+    check(pc::saveTimeText(-5).empty(),"a negative stamp gives no text");
+    const auto text=pc::saveTimeText(1794348781);  // 2026-11-10, some hour of the local day
+    check(text.size()==16&&text.rfind("2026-11-",0)==0&&text[10]==' '&&text[13]==':',"YYYY-MM-DD HH:MM");
+}
 }
 
 int main() {
@@ -190,6 +197,7 @@ int main() {
     stampsResumeInItsSlotsFile();
     headerWriteStampsNothing();
     stampsBothBanksOfASplitWrite();
+    saveTimeTextFormats();
     std::cout<<(failures?"save pages: FAILED ":"save pages: all passed ")<<failures<<'\n';
     return failures?1:0;
 }

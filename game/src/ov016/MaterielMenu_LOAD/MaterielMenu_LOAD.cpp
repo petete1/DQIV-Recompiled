@@ -706,7 +706,14 @@ THUMB void MaterielMenu_LOAD::dataSelectUpdate()
         case 2:
             if (diary_[active].name_ != 0) {
                 g_TownMenuMessage.openMessageForMENU();
+#ifdef DQIV_NATIVE
+                // The log's number counts the page's logs before it (id_ is its bank in its file).
+                profile::CatalogView named = catalogview_[activeDiaryNo_];
+                named.id_ += shownPage() * 3;
+                profile::SaveLoad::setCatalogMacro(&named);
+#else
                 profile::SaveLoad::setCatalogMacro(&catalogview_[activeDiaryNo_]);
+#endif
                 if (diary_[activeDiaryNo_].savetype_ == 4) {
                     g_TownMenuMessage.addMessage(0xcb610);
                 } else if (diary_[activeDiaryNo_].chapter_ >= 5) {

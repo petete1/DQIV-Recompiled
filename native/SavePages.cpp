@@ -4,6 +4,7 @@
 #include <ctime>
 #include <exception>
 #include <utility>
+#include <vector>
 
 namespace pc {
 namespace {
@@ -39,15 +40,22 @@ void SavePages::write(std::uint32_t offset,std::span<const std::uint8_t> source)
         const std::uint32_t edge=offset<resumeStart?resumeStart:resume?resumeEnd:SaveStore::size;
         const auto count=std::min<std::size_t>(source.size(),edge>offset?edge-offset:source.size());
         SaveStore& store=resume?resumeStore(slot_):pageStore(shown_);
-        store.write(offset,source.first(count));
+        // The stamps of the banks it touches go in the same file write as the data:
+        // one transaction, so a save cannot fail after its data is on disk.
+        std::vector<std::uint8_t> image;
         const std::int64_t now=std::time(nullptr);
         for(std::uint32_t bank=0;bank<4;++bank) {
             const std::uint32_t start=bankStart+bank*bankSize;
             if(offset>=start+bankSize||offset+count<=start) continue;
-            std::array<std::uint8_t,8> stamp{};
-            for(int i=0;i<8;++i) stamp[i]=std::uint8_t(std::uint64_t(now)>>(8*i));
-            store.write(stampOffset+8*bank,stamp);
+            if(image.empty()) {
+                image.resize(stampOffset+32-offset);
+                store.read(offset,image);
+                std::copy_n(source.begin(),count,image.begin());
+            }
+            for(int i=0;i<8;++i) image[stampOffset-offset+8*bank+i]=std::uint8_t(std::uint64_t(now)>>(8*i));
         }
+        if(image.empty()) store.write(offset,source.first(count));
+        else store.write(offset,image);
         offset+=std::uint32_t(count);source=source.subspan(count);
     }
 }
@@ -72,6 +80,14 @@ bool SavePages::tagResume(ResumeSlot slot,int page) {
     // Called from game code, which has no handler: a failed write is reported.
     try {resumeStore(slot).write(tagOffset,tag);} catch(const std::exception&) {return false;}
     return true;
+}
+std::string saveTimeText(std::int64_t seconds) {
+    if(seconds<946684800||seconds>=7258118400) return {};
+    const std::time_t t=std::time_t(seconds);
+    const std::tm* local=std::localtime(&t);
+    char text[32];
+    if(!local||!std::strftime(text,sizeof(text),"%Y-%m-%d %H:%M",local)) return {};
+    return text;
 }
 SavePages* mountedSavePages() {return mounted;}
 void mountSavePages(SavePages* pages) {mounted=pages;}
