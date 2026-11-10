@@ -24,6 +24,9 @@
 #ifdef DQIV_NATIVE
 #include "Settings.hpp"
 #endif
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 
 btl::BattleRound battleRound_;
 
@@ -209,6 +212,9 @@ THUMB void btl::BattleRoot::setupMonster()
             }
         }
     }
+#endif
+#ifdef DQIV_DEBUG_MENU
+    pc::debugApplyGroupStats(); // the debug menu's Select Battle
 #endif
 
     int tileId = encount::Encount::getSingleton()->tileId_;

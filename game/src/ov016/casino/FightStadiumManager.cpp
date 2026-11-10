@@ -7,6 +7,9 @@
 #include "main/status/StoryStatus.hpp"
 #include "main/status/PartyStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 
 FightCardData FightStadiumManager::cardDataList_[MAX_CARD_COUNT] = {
     { 1, 32, 9, 47, 1, 44, 5, -1, -1 },
@@ -63,6 +66,9 @@ THUMB void FightStadiumManager::setup()
     dss::memset(diameter_, -1, sizeof(diameter_));
     encount_ = 0;
     int index = dssrand::rand(getCardCount());
+#ifdef DQIV_DEBUG_MENU
+    if (pc::debugState().arenaMatch >= 0) index = pc::debugState().arenaMatch; // the debug menu's choice
+#endif
     encount_ = cardDataList_[index].encount;
     monster_[0] = cardDataList_[index].mobA;
     monster_[1] = cardDataList_[index].mobB;

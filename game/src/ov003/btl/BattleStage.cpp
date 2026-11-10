@@ -4,6 +4,9 @@
 #include "main/status/StageStatus.hpp"
 #include "main/status/ExcelParam.hpp"
 #include "main/param/BattleMap.hpp"
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 
 static const char* btlMapPath = "data/btlmap";
 
@@ -29,6 +32,14 @@ THUMB void BattleStage::initialize()
 
     stage_.setRender(&btl::BattleSystem2::getSingleton()->render_);
     stage_.setPath(btlMapPath);
+#ifdef DQIV_DEBUG_MENU
+    // The debug menu's chosen background, whatever the battle.
+    const std::string debugMap = pc::debugTakeBattleMap();
+    if (!debugMap.empty() && stage_.isExist(debugMap.c_str())) {
+        stage_.load(debugMap.c_str());
+        index = param::BattleMap::getBattleMap(battleMap, const_cast<char*>(debugMap.c_str()));
+    } else
+#endif
     switch (encount::Encount::getSingleton()->battleMode_) {
     case 0:
         if (stage_.isExist(g_Stage.getBtlMapName())) {
