@@ -3,6 +3,9 @@
 #include "ov009/casino/PokerDoubleupSelectCard.hpp"
 #include "ov009/casino/PokerDoubleupHighAndLow.hpp"
 #include "main/dss/Random.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
 
 ARM PokerManager* PokerManager::getSingleton()
 {
@@ -58,6 +61,15 @@ ARM void PokerManager::dealCard(int index)
 {
     short count = 0;
     if (index == -1) {
+#ifdef DQIV_NATIVE
+        if (pc::gameSettings().cheats.guaranteedJackpot) {
+            // A royal flush of slimes: ace, 10, jack, queen, king.
+            static const short royalFlush[5] = { 0, 9, 10, 11, 12 };
+            for (int i = 0; i < 5; i++) {
+                debugCard_[i].defaultNo_ = royalFlush[i];
+            }
+        }
+#endif
         for (int i = 0; i < 5; i++) {
             chengeCard_[i] = -1;
         }

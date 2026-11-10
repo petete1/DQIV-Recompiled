@@ -62,8 +62,8 @@ bool fastForward();
 // The game's frame count (with the power functions).
 extern "C" unsigned pcVBlankCount();
 namespace pc {
-// The cheats page is not one of the settings': Misc > Cheats shows it alone.
-enum SettingsPage {pageGame,pageDisplay,pageKeyboard,pageGamepad,pageCheats,pageCount};
+// The cheats pages are not among the settings': Misc > Cheats shows them alone.
+enum SettingsPage {pageGame,pageDisplay,pageKeyboard,pageGamepad,pageCheats,pageBattleCheats,pageCount};
 const char* pageTitle(int page,int language);
 const char* controlName(int action,int language);
 // The key or gamepad button an action uses (defined with the window's input).
@@ -105,7 +105,9 @@ void saveSettings();
 enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize,settingPicture,settingStretch,
     settingVsync,settingQuality,settingTextures,settingVolume,settingTextSpeed,settingFrameRate,settingBattleBoost,
     settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,settingBattleMenus,
-    settingCheatInvincible,settingCheatNoEncounters,settingCheatCriticals,settingCheatExp,settingCheatGold,settingCount};
+    settingCheatInvincible,settingCheatNoEncounters,settingCheatCriticals,settingCheatExp,settingCheatGold,
+    settingCheatJackpot,settingCheatFirstStrike,settingCheatMonsterActions,settingCheatHocusPocus,
+    settingCheatConfusedAllies,settingCheatConfusedEnemies,settingCount};
 inline constexpr int cameraZoomMin=50,cameraZoomMax=200;
 // Changes the camera zoom by `step` (percent); for the mouse wheel and the right stick.
 void zoomCamera(int step);

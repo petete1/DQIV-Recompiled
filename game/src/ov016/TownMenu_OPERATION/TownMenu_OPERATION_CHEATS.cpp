@@ -11,13 +11,16 @@
 
 #ifdef DQIV_DEBUG_MENU
 namespace {
-// The window's tabs: the cheats (in the game's language), then the debug pages.
-const char* s_tabs[1 + DebugPanel::PAGE_COUNT];
+// The window's tabs: the cheats' pages (in the game's language), then the debug pages.
+const int s_cheatTabs = pc::pageCount - pc::pageCheats;
+const char* s_tabs[s_cheatTabs + DebugPanel::PAGE_COUNT];
 void buildTabs()
 {
-    s_tabs[0] = pc::pageTitle(pc::pageCheats, pc::gameSettings().language);
+    for (int tab = 0; tab < s_cheatTabs; tab++) {
+        s_tabs[tab] = pc::pageTitle(pc::pageCheats + tab, pc::gameSettings().language);
+    }
     for (int page = 0; page < DebugPanel::PAGE_COUNT; page++) {
-        s_tabs[page + 1] = DebugPanel::pageTitle(page);
+        s_tabs[s_cheatTabs + page] = DebugPanel::pageTitle(page);
     }
 }
 }
@@ -32,7 +35,7 @@ THUMB void TownMenu_OPERATION_CHEATS::menuSetup()
 #ifdef DQIV_DEBUG_MENU
     buildTabs();
     cheats_.tabs_ = s_tabs;
-    cheats_.tabCount_ = 1 + DebugPanel::PAGE_COUNT;
+    cheats_.tabCount_ = s_cheatTabs + DebugPanel::PAGE_COUNT;
     debug_.open();
     tab_ = 0;
 #endif
@@ -41,7 +44,7 @@ THUMB void TownMenu_OPERATION_CHEATS::menuSetup()
 THUMB void TownMenu_OPERATION_CHEATS::menuExecute()
 {
 #ifdef DQIV_DEBUG_MENU
-    if (tab_ != 0) {
+    if (tab_ >= s_cheatTabs) {
         debug_.execute(item_);
         return;
     }
@@ -52,7 +55,7 @@ THUMB void TownMenu_OPERATION_CHEATS::menuExecute()
 THUMB void TownMenu_OPERATION_CHEATS::menuDraw()
 {
 #ifdef DQIV_DEBUG_MENU
-    if (tab_ != 0) {
+    if (tab_ >= s_cheatTabs) {
         debug_.draw(item_, 0, 0x100, drawMenuFrame);
         return;
     }
@@ -65,7 +68,7 @@ THUMB void TownMenu_OPERATION_CHEATS::menuUpdate()
 #ifdef DQIV_DEBUG_MENU
     // L and R turn the tabs: the cheats, then the debug pages.
     int tab = tab_;
-    const int count = 1 + DebugPanel::PAGE_COUNT;
+    const int count = s_cheatTabs + DebugPanel::PAGE_COUNT;
     if (dss::g_Pad.edge() & PAD_BUTTON_R) {
         tab = (tab + 1) % count;
     }
@@ -74,8 +77,10 @@ THUMB void TownMenu_OPERATION_CHEATS::menuUpdate()
     }
     if (tab != tab_) {
         tab_ = tab;
-        if (tab_ != 0) {
-            debug_.showPage(tab_ - 1, s_tabs, count);
+        if (tab_ >= s_cheatTabs) {
+            debug_.showPage(tab_ - s_cheatTabs, s_tabs, count);
+        } else {
+            cheats_.openCheats(pc::pageCheats + tab_);
         }
         item_.active_ = 0;
         item_.result_ = 0;
@@ -83,7 +88,7 @@ THUMB void TownMenu_OPERATION_CHEATS::menuUpdate()
         redraw_ = 1;
         return;
     }
-    if (tab_ != 0) {
+    if (tab_ >= s_cheatTabs) {
         if (!debug_.update(item_, redraw_)) {
             return;
         }

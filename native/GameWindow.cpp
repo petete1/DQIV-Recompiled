@@ -456,8 +456,10 @@ void GameWindow::drawInterface(int width,int height) {
             start=end+1;
         }
         const int size=int(std::lround(14*scale)),line=size*5/4;
-        if(!debugPicture_||debugPicture_->height()!=int(lines.size())*line+size/2)
-            debugPicture_=std::make_unique<TextCanvas>(int(std::lround(330*scale)),int(lines.size())*line+size/2);
+        int width=int(std::lround(330*scale));
+        for(const auto& text:lines)width=std::max(width,TextCanvas(1,1).measure(text,size)+size);
+        if(!debugPicture_||debugPicture_->height()!=int(lines.size())*line+size/2||debugPicture_->width()!=width)
+            debugPicture_=std::make_unique<TextCanvas>(width,int(lines.size())*line+size/2);
         debugPicture_->clear(0xa0000000);
         for(std::size_t i=0;i<lines.size();++i)
             debugPicture_->text(size/2,size/4+int(i)*line,lines[i],size,0xffe8e8e8,false,0,debugPicture_->width()-size);

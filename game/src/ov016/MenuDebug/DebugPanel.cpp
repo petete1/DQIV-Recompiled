@@ -52,6 +52,10 @@ const char* const s_pages[DebugPanel::PAGE_COUNT] = { "Warp", "Battle", "Party",
 const char* const s_flagSets[pc::debugFlagSetCount] = { "Global", "Area", "Local" };
 const char* const s_minigames[pc::debugMinigameCount] = { "Poker", "Slots (1)", "Slots (10)", "Slots (100)" };
 const char* const s_times[] = { "-", "Morning", "Day", "Evening", "Night" };
+const char* const s_stats[pc::debugStatCount] = { "Level", "HP", "MP", "Attack", "Defence", "Agility", "EXP", "Gold" };
+const char* const s_memberStats[pc::debugMemberStatCount] = {
+    "HP", "Max HP", "MP", "Max MP", "Strength", "Agility", "Resilience", "Wisdom", "Luck",
+};
 }
 
 void DebugPanel::open()
@@ -78,6 +82,26 @@ const char* DebugPanel::pageTitle(int page)
     return s_pages[page];
 }
 
+void DebugPanel::openPage(int page, int row, menu::MenuItem& item)
+{
+    page_ = page;
+    doneRow_ = -1;
+    buildRows();
+    item.active_ = 0;
+    for (int i = 0; i < rowCount_; i++) {
+        if (rows_[i] == row) item.active_ = i;
+    }
+}
+
+void DebugPanel::back(menu::MenuItem& item)
+{
+    if (page_ == PAGE_GROUP) {
+        openPage(PAGE_BATTLE, ROW_GROUP + group_, item);
+    } else {
+        openPage(PAGE_PARTY, ROW_EDIT_MEMBER, item);
+    }
+}
+
 void DebugPanel::buildRows()
 {
     rowCount_ = 0;
@@ -93,16 +117,36 @@ void DebugPanel::buildRows()
         rows_[rowCount_++] = ROW_BALLOON;
         break;
     case PAGE_BATTLE:
-        rows_[rowCount_++] = ROW_MONSTER;
+        // Select Battle, as the 1.8.1 mod's: four groups, A on one opens its stats.
+        for (int row = ROW_GROUP; row <= ROW_GROUP_LAST; row++) rows_[rowCount_++] = row;
         rows_[rowCount_++] = ROW_MONSTER_COUNT;
+        rows_[rowCount_++] = ROW_BACKGROUND;
+        rows_[rowCount_++] = ROW_ARENA;
+        rows_[rowCount_++] = ROW_BATTLE_INFO;
+        rows_[rowCount_++] = ROW_TILE;
+        rows_[rowCount_++] = ROW_RESET_BATTLE;
         rows_[rowCount_++] = ROW_FIGHT;
+        break;
+    case PAGE_GROUP:
+        rows_[rowCount_++] = ROW_GROUP_HEAD;
+        for (int row = ROW_STAT; row <= ROW_STAT_LAST; row++) rows_[rowCount_++] = row;
+        rows_[rowCount_++] = ROW_RESET_STATS;
         break;
     case PAGE_PARTY:
         rows_[rowCount_++] = ROW_MEMBER;
         rows_[rowCount_++] = ROW_LEVEL;
         rows_[rowCount_++] = ROW_SPELLS;
+        rows_[rowCount_++] = ROW_EDIT_MEMBER;
+        rows_[rowCount_++] = ROW_MAX_STATS;
         rows_[rowCount_++] = ROW_CHARACTER;
         rows_[rowCount_++] = ROW_JOINED;
+        break;
+    case PAGE_MEMBER:
+        rows_[rowCount_++] = ROW_MEMBER;
+        for (int row = ROW_MEMBER_STAT; row <= ROW_MEMBER_STAT_LAST; row++) rows_[rowCount_++] = row;
+        rows_[rowCount_++] = ROW_CONDITION;
+        rows_[rowCount_++] = ROW_POISON;
+        rows_[rowCount_++] = ROW_HEAL;
         break;
     case PAGE_STORY:
         rows_[rowCount_++] = ROW_CHAPTER;
@@ -135,8 +179,35 @@ void DebugPanel::execute(menu::MenuItem& item)
 void DebugPanel::change(int row, int step)
 {
     doneRow_ = -1;
-    if (row == ROW_WALLS || row == ROW_WAGON || row == ROW_SHIP || row == ROW_BALLOON) {
+    if (row == ROW_WALLS || row == ROW_WAGON || row == ROW_SHIP || row == ROW_BALLOON || row == ROW_CONDITION
+        || row == ROW_POISON || (row >= ROW_MEMBER_STAT && row <= ROW_MEMBER_STAT_LAST)) {
         pc::debugState().used = true; // no achievements now (DebugTools.hpp)
+    }
+    auto& state = pc::debugState();
+    pc::DebugGroup& group = state.groups[group_];
+    // Numbers move faster while left / right is held; the lists, by 10 at most.
+    const int fast = step * pc::debugHeldStep(held_);
+    const int listStep = step * (pc::debugHeldStep(held_) < 10 ? pc::debugHeldStep(held_) : 10);
+    if (row >= ROW_GROUP && row <= ROW_GROUP_LAST) {
+        // How many is then this group's: the cursor passes the others on its way there.
+        group_ = row - ROW_GROUP;
+        pc::DebugGroup& chosen = state.groups[group_];
+        chosen.monster = wrap(chosen.monster + listStep - step, step, 1, pc::debugLastMonster());
+        while (pc::debugBlankMonster(chosen.monster)) chosen.monster = wrap(chosen.monster, step, 1, pc::debugLastMonster());
+        if (chosen.count == 0) chosen.count = 1; // choosing a monster makes the group
+        for (int& stat : chosen.stats) stat = -1;
+        return;
+    }
+    if (row >= ROW_STAT && row <= ROW_STAT_LAST) {
+        const int stat = row - ROW_STAT;
+        const int value = group.stats[stat] >= 0 ? group.stats[stat] : pc::debugMonsterStat(group.monster, stat);
+        group.stats[stat] = clamp(value + fast, stat == pc::debugStatLevel || stat == pc::debugStatHp ? 1 : 0, pc::debugStatLimit(stat));
+        return;
+    }
+    if (row >= ROW_MEMBER_STAT && row <= ROW_MEMBER_STAT_LAST) {
+        const int stat = row - ROW_MEMBER_STAT;
+        pc::debugSetMemberStat(member_, stat, pc::debugMemberStat(member_, stat) + fast);
+        return;
     }
     const auto& maps = pc::debugMaps();
     switch (row) {
@@ -158,8 +229,20 @@ void DebugPanel::change(int row, int step)
     case ROW_WAGON: pc::debugToggleVehicle(pc::debugWagon); break;
     case ROW_SHIP: pc::debugToggleVehicle(pc::debugShip); break;
     case ROW_BALLOON: pc::debugToggleVehicle(pc::debugBalloon); break;
-    case ROW_MONSTER: monster_ = wrap(monster_, step, 1, pc::debugLastMonster()); break;
-    case ROW_MONSTER_COUNT: monsterCount_ = clamp(monsterCount_ + step, 1, 8); break;
+    case ROW_MONSTER_COUNT:
+        // The first group is always there.
+        group.count = clamp(group.count + step, group_ == 0 ? 1 : 0, 8);
+        if (group.count && !group.monster) group.monster = 1;
+        break;
+    case ROW_GROUP_HEAD: group_ = wrap(group_, step, 0, pc::debugGroupCount - 1); break;
+    case ROW_BACKGROUND:
+        state.battleMap = wrap(state.battleMap, step, pc::debugRandomMap, (int)pc::debugBattleMaps().size() - 1);
+        break;
+    case ROW_ARENA: state.arenaMatch = wrap(state.arenaMatch, step, -1, pc::debugArenaMatchCount - 1); break;
+    case ROW_BATTLE_INFO: state.battleInfo = !state.battleInfo; break;
+    case ROW_TILE: tile_ = wrap(tile_ + listStep - step, step, -1, 255); break;
+    case ROW_CONDITION: pc::debugToggleMemberDead(member_); break;
+    case ROW_POISON: pc::debugToggleMemberPoison(member_); break;
     case ROW_MEMBER:
         member_ = wrap(member_, step, 0, pc::debugPartySize() - 1);
         level_ = pc::debugLevel(member_);
@@ -188,7 +271,7 @@ void DebugPanel::change(int row, int step)
 void DebugPanel::run(int row)
 {
     done_ = "Done";
-    if (row != ROW_MUSIC && row != ROW_SOUND && row != ROW_OVERLAY) {
+    if (row != ROW_MUSIC && row != ROW_SOUND && row != ROW_OVERLAY && row != ROW_BATTLE_INFO) {
         pc::debugState().used = true; // no achievements now (DebugTools.hpp)
     }
     switch (row) {
@@ -208,9 +291,39 @@ void DebugPanel::run(int row)
         closeMenus_ = true;
         return;
     case ROW_FIGHT:
-        pc::debugStartBattle(monster_, monsterCount_);
+        pc::debugStartBattle();
         closeMenus_ = true;
         return;
+    case ROW_TILE:
+        if (pc::debugStartTileBattle(tile_)) {
+            closeMenus_ = true;
+            return;
+        }
+        done_ = "No encounters";
+        break;
+    case ROW_RESET_BATTLE: {
+        auto& state = pc::debugState();
+        for (auto& group : state.groups) group = {};
+        state.groups[0] = {1, 1};
+        state.battleMap = pc::debugOwnMap;
+        state.arenaMatch = -1;
+        group_ = 0;
+        break;
+    }
+    case ROW_RESET_STATS:
+        for (int& stat : pc::debugState().groups[group_].stats) stat = -1;
+        break;
+    case ROW_BACKGROUND:
+        return; // left / right choose it
+    case ROW_ARENA:
+        pc::debugState().arenaMatch = -1;
+        break;
+    case ROW_MAX_STATS:
+        pc::debugMaxAllStats();
+        break;
+    case ROW_HEAL:
+        pc::debugHealMember(member_);
+        break;
     case ROW_LEVEL:
         pc::debugSetLevel(member_, level_);
         break;
@@ -271,14 +384,25 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
     if (dss::g_Pad.repeat() & PAD_KEY_RIGHT) {
         step = 1;
     }
+    if (dss::g_Pad.edge() & (PAD_KEY_LEFT | PAD_KEY_RIGHT)) {
+        held_ = 0;
+    } else if (step != 0) {
+        held_++;
+    }
     bool leave = false;
     const int row = rows_[item.active_];
     switch (item.result_) {
     case 2:
         item.result_ = 0;
         item.lastresult_ = 0;
-        if (row == ROW_BACK) {
-            leave = true;
+        if (row == ROW_BACK || row == ROW_GROUP_HEAD) {
+            if (page_ >= PAGE_COUNT) back(item);
+            else leave = true;
+        } else if (row >= ROW_GROUP && row <= ROW_GROUP_LAST) {
+            group_ = row - ROW_GROUP;
+            openPage(PAGE_GROUP, ROW_GROUP_HEAD, item);
+        } else if (row == ROW_EDIT_MEMBER) {
+            openPage(PAGE_MEMBER, ROW_MEMBER, item);
         } else {
             run(row);
             leave = closeMenus_;
@@ -288,7 +412,12 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
     case 3:
         item.result_ = 0;
         item.lastresult_ = 0;
-        leave = true;
+        if (page_ >= PAGE_COUNT) {
+            back(item);
+            redraw = 1;
+        } else {
+            leave = true;
+        }
         break;
     case 5:
         item.active_ = rowCount_ - 1;
@@ -306,8 +435,11 @@ bool DebugPanel::update(menu::MenuItem& item, int& redraw)
 
 void DebugPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int, int, int, int))
 {
-    // The cheats window's tabs: the cheats, then these pages.
-    unkfunc_native_tabs(tabs_, tabCount_, page_ + 1, x, w, frame);
+    // The cheats window's tabs: the cheats' pages, then these pages.
+    const int tab = page_ == PAGE_GROUP ? PAGE_BATTLE : page_ == PAGE_MEMBER ? PAGE_PARTY : page_;
+    unkfunc_native_tabs(tabs_, tabCount_, tabCount_ - PAGE_COUNT + tab, x, w, frame);
+    const auto& state = pc::debugState();
+    const auto& battleMaps = pc::debugBattleMaps();
     frame(x, 0x18, w, 0xc0 - 0x18, -1);
     const auto& maps = pc::debugMaps();
     const auto& characters = pc::debugCharacters();
@@ -343,11 +475,59 @@ void DebugPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int
         case ROW_WAGON: label = "Wagon"; copy(value, sizeof(value), yesNo(pc::debugHasVehicle(pc::debugWagon))); break;
         case ROW_SHIP: label = "Ship"; copy(value, sizeof(value), yesNo(pc::debugHasVehicle(pc::debugShip))); break;
         case ROW_BALLOON: label = "Balloon"; copy(value, sizeof(value), yesNo(pc::debugHasVehicle(pc::debugBalloon))); break;
-        case ROW_MONSTER:
-            label = "Monster";
-            snprintf(value, sizeof(value), "%d %s", monster_, pc::debugMonsterName(monster_).c_str());
+        case ROW_GROUP_HEAD:
+        case ROW_GROUP:
+        case ROW_GROUP + 1:
+        case ROW_GROUP + 2:
+        case ROW_GROUP_LAST: {
+            static char groupLabel[16];
+            const int index = row == ROW_GROUP_HEAD ? group_ : row - ROW_GROUP;
+            const pc::DebugGroup& group = state.groups[index];
+            snprintf(groupLabel, sizeof(groupLabel), "Group %d", index + 1);
+            label = groupLabel;
+            if (group.count > 0) {
+                snprintf(value, sizeof(value), "%d %s x%d", group.monster, pc::debugMonsterName(group.monster).c_str(), group.count);
+            } else {
+                copy(value, sizeof(value), "Nothing");
+            }
             break;
-        case ROW_MONSTER_COUNT: label = "How many"; snprintf(value, sizeof(value), "%d", monsterCount_); break;
+        }
+        case ROW_MONSTER_COUNT:
+            label = "How many";
+            snprintf(value, sizeof(value), "%d (group %d)", state.groups[group_].count, group_ + 1);
+            break;
+        case ROW_BACKGROUND:
+            label = "Background";
+            copy(value, sizeof(value), state.battleMap == pc::debugRandomMap ? "Random"
+                : state.battleMap == pc::debugOwnMap ? "The place's own" : battleMaps[state.battleMap].c_str());
+            break;
+        case ROW_ARENA:
+            label = "Arena match";
+            if (state.arenaMatch < 0) {
+                copy(value, sizeof(value), "Random");
+            } else {
+                snprintf(value, sizeof(value), "%d: %s", state.arenaMatch + 1, pc::debugArenaMatchName(state.arenaMatch).c_str());
+            }
+            break;
+        case ROW_BATTLE_INFO: label = "Battle info"; copy(value, sizeof(value), yesNo(state.battleInfo)); break;
+        case ROW_TILE:
+            label = "Tile battle";
+            if (tile_ >= 0) {
+                snprintf(value, sizeof(value), "Tile %d", tile_);
+            } else if (pc::debugTile() >= 0) {
+                snprintf(value, sizeof(value), "Here (tile %d)", pc::debugTile());
+            } else {
+                copy(value, sizeof(value), "Here (none)");
+            }
+            action = true;
+            break;
+        case ROW_RESET_BATTLE: label = "Reset all"; action = true; break;
+        case ROW_RESET_STATS: label = "Reset stats"; action = true; break;
+        case ROW_EDIT_MEMBER: label = "Edit member"; action = true; break;
+        case ROW_MAX_STATS: label = "Max out all stats"; action = true; break;
+        case ROW_CONDITION: label = "Condition"; copy(value, sizeof(value), pc::debugMemberDead(member_) ? "Dead" : "Alive"); break;
+        case ROW_POISON: label = "Poison"; copy(value, sizeof(value), pc::debugMemberPoisoned(member_) ? "On" : "Off"); break;
+        case ROW_HEAL: label = "Fully heal"; action = true; break;
         case ROW_FIGHT: label = "Start battle"; action = true; break;
         case ROW_MEMBER: label = "Member"; copy(value, sizeof(value), pc::debugMemberName(member_).c_str()); break;
         case ROW_LEVEL:
@@ -380,6 +560,21 @@ void DebugPanel::draw(menu::MenuItem& item, int x, int w, void (*frame)(int, int
         case ROW_BESTIARY: label = "Complete bestiary"; action = true; break;
         case ROW_MINIGAME: label = "Start minigame"; copy(value, sizeof(value), s_minigames[minigame_]); action = true; break;
         case ROW_BACK: label = "Back"; break;
+        }
+        if (row >= ROW_STAT && row <= ROW_STAT_LAST) {
+            // The group's own value, or the one that replaces it (*).
+            const int stat = row - ROW_STAT;
+            const pc::DebugGroup& group = state.groups[group_];
+            label = s_stats[stat];
+            if (group.stats[stat] >= 0) {
+                snprintf(value, sizeof(value), "%d *", group.stats[stat]);
+            } else {
+                snprintf(value, sizeof(value), "%d", pc::debugMonsterStat(group.monster ? group.monster : 1, stat));
+            }
+        }
+        if (row >= ROW_MEMBER_STAT && row <= ROW_MEMBER_STAT_LAST) {
+            label = s_memberStats[row - ROW_MEMBER_STAT];
+            snprintf(value, sizeof(value), "%d", pc::debugMemberStat(member_, row - ROW_MEMBER_STAT));
         }
         if (row == doneRow_) {
             copy(value, sizeof(value), done_);

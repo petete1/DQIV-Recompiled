@@ -53,6 +53,12 @@ void loadSettings() {
         else if(key=="cheatGuaranteedCriticals")s.cheats.guaranteedCriticals=value!=0;
         else if(key=="cheatExpMultiplier")s.cheats.expMultiplier=normalizeCheatMultiplier(value);
         else if(key=="cheatGoldMultiplier")s.cheats.goldMultiplier=normalizeCheatMultiplier(value);
+        else if(key=="cheatGuaranteedJackpot")s.cheats.guaranteedJackpot=value!=0;
+        else if(key=="cheatFirstStrike")s.cheats.firstStrike=std::clamp(value,0,firstStrikeCount-1);
+        else if(key=="cheatMonsterActions")s.cheats.monsterActions=std::clamp(value,0,monsterActionsCount-1);
+        else if(key=="cheatHocusPocus")s.cheats.hocusPocus=std::clamp(value,0,hocusPocusCount);
+        else if(key=="cheatConfusedAllies")s.cheats.confusedAllies=std::clamp(value,0,confusedCount);
+        else if(key=="cheatConfusedEnemies")s.cheats.confusedEnemies=std::clamp(value,0,confusedCount);
         else if(key.rfind("key",0)==0&&key.size()>3) {
             const int i=std::atoi(key.c_str()+3);
             if(i>=0&&i<controlCount)s.keys[i]=static_cast<unsigned>(std::stoul(line.substr(equals+1)));
@@ -73,7 +79,10 @@ void saveSettings() {
         <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\nbattleMenus="<<s.battleMenus
         <<"\ncheatBattleInvincible="<<s.cheats.battleInvincible<<"\ncheatNoRandomEncounters="<<s.cheats.noRandomEncounters
         <<"\ncheatGuaranteedCriticals="<<s.cheats.guaranteedCriticals
-        <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier<<"\n";
+        <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier
+        <<"\ncheatGuaranteedJackpot="<<s.cheats.guaranteedJackpot<<"\ncheatFirstStrike="<<s.cheats.firstStrike
+        <<"\ncheatMonsterActions="<<s.cheats.monsterActions<<"\ncheatHocusPocus="<<s.cheats.hocusPocus
+        <<"\ncheatConfusedAllies="<<s.cheats.confusedAllies<<"\ncheatConfusedEnemies="<<s.cheats.confusedEnemies<<"\n";
     for(int i=0;i<controlCount;++i)file<<"key"<<i<<"="<<s.keys[i]<<"\npad"<<i<<"="<<s.pads[i]<<"\n";
 }
 namespace {
@@ -95,6 +104,19 @@ const char* japanese(const char* en) {
         {"Guaranteed criticals","かならず かいしんのいちげき"},
         {"EXP multiplier","けいけんちの ばいりつ"},
         {"Gold multiplier","ゴールドの ばいりつ"},
+        {"Guaranteed jackpot","かならず おおあたり"},
+        {"Battle cheats","せんとうの チート"},
+        {"First strike","せんせいこうげき"},
+        {"Party first","なかまが さきに"},
+        {"Monsters first","モンスターが さきに"},
+        {"Monster actions","モンスターの こうどう"},
+        {"In turn","じゅんばんに"},
+        {"Action","こうどう"},
+        {"Hocus Pocus","パルプンテ"},
+        {"Effect","こうか"},
+        {"Confused allies","こんらんした なかま"},
+        {"Confused monsters","こんらんした モンスター"},
+        {"Random","ランダム"},
         {"Max gold","ゴールドを さいだいに"},
         {"Max bank balance","ぎんこうを さいだいに"},
         {"Max casino coins","コインを さいだいに"},
@@ -204,6 +226,7 @@ const char* pageTitle(int page,int language) {
     case pageGamepad:return pick(language,"Gamepad","Manette","Controller","Controller","Mando");
     case pageDisplay:return pick(language,"Display","Affichage","Anzeige","Schermo","Pantalla");
     case pageCheats:return pick(language,"Cheats","Triches","Cheats","Trucchi","Trucos");
+    case pageBattleCheats:return pick(language,"Battle cheats","Triches combat","Kampf-Cheats","Trucchi lotta","Trucos combate");
     }
     return pick(language,"Game","Jeu","Spiel","Gioco","Juego");
 }
@@ -273,6 +296,12 @@ const char* settingLabel(int item,int language) {
     case settingCheatCriticals:return pick(language,"Guaranteed criticals","Coups critiques assurés","Immer kritische Treffer","Colpi critici garantiti","Golpes críticos seguros");
     case settingCheatExp:return pick(language,"EXP multiplier","Multiplicateur EXP","EP-Multiplikator","Moltiplicatore EXP","Multiplicador EXP");
     case settingCheatGold:return pick(language,"Gold multiplier","Multiplicateur d'or","Gold-Multiplikator","Moltiplicatore oro","Multiplicador de oro");
+    case settingCheatJackpot:return pick(language,"Guaranteed jackpot","Jackpot assuré","Immer Jackpot","Jackpot garantito","Premio asegurado");
+    case settingCheatFirstStrike:return pick(language,"First strike","Premier coup","Erstschlag","Primo colpo","Primer golpe");
+    case settingCheatMonsterActions:return pick(language,"Monster actions","Actions des monstres","Monsteraktionen","Azioni dei mostri","Acciones monstruos");
+    case settingCheatHocusPocus:return pick(language,"Hocus Pocus","Abracadabra","Hokuspokus","Abracadabra","Abracadabra");
+    case settingCheatConfusedAllies:return pick(language,"Confused allies","Alliés confus","Verwirrte Gruppe","Alleati confusi","Aliados confusos");
+    case settingCheatConfusedEnemies:return pick(language,"Confused monsters","Monstres confus","Verwirrte Monster","Mostri confusi","Monstruos confusos");
     case settingFps:return pick(language,"Show FPS","Afficher les FPS","FPS anzeigen","Mostra FPS","Mostrar FPS");
     case settingFullscreen:return pick(language,"Full screen","Plein écran","Vollbild","Schermo intero","Pantalla completa");
     case settingWindowSize:return pick(language,"Window size","Taille de la fenêtre","Fenstergröße","Dimensione finestra","Tamaño de ventana");
@@ -309,6 +338,24 @@ std::string settingValue(int item,int language) {
     case settingCheatCriticals:return yesNo(s.cheats.guaranteedCriticals,language);
     case settingCheatExp:return "x"+std::to_string(s.cheats.expMultiplier);
     case settingCheatGold:return "x"+std::to_string(s.cheats.goldMultiplier);
+    case settingCheatJackpot:return yesNo(s.cheats.guaranteedJackpot,language);
+    case settingCheatFirstStrike:
+        if(s.cheats.firstStrike==1)return pick(language,"Party first","Le groupe","Die Gruppe","Il gruppo","El grupo");
+        if(s.cheats.firstStrike==2)return pick(language,"Monsters first","Les monstres","Die Monster","I mostri","Los monstruos");
+        return pick(language,"Normal","Normale","Normal","Normale","Normal");
+    case settingCheatMonsterActions:
+        if(s.cheats.monsterActions==1)return pick(language,"In turn","Tour à tour","Der Reihe nach","A turno","Por turnos");
+        if(s.cheats.monsterActions>1)return std::string(pick(language,"Action","Action","Aktion","Azione","Acción"))+" "+std::to_string(s.cheats.monsterActions-1);
+        return pick(language,"Normal","Normale","Normal","Normale","Normal");
+    case settingCheatHocusPocus:
+    case settingCheatConfusedAllies:
+    case settingCheatConfusedEnemies: {
+        // The effects and behaviours are numbered as the game's tables list them.
+        const int value=item==settingCheatHocusPocus?s.cheats.hocusPocus:item==settingCheatConfusedAllies?s.cheats.confusedAllies:s.cheats.confusedEnemies;
+        if(value==0)return pick(language,"Random","Aléatoire","Zufällig","Casuale","Aleatorio");
+        return std::string(item==settingCheatHocusPocus?pick(language,"Effect","Effet","Effekt","Effetto","Efecto"):
+            pick(language,"Action","Action","Aktion","Azione","Acción"))+" "+std::to_string(value);
+    }
     case settingFullscreen:return yesNo(s.fullscreen,language);
     case settingWindowSize:return std::to_string(windowSizes[s.windowSize][0])+"x"+std::to_string(windowSizes[s.windowSize][1]);
     case settingPicture: {
@@ -402,6 +449,12 @@ bool changeSetting(int item,int step) {
         s.cheats.goldMultiplier=changeCheatMultiplier(before,step);
         return s.cheats.goldMultiplier!=before;
     }
+    case settingCheatJackpot:s.cheats.guaranteedJackpot=!s.cheats.guaranteedJackpot;return true;
+    case settingCheatFirstStrike:s.cheats.firstStrike=cycle(s.cheats.firstStrike,0,firstStrikeCount-1);return true;
+    case settingCheatMonsterActions:s.cheats.monsterActions=cycle(s.cheats.monsterActions,0,monsterActionsCount-1);return true;
+    case settingCheatHocusPocus:s.cheats.hocusPocus=cycle(s.cheats.hocusPocus,0,hocusPocusCount);return true;
+    case settingCheatConfusedAllies:s.cheats.confusedAllies=cycle(s.cheats.confusedAllies,0,confusedCount);return true;
+    case settingCheatConfusedEnemies:s.cheats.confusedEnemies=cycle(s.cheats.confusedEnemies,0,confusedCount);return true;
     case settingMobileSound:s.mobileSound=!s.mobileSound;return true;
     case settingFullscreen:s.fullscreen=!s.fullscreen;return true;
     case settingWindowSize:s.windowSize=cycle(s.windowSize,0,windowSizeCount-1);return true;

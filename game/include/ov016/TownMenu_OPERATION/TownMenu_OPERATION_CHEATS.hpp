@@ -15,7 +15,7 @@ struct TownMenu_OPERATION_CHEATS : menu::MenuBase
     SettingsPanel cheats_;
 #ifdef DQIV_DEBUG_MENU
     DebugPanel debug_;
-    int tab_ = 0; // 0: the cheats, then the debug pages
+    int tab_ = 0; // the cheats' pages, then the debug pages
 #endif
 
     virtual void menuSetup();

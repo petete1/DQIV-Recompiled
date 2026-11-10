@@ -46,6 +46,15 @@ int main(int argc, char** argv) {
     CHECK(pc::scaleCheatReward(INT_MAX, 64, 999999) == 999999);
     CHECK(pc::scaleCheatReward(INT_MAX, 64, 0xffffff) == 0xffffff);
     CHECK(pc::scaleCheatReward(-12, 1, 999999) == -12);
+    {
+        const int actions[6] = {7, 8, 7, 9, 9, 8};
+        CHECK(pc::nextMonsterActionSlot(actions, 0) == 0);
+        CHECK(pc::nextMonsterActionSlot(actions, 1) == 1);
+        CHECK(pc::nextMonsterActionSlot(actions, 2) == 3); // slot 2 repeats slot 0
+        CHECK(pc::nextMonsterActionSlot(actions, 4) == 0); // 4 and 5 repeat: wraps
+        const int same[6] = {5, 5, 5, 5, 5, 5};
+        CHECK(pc::nextMonsterActionSlot(same, 3) == 0);
+    }
 
     // Actual settings serializer: missing keys, round trip, malformed values.
     pc::loadSettings();
@@ -61,6 +70,25 @@ int main(int argc, char** argv) {
     CHECK(settings.cheats.expMultiplier == 32 && settings.cheats.goldMultiplier == 8);
     CHECK(settings.volume == 30 && settings.keys[0] == 'v');
     CHECK(!settings.centredCamera);
+    settings.cheats.guaranteedJackpot = true;
+    settings.cheats.firstStrike = 2;
+    settings.cheats.monsterActions = 7;
+    settings.cheats.hocusPocus = 23;
+    settings.cheats.confusedAllies = 9;
+    settings.cheats.confusedEnemies = 4;
+    pc::saveSettings();
+    settings = pc::GameSettings{};
+    pc::loadSettings();
+    CHECK(settings.cheats.guaranteedJackpot && settings.cheats.firstStrike == 2 && settings.cheats.monsterActions == 7);
+    CHECK(settings.cheats.hocusPocus == 23 && settings.cheats.confusedAllies == 9 && settings.cheats.confusedEnemies == 4);
+    {
+        std::ofstream file(pc::testSaveDirectory / "settings.ini");
+        file << "cheatFirstStrike=-3\ncheatMonsterActions=8\ncheatHocusPocus=99\ncheatConfusedAllies=-1\ncheatConfusedEnemies=10\n";
+    }
+    settings = pc::GameSettings{};
+    pc::loadSettings();
+    CHECK(settings.cheats.firstStrike == 0 && settings.cheats.monsterActions == 7 && settings.cheats.hocusPocus == 23);
+    CHECK(settings.cheats.confusedAllies == 0 && settings.cheats.confusedEnemies == 9 && !settings.cheats.guaranteedJackpot);
     {
         std::ofstream file(pc::testSaveDirectory / "settings.ini");
         file << "volume=70\ncheatExpMultiplier=-1\ncheatGoldMultiplier=2147483647\ncheatBattleInvincible=garbage\n";
@@ -175,7 +203,10 @@ int main(int argc, char** argv) {
     CHECK(party.players[3].haveStatusInfo_.haveStatus_.exp == 0);
     status::BaseAction::doubleFlag_ = 0;
     settings.cheats.guaranteedCriticals = true;
+    settings.cheats.guaranteedJackpot = true;
+    settings.cheats.hocusPocus = 3;
     CHECK(pc::runCheatAction(pc::cheatReset) == pc::cheatDone);
+    CHECK(!settings.cheats.guaranteedJackpot && settings.cheats.hocusPocus == 0);
     CHECK(!settings.cheats.battleInvincible && !settings.cheats.noRandomEncounters);
     CHECK(!settings.cheats.guaranteedCriticals);
     CHECK(settings.cheats.expMultiplier == 1 && settings.cheats.goldMultiplier == 1);
@@ -213,14 +244,37 @@ int main(int argc, char** argv) {
     panel.open(true);
     input(panel, item, PAD_BUTTON_L);
     CHECK(panel.page_ == pc::pageGamepad);
-    // Misc > Cheats: the cheats alone, without other pages to turn to.
+    // Misc > Cheats: the cheats' two pages alone.
     panel.openCheats();
-    CHECK(panel.page_ == pc::pageCheats && panel.rowCount_ == 15);
+    CHECK(panel.page_ == pc::pageCheats && panel.rowCount_ == 16);
     input(panel, item, PAD_BUTTON_L);
+    CHECK(panel.page_ == pc::pageBattleCheats && panel.rowCount_ == 6);
+    item.active_ = rowIndex(panel, pc::settingCheatFirstStrike);
+    input(panel, item, PAD_KEY_LEFT);
+    CHECK(settings.cheats.firstStrike == 2);
+    item.active_ = rowIndex(panel, pc::settingCheatHocusPocus);
+    input(panel, item, 0, 2);
+    CHECK(settings.cheats.hocusPocus == 1);
+    for (int language = 0; language <= 5; ++language) {
+        settings.language = language;
+        for (int row : {pc::settingCheatFirstStrike, pc::settingCheatMonsterActions, pc::settingCheatHocusPocus,
+                        pc::settingCheatConfusedAllies, pc::settingCheatConfusedEnemies, pc::settingCheatJackpot})
+            CHECK(std::string(pc::settingLabel(row, language)).size() > 0 && pc::settingValue(row, language).size() > 0);
+        panel.draw(item, 0, 256, frame);
+        CHECK(drawnTabs == 2);
+    }
+    settings.cheats = pc::CheatSettings{};
     input(panel, item, PAD_BUTTON_R);
     CHECK(panel.page_ == pc::pageCheats);
+    panel.openCheats(pc::pageBattleCheats);
+    CHECK(panel.page_ == pc::pageBattleCheats);
+    panel.openCheats();
+    item.active_ = rowIndex(panel, pc::settingCheatJackpot);
+    input(panel, item, PAD_KEY_RIGHT);
+    CHECK(settings.cheats.guaranteedJackpot);
+    settings.cheats.guaranteedJackpot = false;
     panel.execute(item);
-    CHECK(MenuTemplate_materiel::rows == 15);
+    CHECK(MenuTemplate_materiel::rows == 16);
     item.active_ = rowIndex(panel, pc::settingCheatInvincible);
     input(panel, item, 0, 2);
     CHECK(settings.cheats.battleInvincible && !pc::takeSettingsApply());
@@ -254,7 +308,7 @@ int main(int argc, char** argv) {
         for (int active = 0; active < panel.rowCount_; ++active) {
             item.active_ = active;
             panel.draw(item, 0, 256, frame);
-            CHECK(drawnTabs == 1 && highestRow <= 176);
+            CHECK(drawnTabs == 2 && highestRow <= 176);
         }
     }
     item.active_ = rowIndex(panel, SettingsPanel::ROW_BACK);

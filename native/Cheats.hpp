@@ -8,7 +8,28 @@ struct CheatSettings {
     int expMultiplier = 1;
     int goldMultiplier = 1;
     bool guaranteedCriticals = false;
+    // Slots always hit 7s, poker deals a royal flush, the Monster Arena's bet wins.
+    bool guaranteedJackpot = false;
+    // Battle overrides; 0 keeps the game's own choice.
+    int firstStrike = 0;     // 1 the party strikes first, 2 the monsters do
+    int monsterActions = 0;  // 1 each of a monster's actions in turn, 2..7 always action slot 1..6
+    int hocusPocus = 0;      // 1..hocusPocusCount: that Hocus Pocus effect
+    int confusedAllies = 0;  // 1..confusedCount: what a confused party member does
+    int confusedEnemies = 0; // 1..confusedCount: what a confused monster does
 };
+inline constexpr int firstStrikeCount = 3, monsterActionsCount = 8, hocusPocusCount = 23, confusedCount = 9;
+
+// Monster actions "in turn": from slot `turn`, the next of a monster's six
+// action slots whose action no earlier slot repeats (slot 0 if none is left).
+constexpr int nextMonsterActionSlot(const int (&actions)[6], int turn) {
+    for (int tries = 0; tries < 6; ++tries, ++turn) {
+        const int slot = turn % 6;
+        bool repeat = false;
+        for (int earlier = 0; earlier < slot; ++earlier) repeat = repeat || actions[earlier] == actions[slot];
+        if (!repeat) return slot;
+    }
+    return 0;
+}
 
 inline constexpr int cheatMultipliers[] = {1, 2, 4, 8, 16, 32, 64};
 inline constexpr int cheatMultiplierCount = 7;

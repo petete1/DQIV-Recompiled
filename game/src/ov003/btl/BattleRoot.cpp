@@ -21,6 +21,12 @@
 #include "main/status/HaveBattleStatus.hpp"
 #include "main/status/PlayerStatus.hpp"
 #include "main/task/PartTaskManager.hpp"
+#ifdef DQIV_NATIVE
+#include "Settings.hpp"
+#endif
+#ifdef DQIV_DEBUG_MENU
+#include "DebugTools.hpp"
+#endif
 
 btl::BattleRound battleRound_;
 
@@ -194,6 +200,22 @@ THUMB void btl::BattleRoot::setupMonster()
         int noDamage = status::PartyStatus::noDamageEnableForMonster_;
         g_monster.getMonsterStatus(i)->haveStatusInfo_.noDamage_ = noDamage;
     }
+#ifdef DQIV_NATIVE
+    if (g_Global.fightStadiumFlag_ && pc::gameSettings().cheats.guaranteedJackpot) {
+        // Guaranteed jackpot: the monsters bet on all but can't fall, the others are at 1 HP.
+        for (int i = 0; i < count; i++) {
+            status::BaseStatus& base = g_monster.getMonsterStatus(i)->haveStatusInfo_.haveStatus_.baseStatus_;
+            if (g_monster.getMonsterStatus(i)->characterGroup_ == g_Global.betOnIndex_) {
+                base.hp_ = base.hpMax_ = 9999;
+            } else {
+                base.hp_ = 1;
+            }
+        }
+    }
+#endif
+#ifdef DQIV_DEBUG_MENU
+    pc::debugApplyGroupStats(); // the debug menu's Select Battle
+#endif
 
     int tileId = encount::Encount::getSingleton()->tileId_;
     status::HaveBattleStatus::eventFlag_ = eventEncount_;
@@ -202,6 +224,14 @@ THUMB void btl::BattleRoot::setupMonster()
     status::BaseActionStatus::eventBattle_ = eventEncount_;
     status::g_Party.startBattle();
 
+#ifdef DQIV_NATIVE
+    // First strike cheat; event battles and the arena still deny the party one.
+    if (pc::gameSettings().cheats.firstStrike == 1) {
+        status::g_BattleResult.playerFirstAttack_ = 1;
+    } else if (pc::gameSettings().cheats.firstStrike == 2) {
+        status::g_BattleResult.monsterFirstAttack_ = 1;
+    }
+#endif
     BattleActorManager2::getSingleton()->setFirstAttack(encount::Encount::getSingleton()->getFirstAttack());
     if (status::g_BattleResult.monsterFirstAttack_) {
         BattleActorManager2::getSingleton()->setFirstAttack((FirstAttack)2);

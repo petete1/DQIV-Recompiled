@@ -8,6 +8,7 @@
 #include "main/status/PartyStatus.hpp"
 #ifdef DQIV_NATIVE
 #include <cstring>
+#include "Settings.hpp"
 #endif
 
 const ConfuseArray3         confusePlayer7          = { { 0x1ab, 0x1ac, 0x1ad } };                                                                         
@@ -30,6 +31,14 @@ const ConfuseArray3         confusePlayer12         = { { 0x1a4, 0x1a5, 0x1a6 } 
 const ParupunteArraySmall   parupunteSmallTable     = { { 0x1cc, 0x1cd, 0x1d6, 0x1d7, 0x1d9, 0x1da, 0x1dc, 0x1de, 0x1df, 0x1e0, 0x1e1, 0x1e3, 0x1e4 } };   
 const TarotTable            tarotActionTable        = { { 0x21e, 0x220, 0x221, 0x222, 0x223, 0x224, 0x225, 0x226 } };                                      
 const ConfuseArray8         confuseMonsterParupunte = { { 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1a7, 0x1a3, 0x1a3, 0x1a3 } };                                      
+#ifdef DQIV_NATIVE
+namespace {
+// What the confusion cheats make a confused party member or monster do.
+const int s_confusedAllyActions[pc::confusedCount] = { 0x1a2, 0x1a1, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1a7, 0x1a3 };
+const int s_confusedEnemyActions[pc::confusedCount] = { 0x1a2, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1a7, 0x1c8, 0x1c9, 0x1ca };
+int s_monsterActionTurn = 0; // "in turn": the next action slot to try
+}
+#endif
 
 
 unsigned char actionPattern[120] = {
@@ -371,6 +380,25 @@ THUMB void status::HaveBattleStatus::setActionSelectForPlayer()
 
 
 
+#ifdef DQIV_NATIVE
+// Monster actions cheat: a fixed action slot, or each different action of the
+// monster's list in turn (one counter for every monster, as the PC mod did).
+static void cheatMonsterAction(status::HaveBattleStatus& monster)
+{
+    const int mode = pc::gameSettings().cheats.monsterActions;
+    if (mode <= 0 || mode >= pc::monsterActionsCount) return;
+    int slot = mode - 2;
+    if (mode == 1) {
+        const param::MonsterData& data = status::HaveBattleStatus::monsterData_[monster.index_];
+        const int actions[6] = { data.action1, data.action2, data.action3, data.action4, data.action5, data.action6 };
+        slot = pc::nextMonsterActionSlot(actions, s_monsterActionTurn);
+        s_monsterActionTurn = slot + 1;
+    }
+    monster.patternIndex_ = slot;
+    monster.setActionIndexForMonster();
+}
+#endif
+
 THUMB void status::HaveBattleStatus::setActionSelectForMonster(CallStart callStart)
 {
     int savedPatternIndex;
@@ -394,6 +422,9 @@ THUMB void status::HaveBattleStatus::setActionSelectForMonster(CallStart callSta
             this->patternIndex_ = savedPatternIndex;
             if (!isActionDisable()) {
                 setActionIndexForMonster();
+#ifdef DQIV_NATIVE
+                cheatMonsterAction(*this);
+#endif
                 return;
             }
         }
@@ -412,6 +443,9 @@ THUMB void status::HaveBattleStatus::setActionSelectForMonster(CallStart callSta
             this->patternIndex_ = savedPatternIndex;
             if (!isActionDisable()) {
                 setActionIndexForMonster();
+#ifdef DQIV_NATIVE
+                cheatMonsterAction(*this);
+#endif
                 return;
             }
         }
@@ -435,6 +469,9 @@ THUMB void status::HaveBattleStatus::setActionSelectForMonster(CallStart callSta
             this->actionIndex_ = getMosyasAction(randIndex);
         }
     }
+#ifdef DQIV_NATIVE
+    cheatMonsterAction(*this);
+#endif
 }
 
 
@@ -1048,6 +1085,12 @@ THUMB void status::HaveBattleStatus::setupParupunteAction() {
                 int r = dssrand::rand(0x17);
                 this->actionIndex_ = tmp.v[r];
             }
+#ifdef DQIV_NATIVE
+            const int hocus = pc::gameSettings().cheats.hocusPocus;
+            if (hocus > 0 && hocus <= pc::hocusPocusCount) {
+                this->actionIndex_ = parupunteLargeTable.v[hocus - 1];
+            }
+#endif
             if (parupunteDebugIndex_ != 0) {
                 this->actionIndex_ = parupunteDebugIndex_;
                 parupunteDebugIndex_ = 0;
@@ -1197,6 +1240,14 @@ THUMB void status::HaveBattleStatus::setupConfuseAction() {
             this->actionIndex_ = tmp.v[r];
         }
     }
+#ifdef DQIV_NATIVE
+    const bool ally = this->type_ == PLAYER || this->monsterIndexForNpc_ != 0;
+    const pc::CheatSettings& cheats = pc::gameSettings().cheats;
+    const int confused = ally ? cheats.confusedAllies : this->type_ == MONSTER ? cheats.confusedEnemies : 0;
+    if (confused > 0 && confused <= pc::confusedCount) {
+        this->actionIndex_ = (ally ? s_confusedAllyActions : s_confusedEnemyActions)[confused - 1];
+    }
+#endif
     this->selectCommand_ = UseAction;
     this->selectedTarget_ = -1;
     this->selectedGroup_ = -1;
