@@ -96,7 +96,7 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
     return p;
 }
 // The launch list (Classic): the save cards in one window, scrolled to the cursor's card.
-constexpr int cardHeight=30,cardGap=2,cardFace=24;
+constexpr int cardHeight=31,cardGap=2,cardFace=24;  // 31: a row under the face, as the portrait's own top row leaves above it
 Plan planLaunch(const BattleMenuState& state,int width,int height) {
     Plan p;p.launch=true;
     const Box big{0,0,width-2*margin,height-2*margin};
