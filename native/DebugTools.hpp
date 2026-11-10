@@ -52,6 +52,13 @@ void debugToggleVehicle(int vehicle);
 // A battle against the chosen groups, on the chosen background.
 int debugLastMonster();
 std::string debugMonsterName(int monster);
+// Ids with no real monster (placeholders, blank entries), which the picker skips (as the mod's).
+constexpr bool debugBlankMonster(int monster)
+{
+    return monster == 189 || (monster >= 195 && monster <= 204) || (monster >= 247 && monster <= 299)
+        || (monster >= 310 && monster <= 314);
+}
+static_assert(debugBlankMonster(189) && debugBlankMonster(250) && !debugBlankMonster(174) && !debugBlankMonster(309));
 int debugMonsterStat(int monster, int stat); // its own
 int debugStatLimit(int stat);
 void debugStartBattle();

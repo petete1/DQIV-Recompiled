@@ -193,6 +193,7 @@ void DebugPanel::change(int row, int step)
         group_ = row - ROW_GROUP;
         pc::DebugGroup& chosen = state.groups[group_];
         chosen.monster = wrap(chosen.monster + listStep - step, step, 1, pc::debugLastMonster());
+        while (pc::debugBlankMonster(chosen.monster)) chosen.monster = wrap(chosen.monster, step, 1, pc::debugLastMonster());
         if (chosen.count == 0) chosen.count = 1; // choosing a monster makes the group
         for (int& stat : chosen.stats) stat = -1;
         return;
