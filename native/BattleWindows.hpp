@@ -64,7 +64,9 @@ struct BattleSaveCard {
     std::vector<std::uint8_t> face;                 // 48x48 portraitPalette indices, may be empty
     int entry=-1;                                   // its index in state.entries, -1 not pickable (drawn dimmed)
 };
-struct BattleLaunchMenu {bool shown=false;std::vector<BattleSaveCard> cards;};
+// fit: the window as tall as its cards (the save list, above the message), not the screen.
+// With the party's cards the window stays left of them; without a title, no header row.
+struct BattleLaunchMenu {bool shown=false,fit=false;std::vector<BattleSaveCard> cards;};
 struct BattleMenuState {
     BattleMenuKind kind=BattleMenuKind::none;
     BattleText title,footer;          // member name (or a message); "MP left" line (may be empty)

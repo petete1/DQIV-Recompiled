@@ -36,68 +36,11 @@ pc::ResumeSlot resumeSlotShown() { return shownPage() == 0 ? pc::ResumeSlot::qui
 // Classic: the list's cards (autosave, quick save, logs 1-6), read from both pages.
 std::vector<pc::BattleSaveCard> s_cards;
 int s_cardsRevision = 0;
-pc::BattleSaveCard saveCard(const profile::CatalogView* view, const pc::BattleText& label, long long when)
-{
-    pc::BattleSaveCard card;
-    card.label = label;
-    if (view == NULL || view->useFlag_ == 0) {
-        card.name = battleText(0xa0000321);
-        return card;
-    }
-    // Rendered now: the next page's read overwrites the catalogue's names.
-    card.name = battleText((int)view->name_);
-    // Chapters 1-4: their own lead (Ragnar, Alena, Torneko, Meena); else the hero, first in the party.
-    static const int s_leads[5] = { 0, 3, 4, 7, 8 };
-    card.face = playerFace(view->chapter_ >= 1 && view->chapter_ <= 4 ? s_leads[view->chapter_] : view->lead_);
-    card.time = battlePlayTime(view->time_);
-    card.date = battleSaveDate(when);
-    if (view->savetype_ != 4) {
-        if (view->chapter_ >= 0 && view->chapter_ <= 6) {
-            card.chapter = battleText(0xa0000323 + view->chapter_);
-        }
-        if (view->chapter_ >= 5) {
-            card.level = battleNumber(view->level_);
-        }
-        if (view->town_ != 0) {  // a resume save made away from a place has none
-            card.place = battleText(view->town_ == -1 ? 0x80000032 : view->town_);
-        }
-    }
-    return card;
-}
-// Both pages' logs and resume saves, then the session page shown again. menuMode 0
+// Both pages' logs and resume saves (BattleMenuNative's readSaveCards). menuMode 0
 // (Continue): all eight pickable; Create and Delete: the six logs.
 void readAllCards(int menuMode)
 {
-    pc::SavePages* p = pages();
-    const int language = pc::gameSettings().language;
-    pc::BattleSaveCard resume[2];
-    pc::BattleSaveCard logs[6];
-    for (int page = 0; page < (p ? pc::SavePages::pageCount : 1); page++) {
-        if (p) {
-            p->showPage(page);
-        }
-        const profile::CatalogView* views = profile::SaveLoad::getCatalogView();
-        for (int i = 0; i < 3; i++) {
-            logs[page * 3 + i] = saveCard(views ? &views[i] : NULL, battleNumber(page * 3 + i + 1), p ? p->saveTime(page, i) : 0);
-        }
-        if (p) {
-            const pc::ResumeSlot slot = page == 0 ? pc::ResumeSlot::quick : pc::ResumeSlot::autosave;
-            profile::CatalogView view;
-            p->useResumeSlot(slot);
-            const bool used = profile::SaveLoad::getResumeView(&view);
-            p->useResumeSlot(pc::ResumeSlot::quick);
-            resume[page] = saveCard(used ? &view : NULL, battleString(page == 0 ? pc::quickSaveLabel(language) : pc::autosaveLabel(language)), p->saveTime(page, 3));
-        }
-    }
-    if (p) {
-        p->showPage(p->sessionPage());
-    }
-    s_cards.clear();
-    s_cards.push_back(resume[1]);
-    s_cards.push_back(resume[0]);
-    for (int i = 0; i < 6; i++) {
-        s_cards.push_back(logs[i]);
-    }
+    s_cards = readSaveCards(true);
     for (int i = 0; i < 8; i++) {
         s_cards[i].entry = menuMode == 0 ? i : i >= 2 ? i - 2 : -1;
     }

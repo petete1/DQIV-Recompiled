@@ -99,12 +99,16 @@ void clearBattleActed();
 struct MenuTextDisplay;
 bool publishBattlePlate(MenuTextDisplay* text);
 // The launch menu (MaterielMenu_LOAD, Classic): its commands as a field list (texts:
-// message values or text pointers), and its log list of save cards (entries pickable).
+// message values or text pointers), and its log list of save cards (entries pickable;
+// title 0: none). fit: the save list, as tall as its cards beside the party's cards.
 void publishLaunchCommands(int count, const int* texts, int active);
-void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision);
+void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision, bool fit = false);
 // A save card's pieces: its date ("YYYY-MM-DD HH:MM", local; empty for 0), a play time
 // ("HHH:MM" from the game's frames), a plain UTF-8 text, and a player's face.
 pc::BattleText battleSaveDate(long long seconds);
+// The save cards of both pages: (resumeSaves: the autosave, the quick save, then) logs 1-6,
+// none pickable yet (entry -1); the session page is shown again after.
+std::vector<pc::BattleSaveCard> readSaveCards(bool resumeSaves);
 pc::BattleText battlePlayTime(int frames);
 pc::BattleText battleString(const char* utf8);
 const std::vector<std::uint8_t>& playerFace(int player);

@@ -99,9 +99,11 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
 constexpr int cardHeight=31,cardGap=2,cardFace=24;  // 31: a row under the face, as the portrait's own top row leaves above it
 Plan planLaunch(const BattleMenuState& state,int width,int height) {
     Plan p;p.launch=true;
-    const Box big{0,0,width-2*margin,height-2*margin};
-    const int top=headerHeight+gap,count=int(state.launch.cards.size());
+    const int right=state.party.empty()?width-margin:width-margin-partyRoom-gap;
+    Box big{0,0,right-margin,height-2*margin};
+    const int top=state.title.width>0?headerHeight+gap:pad,count=int(state.launch.cards.size());
     const int visible=std::min(count,(big.h-top-pad+cardGap)/(cardHeight+cardGap));
+    if(state.launch.fit)big.h=std::min(big.h,top+visible*(cardHeight+cardGap)-cardGap+pad);
     if(visible<1||big.w<2*pad+cursorWidth+cardFace)return Plan{};
     int cursorCard=0;
     for(int i=0;i<count;++i)if(state.launch.cards[std::size_t(i)].entry==state.cursor&&state.cursor>=0)cursorCard=i;
@@ -550,8 +552,10 @@ template<class Pointer>
 void composeLaunch(std::vector<std::uint32_t>& out,int width,int height,const BattleMenuState& state,const Plan& p,Pointer& pointer) {
     const auto& big=p.windows[0];
     frame(out,width,big);
-    blit(out,width,height,state.title,big.x+(big.w-state.title.width)/2,big.y+(headerHeight-state.title.height)/2+1,big.w-2*pad,state.palette,false);
-    rule(out,width,big.x+pad,big.y+headerHeight,big.w-2*pad);
+    if(state.title.width>0) {
+        blit(out,width,height,state.title,big.x+(big.w-state.title.width)/2,big.y+(headerHeight-state.title.height)/2+1,big.w-2*pad,state.palette,false);
+        rule(out,width,big.x+pad,big.y+headerHeight,big.w-2*pad);
+    }
     if(p.moreAbove)arrow(out,width,height,big.x+big.w-pad-9,big.y+headerHeight-7,true);
     if(p.moreBelow)arrow(out,width,height,big.x+big.w-pad-9,big.y+big.h-pad+1,false);
     int labels=0,chapters=0;

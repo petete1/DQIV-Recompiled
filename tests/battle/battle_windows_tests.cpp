@@ -377,6 +377,26 @@ void launchDrawsCards() {
     bool face=false;for(auto c:pixels)face=face||c==0xff123456;
     check(face,"a card draws its face");
 }
+pc::BattleMenuState saveListState() {
+    auto state=launchState(6,6);state.title=pc::BattleText();state.launch.fit=true;
+    for(int i=0;i<3;++i)state.party.push_back({});
+    return state;
+}
+void saveListFitsItsCards() {
+    const auto layout=pc::layoutBattleMenu(saveListState(),1280,720);
+    const int s=pc::battleScale(720);
+    check(layout.windows.size()==7,"the window and six cards");
+    if(layout.windows.size()<7)return;
+    const auto& big=layout.windows[0];const auto& last=layout.windows[6];
+    check(big.y+big.h==last.y+last.h+8*s,"the window ends under its last card");
+    check(layout.windows[1].y-big.y<20*s,"no header row without a title");
+}
+void saveListLeftOfParty() {
+    const auto state=saveListState();
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    if(layout.windows.empty()) {check(false,"the save list's window");return;}
+    check(layout.windows[0].x+layout.windows[0].w<=pc::layoutBattleParty(state,1280,720).picture.x,"left of the party cards");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -769,6 +789,8 @@ int main() {
     launchWindowsInside();
     launchHidesMapAndGold();
     launchDrawsCards();
+    saveListFitsItsCards();
+    saveListLeftOfParty();
     windowsStayInside();
     cursorSkipsEmptySlot();
     listWraps();

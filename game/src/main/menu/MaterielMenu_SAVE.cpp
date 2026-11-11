@@ -5,8 +5,20 @@
 #include "Settings.hpp"
 #include "SavePages.hpp"
 #include "main/menu/MenuPartsDraw.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include <nitro/pad.h>
 #include <string.h>
+#include <vector>
+
+namespace {
+// Classic: logs 1-6 as cards in one list; a row is a log, its page shown when picked.
+std::vector<pc::BattleSaveCard> s_cards;
+int s_cardsRevision = 0;
+// The game's bank (0-2, in the page shown) for the menu's active row.
+int saveBank(int active) { return classicBattleMenus() ? active % 3 : active; }
+}
+#else
+static inline int saveBank(int active) { return active; }
 #endif
 #include "main/object/DisplayCharacter.hpp"
 #include "main/menu/MaterielMenuWindowManager.hpp"
@@ -49,6 +61,12 @@ THUMB void MaterielMenu_SAVE::menuSetup()
 
 THUMB void MaterielMenu_SAVE::menuExecute()
 {
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&menuItem_, 6);
+        return;
+    }
+#endif
     MenuTemplate_materiel::MATERIEL_DIARY_SELECT(&menuItem_);
 }
 
@@ -61,6 +79,10 @@ THUMB void MaterielMenu_SAVE::menuDraw()
         return;
     }
 #ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        publishLaunchList(0, s_cards, 6, menuItem_.active_, s_cardsRevision, true);
+        return;
+    }
     // Logs 1-3 or 4-6, and the page label.
     const int page = pc::mountedSavePages() ? pc::mountedSavePages()->shownPage() : 0;
     for (int i = 0; i < 3; i++) {
@@ -327,6 +349,18 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
             if (active == 3) {
                 active = 0;
             }
+#ifdef DQIV_NATIVE
+            if (classicBattleMenus()) {
+                s_cards = readSaveCards(false);
+                for (int i = 0; i < 6; i++) {
+                    s_cards[i].entry = i;
+                }
+                s_cardsRevision++;
+                // The log the adventure came from, on its page.
+                pc::SavePages* pages = pc::mountedSavePages();
+                active += pages ? pages->sessionPage() * 3 : 0;
+            }
+#endif
             menuItem_.active_ = active;
         } else {
             setMode(MENU_BLANK);
@@ -379,7 +413,18 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
         }
         break;
     case MENU_IS_OVERWRITE:
+#ifdef DQIV_NATIVE
+    {
+        // The log's number counts the page's logs before it (id_ is its bank in its file).
+        profile::CatalogView named = catalogview_[saveBank(menuItem_.active_)];
+        if (pc::SavePages* pages = pc::mountedSavePages()) {
+            named.id_ += pages->shownPage() * 3;
+        }
+        profile::SaveLoad::setCatalogMacro(&named);
+    }
+#else
         profile::SaveLoad::setCatalogMacro(&catalogview_[menuItem_.active_]);
+#endif
         switch (saveType_) {
         case TYPE_CHURCH:
             setTalkYesNoMessage(0xc6faa, true);
@@ -434,7 +479,7 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
             switch (saveType_) {
             case TYPE_CHURCH:
                 g_Stage.setChurchMapName(g_Stage.getMapName());
-                profile::SaveLoad::savebankAsync(menuItem_.active_, profile::SAVETYPE_CHURCH);
+                profile::SaveLoad::savebankAsync(saveBank(menuItem_.active_), profile::SAVETYPE_CHURCH);
                 break;
             case TYPE_CLEAR:
                 g_Stage.lastFldSurface_ = -1;
@@ -447,7 +492,7 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
                 pos.vz = dss::Fix32(0.65f);
                 g_Stage.overviewPosition_ = pos;
                 g_Stage.overviewTempPosition_ = pos;
-                profile::SaveLoad::savebankAsync(menuItem_.active_, profile::SAVETYPE_CHURCH);
+                profile::SaveLoad::savebankAsync(saveBank(menuItem_.active_), profile::SAVETYPE_CHURCH);
                 g_cmnPartyInfo.resetBalloonPosByExtraSave();
                 break;
             case TYPE_SURECHIGAI:
@@ -457,12 +502,12 @@ THUMB void MaterielMenu_SAVE::commandUpdate()
                 pos.vz = dss::Fix32(1.18f);
                 g_Stage.overviewPosition_ = pos;
                 g_Stage.overviewTempPosition_ = pos;
-                profile::SaveLoad::savebankAsync(menuItem_.active_, profile::SAVETYPE_CHURCH);
+                profile::SaveLoad::savebankAsync(saveBank(menuItem_.active_), profile::SAVETYPE_CHURCH);
                 break;
             case TYPE_CHAPTER:
                 g_Stage.lastFldSurface_ = -1;
                 g_Stage.setRanaMapName("");
-                profile::SaveLoad::savebankAsync(menuItem_.active_, profile::SAVETYPE_INTERVAL);
+                profile::SaveLoad::savebankAsync(saveBank(menuItem_.active_), profile::SAVETYPE_INTERVAL);
                 break;
             }
             setMode(MENU_WRITINGWAIT);
@@ -635,7 +680,8 @@ THUMB void MaterielMenu_SAVE::dataSelectUpdate()
     // L / R: the other page of logs.
     pc::SavePages* pages = pc::mountedSavePages();
     const int edge = dss::g_Pad.edge();
-    if (pages && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
+    const bool classic = classicBattleMenus();
+    if (!classic && pages && (edge & (PAD_BUTTON_L | PAD_BUTTON_R))) {
         const int step = edge & PAD_BUTTON_R ? 1 : pc::SavePages::pageCount - 1;
         pages->showPage((pages->shownPage() + step) % pc::SavePages::pageCount);
         getSaveData();
@@ -644,10 +690,21 @@ THUMB void MaterielMenu_SAVE::dataSelectUpdate()
     }
 #endif
     menuItem_.execInput();
+#ifdef DQIV_NATIVE
+    battleListInput(menuItem_);
+#endif
     switch (menuItem_.result_) {
     case 2:
         menuItem_.result_ = 0;
         menuItem_.lastresult_ = 0;
+#ifdef DQIV_NATIVE
+        // Classic: the picked log's page, then its slot there.
+        if (classic && pages) {
+            pages->showPage(menuItem_.active_ / 3);
+            getSaveData();
+        }
+        m_focusDiary = saveBank(menuItem_.active_);
+#endif
         if (diary_[m_focusDiary].name_ == 0) {
             setMode(MENU_WRITING);
         } else {
@@ -664,17 +721,30 @@ THUMB void MaterielMenu_SAVE::dataSelectUpdate()
         if (g_TownMenuMessage.isOpen()) {
             g_TownMenuMessage.close();
         }
+#ifdef DQIV_NATIVE
+        if (classic && pages) {
+            pages->showPage(pages->sessionPage());
+        }
+#endif
         firstCancelMessage();
         redraw_ = 1;
         break;
     case 5:
+#ifdef DQIV_NATIVE
+        menuItem_.active_ = classic ? 5 : 2;
+#else
         menuItem_.active_ = 2;
+#endif
         break;
     case 6:
         menuItem_.active_ = 0;
         break;
     }
+#ifdef DQIV_NATIVE
+    m_focusDiary = saveBank(menuItem_.active_);
+#else
     m_focusDiary = menuItem_.active_;
+#endif
 }
 
 THUMB void MaterielMenu_SAVE::setMessage(int messageID)

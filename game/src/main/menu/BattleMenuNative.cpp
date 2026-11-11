@@ -40,6 +40,7 @@
 #include "Settings.hpp"
 #include "main/status/ExcelParam.hpp"
 #include "SavePages.hpp"
+#include "main/profile/SaveLoad.hpp"
 #include <cstring>
 #include <map>
 #include <string>
@@ -1136,10 +1137,12 @@ void publishLaunchCommands(int count, const int* texts, int active)
     endBattleMenu();
 }
 
-void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision)
+void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, int entries, int active, int revision, bool fit)
 {
     beginFieldMenu(pc::BattleMenuKind::list, 1);
-    setBattleTitle(title);
+    if (title != 0) {
+        setBattleTitle(title);
+    }
     // The pickable cards are the entries; their labels only key the revision.
     for (int i = 0; i < entries; i++) {
         pc::BattleMenuEntry entry;
@@ -1150,10 +1153,15 @@ void publishLaunchList(int title, const std::vector<pc::BattleSaveCard>& cards, 
     loadPortraitPalette(pc::battleMenuState());
     s_building.launch.shown = true;
     s_building.launch.cards = cards;
+    s_building.launch.fit = fit;
     s_keys.push_back(-4);
     s_keys.push_back(entries);
     s_keys.push_back(revision);
+    s_keys.push_back(fit);
     endBattleMenu();
+    if (fit) {
+        publishFieldParty(NULL);
+    }
 }
 
 pc::BattleText battleSaveDate(long long seconds)
@@ -1188,4 +1196,72 @@ const std::vector<std::uint8_t>& playerFace(int player)
         return none;
     }
     return portraitPixels(charData[player].icon);
+}
+
+namespace {
+pc::BattleSaveCard saveCard(const profile::CatalogView* view, const pc::BattleText& label, long long when)
+{
+    pc::BattleSaveCard card;
+    card.label = label;
+    if (view == NULL || view->useFlag_ == 0) {
+        card.name = battleText(0xa0000321);
+        return card;
+    }
+    // Rendered now: the next page's read overwrites the catalogue's names.
+    card.name = battleText((int)view->name_);
+    // Chapters 1-4: their own lead (Ragnar, Alena, Torneko, Meena); else the hero, first in the party.
+    static const int s_leads[5] = { 0, 3, 4, 7, 8 };
+    card.face = playerFace(view->chapter_ >= 1 && view->chapter_ <= 4 ? s_leads[view->chapter_] : view->lead_);
+    card.time = battlePlayTime(view->time_);
+    card.date = battleSaveDate(when);
+    if (view->savetype_ != 4) {
+        if (view->chapter_ >= 0 && view->chapter_ <= 6) {
+            card.chapter = battleText(0xa0000323 + view->chapter_);
+        }
+        if (view->chapter_ >= 5) {
+            card.level = battleNumber(view->level_);
+        }
+        if (view->town_ != 0) {  // a resume save made away from a place has none
+            card.place = battleText(view->town_ == -1 ? 0x80000032 : view->town_);
+        }
+    }
+    return card;
+}
+}
+
+std::vector<pc::BattleSaveCard> readSaveCards(bool resumeSaves)
+{
+    pc::SavePages* p = pc::mountedSavePages();
+    const int language = pc::gameSettings().language;
+    pc::BattleSaveCard resume[2];
+    pc::BattleSaveCard logs[6];
+    for (int page = 0; page < (p ? pc::SavePages::pageCount : 1); page++) {
+        if (p) {
+            p->showPage(page);
+        }
+        const profile::CatalogView* views = profile::SaveLoad::getCatalogView();
+        for (int i = 0; i < 3; i++) {
+            logs[page * 3 + i] = saveCard(views ? &views[i] : NULL, battleNumber(page * 3 + i + 1), p ? p->saveTime(page, i) : 0);
+        }
+        if (p && resumeSaves) {
+            const pc::ResumeSlot slot = page == 0 ? pc::ResumeSlot::quick : pc::ResumeSlot::autosave;
+            profile::CatalogView view;
+            p->useResumeSlot(slot);
+            const bool used = profile::SaveLoad::getResumeView(&view);
+            p->useResumeSlot(pc::ResumeSlot::quick);
+            resume[page] = saveCard(used ? &view : NULL, battleString(page == 0 ? pc::quickSaveLabel(language) : pc::autosaveLabel(language)), p->saveTime(page, 3));
+        }
+    }
+    if (p) {
+        p->showPage(p->sessionPage());
+    }
+    std::vector<pc::BattleSaveCard> cards;
+    if (resumeSaves) {
+        cards.push_back(resume[1]);
+        cards.push_back(resume[0]);
+    }
+    for (int i = 0; i < 6; i++) {
+        cards.push_back(logs[i]);
+    }
+    return cards;
 }

@@ -320,7 +320,7 @@ void GameWindow::drawBattleWindows(int width,int height) {
                 int(std::lround(originY+state.plates[i].y*k)),width,height,int(std::lround(w*k)),int(std::lround(h*k)));
         }
     }
-    // The message window, above the command panel when both show; over the Items window.
+    // The message window, above the command panel when both show.
     auto drawMessage=[&] {
         auto message=layoutBattleMessage(state,width,height);
         if(message.picture.w<=0)return;
@@ -333,7 +333,9 @@ void GameWindow::drawBattleWindows(int width,int height) {
         gpu_->drawOverlay(overlayBattleMessage,pixels,message.picture.w/s,message.picture.h/s,true,
             message.picture.x,message.picture.y,width,height,message.picture.w,message.picture.h);
     };
-    if(!state.items.shown)drawMessage();
+    // Over the Items window and the save list (the priest's question under it).
+    const bool messageOver=state.items.shown||state.launch.shown;
+    if(!messageOver)drawMessage();
     if(state.kind==BattleMenuKind::none) {rememberBattleLayout({});return;}
     // The field menu's gold, at the top right.
     const auto gold=layoutBattleGold(state,width,height);
@@ -344,7 +346,7 @@ void GameWindow::drawBattleWindows(int width,int height) {
     }
     const auto layout=layoutBattleMenu(state,width,height);
     rememberBattleLayout(layout);
-    if(layout.windows.empty()) {if(state.items.shown)drawMessage();return;}
+    if(layout.windows.empty()) {if(messageOver)drawMessage();return;}
     // The cursor blinks at the game's 60 frames per second: on 20, off 10.
     const int blinkFrame=int(SDL_GetTicks()*60/1000);
     const bool blink=blinkFrame%30<20;
@@ -356,7 +358,7 @@ void GameWindow::drawBattleWindows(int width,int height) {
     const int s=layout.scale;
     gpu_->drawOverlay(overlayBattle,battlePicture_,layout.picture.w/s,layout.picture.h/s,changed,
         layout.picture.x,layout.picture.y,width,height,layout.picture.w,layout.picture.h);
-    if(state.items.shown)drawMessage();
+    if(messageOver)drawMessage();
 }
 void GameWindow::drawOverlayMenus(int width,int height) {
     const auto& state=overlayMenuState();
