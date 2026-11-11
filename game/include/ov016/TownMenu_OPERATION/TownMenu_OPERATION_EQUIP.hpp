@@ -32,6 +32,9 @@ struct TownMenu_OPERATION_EQUIP : menu::MenuBase
     void setItemTypeList();
     void setEquip();
     int removeEquipment();
+#ifdef DQIV_NATIVE
+    void classicItemUpdate();
+#endif
 };
 
 extern TownMenu_OPERATION_EQUIP gTownMenu_OPERATION_EQUIP;

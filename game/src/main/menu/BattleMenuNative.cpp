@@ -949,7 +949,7 @@ void beginItemsWindow()
     s_itemsOpen = true;
 }
 
-void addItemsWhose(int cursor)
+void addItemsWhose(int cursor, bool bag)
 {
     // The members (player order) with their faces, then the bag, as drawCharaSelectWindow.
     status::g_Party.setPlayerMode();
@@ -959,17 +959,52 @@ void addItemsWhose(int cursor)
         addBattleEntry(info->haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
         s_building.entries.back().face = portraitPixels(info->haveStatus_.iconIndex_);
     }
-    if (status::g_Party.fukuro_ != 0) {
+    if (bag && status::g_Party.fukuro_ != 0) {
         addBattleEntry(0x5000005b, (short)count, true);
     }
     setBattleCursor((short)cursor);
 }
 
-void storeItemsWhose(int chosen)
+void storeItemsWhose(int chosen, bool bag)
 {
     beginFieldMenu(pc::BattleMenuKind::list, 1);
-    addItemsWhose(chosen);
+    addItemsWhose(chosen, bag);
     stashItemsPane(s_items.whose);
+}
+
+void setItemsWindowTitle(int text)
+{
+    s_items.title = battleText(text);
+    s_itemsKeys.push_back(text);
+}
+
+void addEquipList(const unsigned char* ids, int count, int page, int active, const status::HaveStatusInfo* owner, int title, int removeText)
+{
+    if (title != 0) {
+        setBattleTitle(title);
+    }
+    int top;
+    const int num = count > 0 ? pageEntries(count, page, top) : 0;
+    for (int i = 0; i < num; i++) {
+        const int item = ids[top + i];
+        const bool worn = owner != NULL && const_cast<status::HaveStatusInfo*>(owner)->haveEquipment_.isEquipment(item);
+        addBattleEntry(item + 0x40000000, (short)i, true, worn ? 0xa0000041 : 0);
+        setEntryIcon(0xf0000000, item, 32);
+    }
+    if (removeText != 0) {
+        addBattleEntry(removeText, (short)num, true);
+    }
+    if (count > 6) {
+        setBattlePage(page, (count - 1) / 6 + 1);
+    }
+    setBattleCursor((short)active);
+}
+
+void storeEquipList(const unsigned char* ids, int count, int page, const status::HaveStatusInfo* owner, int title)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    addEquipList(ids, count, page, -1, owner, title, 0);
+    stashItemsPane(s_items.list);
 }
 
 void storeItemsList(int chara, bool bag, int page, int chosen)

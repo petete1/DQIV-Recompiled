@@ -11,6 +11,13 @@
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
+#include <nitro/pad.h>
+#endif
 
 THUMB void TownMenu_OPERATION_EQUIP::menuSetup()
 {
@@ -48,6 +55,14 @@ THUMB void TownMenu_OPERATION_EQUIP::menuExecute()
         if (itemCount > 6) {
             itemCount = 6;
         }
+#ifdef DQIV_NATIVE
+        // Classic: one column, the page's items then Don't Equip (index itemCount).
+        if (classicBattleMenus()) {
+            MenuTemplate_materiel::MATERIEL_DIARY_PAGE(&itemItem_, itemCount + 1);
+            MenuTemplate_town::TOWN_CANCEL(&cancelItem_);
+            return;
+        }
+#endif
         MenuTemplate_Common::COMMON_ITEM_ICON32_2x3(&itemItem_, itemCount, itemItem_.active_);
         if (itemType_ >= 0) {
             MenuTemplate_town::TOWN_OP_NOEQUIP(&removeItem_);
@@ -59,6 +74,32 @@ THUMB void TownMenu_OPERATION_EQUIP::menuExecute()
 THUMB void TownMenu_OPERATION_EQUIP::menuDraw()
 {
     status::g_Party.setPlayerMode();
+#ifdef DQIV_NATIVE
+    // Classic: the Items window: the members, this slot's items (then Don't Equip), and
+    // the detail of the one under the cursor with its comparison.
+    if (classicBattleMenus() && !g_TownMenuMessage.isOpen()) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_;
+        beginItemsWindow();
+        setItemsWindowTitle(0x8000006b);
+        if (itemType_ < 0) {
+            storeEquipList(itemIdList_, itemCount_, 0, info, info->haveStatus_.playerIndex_ + 0x50000000);
+            beginFieldMenu(pc::BattleMenuKind::list, 1);
+            addItemsWhose(charaItem_.active_, false);
+            endItemsWindow(pc::BattleItemsFocus::whose, info);
+            return;
+        }
+        storeItemsWhose(activeChara_, false);
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        const int index = itemPageStart_ * 6 + itemItem_.active_;
+        addEquipList(itemIdList_, itemCount_, itemPageStart_, itemItem_.active_, info,
+                     menu::MenuDataCommon::getEquipKind(itemType_), 0x8000008b);
+        if (index < itemCount_ && itemItem_.active_ < 6) {
+            setItemsDetail(itemIdList_[index], info, -1);
+        }
+        endItemsWindow(pc::BattleItemsFocus::list, info);
+        return;
+    }
+#endif
     if (itemType_ >= 0) {
         if (itemListActive_ != 0) {
             drawEquipScreen(itemType_, activeChara_, itemPageStart_, itemIdList_, itemCount_, itemPosList_[itemPageStart_ * 6 + itemItem_.getActive()]);
@@ -125,7 +166,15 @@ THUMB void TownMenu_OPERATION_EQUIP::menuUpdate()
         setItemTypeList();
         return;
     }
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus() && itemType_ >= 0) {
+        classicItemUpdate();
+        return;
+    }
+    int result = classicBattleMenus() ? battleMenuSelect(charaItem_, charaNavigator_) : MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             itemType_ = 0;
@@ -327,3 +376,62 @@ THUMB int TownMenu_OPERATION_EQUIP::removeEquipment()
     itemType_++;
     return 1;
 }
+
+#ifdef DQIV_NATIVE
+// Classic: the slot's list in one column, Don't Equip its last entry; Left / Right turn pages.
+THUMB void TownMenu_OPERATION_EQUIP::classicItemUpdate()
+{
+    // A new slot: the list takes the pad, the cursor on the item worn (else the first).
+    if (itemType_ != beginItemType_) {
+        setItemTypeList();
+        charaItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH, menu::MenuItem::CURSORTYPE_NONE);
+        itemItem_.setup(menu::MenuItem::MENUITEM_TYPE_TOUCH_PAD, menu::MenuItem::CURSORTYPE_ACTIVE);
+        charaItem_.active_ = activeChara_;
+        status::HaveStatusInfo& info = status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_;
+        for (int i = 0; i < itemCount_; i++) {
+            if (info.haveEquipment_.isEquipment(itemIdList_[i])) {
+                itemPageStart_ = (unsigned char)(i / 6);
+                itemNavigator_.setPageNo(itemPageStart_);
+                itemItem_.active_ = i % 6;
+            }
+        }
+        beginItemType_ = itemType_;
+        redraw_ = 1;
+    }
+    const int pages = itemCount_ > 0 ? (itemCount_ - 1) / 6 + 1 : 1;
+    const int edge = dss::g_Pad.edge();
+    if (pages > 1 && (edge & (PAD_KEY_LEFT | PAD_KEY_RIGHT))) {
+        itemPageStart_ = (unsigned char)((itemPageStart_ + (edge & PAD_KEY_RIGHT ? 1 : pages - 1)) % pages);
+        itemNavigator_.setPageNo(itemPageStart_);
+        itemItem_.active_ = 0;
+        redraw_ = 1;
+        return;
+    }
+    int onPage = itemCount_ - itemPageStart_ * 6;
+    if (onPage > 6) {
+        onPage = 6;
+    }
+    const int result = battleMenuSelect(itemItem_, itemNavigator_);
+    if (result != 2) {
+        if (result != 0) {
+            redraw_ = 1;
+        }
+        return;
+    }
+    if (itemItem_.active_ < onPage) {
+        if (itemType_ >= ITEM_WEAPON && itemType_ <= ITEM_ACCESSORY) {
+            setEquip();
+            setItemTypeList();
+        }
+    } else if (itemType_ >= ITEM_WEAPON && itemType_ <= ITEM_ACCESSORY) {
+        removeEquipment();
+    }
+    if (itemType_ > ITEM_ACCESSORY) {
+        close();
+        gTownMenu_ROOT.open();
+        gTownMenu_ROOT.menuItem_.active_ = TownMenu_ROOT::ROOT_OPERATION;
+        return;
+    }
+    redraw_ = 1;
+}
+#endif
