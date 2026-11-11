@@ -55,6 +55,7 @@ struct BattleItemsWindow {
     std::vector<std::uint32_t> icon;  // 32x32 ARGB; empty: no detail
     BattleText count;                 // "×n" (the Bag), may be empty
     BattleText statLabel,statNow,statNew,statNote;  // the comparison: label now ▶ new, or label note (now)
+    std::vector<std::array<BattleText,2>> rows;     // without an icon: label / value rows under kind (Attributes)
 };
 // The launch menu (MaterielMenu_LOAD, Classic). shown: the commands (a field list) or the
 // log list; the map and gold stay off. cards non-empty: the log list in one window, the

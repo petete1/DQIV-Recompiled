@@ -397,6 +397,25 @@ void saveListLeftOfParty() {
     if(layout.windows.empty()) {check(false,"the save list's window");return;}
     check(layout.windows[0].x+layout.windows[0].w<=pc::layoutBattleParty(state,1280,720).picture.x,"left of the party cards");
 }
+void itemsRowsInDetail() {
+    // Attributes: no item, label / value rows in the detail pane under its header.
+    auto state=itemsState(pc::BattleItemsFocus::whose);state.items.icon.clear();state.help.clear();
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto before=pc::composeBattleMenu(state,layout,0);
+    for(int i=0;i<3;++i)state.items.rows.push_back({ink(30),ink(20)});
+    const auto after=pc::composeBattleMenu(state,layout,0);
+    if(layout.windows.size()<4) {check(false,"the detail pane");return;}
+    const int s=layout.scale,w=layout.picture.w/s;
+    const auto& d=layout.windows[3];
+    const int x0=(d.x-layout.picture.x)/s,y0=(d.y-layout.picture.y)/s,x1=x0+d.w/s,y1=y0+d.h/s;
+    bool inside=false,outside=false;
+    for(std::size_t i=0;i<before.size()&&i<after.size();++i) {
+        if(before[i]==after[i])continue;
+        const int x=int(i)%w,y=int(i)/w;
+        (x>=x0&&x<x1&&y>=y0&&y<y1?inside:outside)=true;
+    }
+    check(inside&&!outside,"the rows drawn in the detail pane only");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -783,6 +802,7 @@ int main() {
     itemsNoWindowWhenTooShort();
     itemsCompareClearOfIconBelow();
     itemsWhoseHeaderOnUse();
+    itemsRowsInDetail();
     launchFitsEightAt720();
     launchScrollsToCursor();
     launchDimmedNotPickable();

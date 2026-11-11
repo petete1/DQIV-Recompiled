@@ -1388,3 +1388,42 @@ void addRecordText(int label, int text, short index)
 {
     addBattleEntry(label, index, label != 0, text);
 }
+
+void setItemsKind(int text)
+{
+    s_items.kind = battleText(text);
+    s_itemsKeys.push_back(text);
+}
+
+namespace {
+void addItemsRowValue(int label, const pc::BattleText& value, int key)
+{
+    s_items.rows.push_back({battleText(label), value});
+    s_itemsKeys.push_back(label);
+    s_itemsKeys.push_back(key);
+}
+}
+
+void addItemsRow(int label, int value)
+{
+    char ascii[0x20];
+    dss::sprintf_s(ascii, sizeof(ascii), "%d", value);
+    addItemsRowValue(label, numbersText(ascii, 12), value);
+}
+
+void addItemsRowPair(int label, int value, int max)
+{
+    char ascii[0x20];
+    dss::sprintf_s(ascii, sizeof(ascii), "%d/%d", value, max);
+    addItemsRowValue(label, numbersText(ascii, 12), value * 10000 + max);
+}
+
+void addItemsRowTime(int label, int frames)
+{
+    addItemsRowValue(label, battlePlayTime(frames), frames);
+}
+
+void addItemsRowText(int label, int text)
+{
+    addItemsRowValue(label, battleText(text), text);
+}

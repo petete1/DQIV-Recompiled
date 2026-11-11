@@ -288,7 +288,7 @@ THUMB void MenuTemplate_materiel::MATERIEL_DIARY_LOAD(menu::MenuItem* menuitem)
 #ifdef DQIV_NATIVE
 THUMB void MenuTemplate_materiel::MATERIEL_DIARY_PAGE(menu::MenuItem* menuitem, int rows)
 {
-    static MENUITEM_DATA menu[9];  // up to 8 rows (the Classic list: 2 resume saves and 6 logs)
+    static MENUITEM_DATA menu[13];  // up to 12 rows (Classic lists: the launch logs, the party and its summary)
     for (int i = 0; i <= rows; i++) {
         const bool end = i == rows; // the list ends with code 0xff
         menu[i].code = end ? 0xff : 1;

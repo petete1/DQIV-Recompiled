@@ -78,6 +78,13 @@ void addItemsWhose(int cursor, bool bag = true);  // the members with their face
 void storeItemsWhose(int chosen, bool bag = true);  // the same, out of focus (chosen: its still cursor, -1 none)
 // The window's header (the Items window's: the root's Items command).
 void setItemsWindowTitle(int text);
+// The detail pane without an item (Attributes): its header, and label / value rows
+// (the value a number, "a/b", a play time or a text).
+void setItemsKind(int text);
+void addItemsRow(int label, int value);
+void addItemsRowPair(int label, int value, int max);
+void addItemsRowTime(int label, int frames);
+void addItemsRowText(int label, int text);
 // Equipment (TownMenu_OPERATION_EQUIP): a member's equipment items ids (6 a page, "E" on
 // those worn), headed by title (0: none), then removeText's entry (0: none) at index
 // count-on-page; into the menu being built, or out of focus.

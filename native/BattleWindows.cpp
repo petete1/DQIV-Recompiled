@@ -522,6 +522,22 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
                 blit(out,width,height,state.help[std::size_t(i)],x,y,text.x+text.w-x,state.palette,false);
         }
     }
+    // Attributes: label / value rows, under the header when there is one.
+    if(items.icon.empty()&&!items.rows.empty()&&p.windows.size()>3) {
+        const auto& d=p.windows[3];
+        int y=d.y+pad/2;
+        if(items.kind.width>0) {
+            blit(out,width,height,items.kind,d.x+std::max(pad,(d.w-items.kind.width)/2),y+(row-items.kind.height)/2,d.w-2*pad,state.palette,false);
+            rule(out,width,d.x+pad-2,y+row+1,d.w-2*pad+4);
+            y+=row+5;
+        }
+        for(const auto& r:items.rows) {
+            if(y+row>d.y+d.h-pad)break;
+            blit(out,width,height,r[1],d.x+d.w-pad-r[1].width,y+(row-r[1].height)/2,r[1].width,state.palette,false);
+            blit(out,width,height,r[0],d.x+pad,y+(row-r[0].height)/2,std::max(0,d.w-3*pad-r[1].width),state.palette,false);
+            y+=row;
+        }
+    }
     // The item's commands, in their own window at the top right.
     if(p.popup&&p.windows.size()>4) {
         const auto& q=*p.popup;const auto& w=p.windows[4];
