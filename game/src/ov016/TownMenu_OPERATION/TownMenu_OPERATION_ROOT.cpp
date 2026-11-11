@@ -1,6 +1,10 @@
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_ROOT.hpp"
 #ifdef DQIV_NATIVE
 #include "SavePages.hpp"
+#include "Settings.hpp"
+#include "Achievements.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include <stdio.h>
 #endif
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_CAREER.hpp"
 #include "ov016/TownMenu_OPERATION/TownMenu_OPERATION_EQUIP.hpp"
@@ -70,6 +74,26 @@ THUMB void TownMenu_OPERATION_ROOT::menuExecute()
 
 THUMB void TownMenu_OPERATION_ROOT::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    // Classic: the commands in two columns under the root's, the hand on Misc.
+    if (classicBattleMenus() && mode_ == 0 && !g_TownMenuMessage.isOpen()) {
+        static const int tactics[9] = { 0x8000006f, 0x8000006b, 0x80000071, 0x80000070, 0x80000072, 0x80000073, 0x80000082, 0x80000074, 0x80000083 };
+        static char s_achievements[48];
+        static char s_cheats[48];
+        snprintf(s_achievements, sizeof(s_achievements), "%s", pc::achievementsTitle(pc::gameSettings().language));
+        snprintf(s_cheats, sizeof(s_cheats), "%s", pc::pageTitle(pc::pageCheats, pc::gameSettings().language));
+        beginFieldMenu(pc::BattleMenuKind::list, 2);
+        for (int i = 0; i < commandCount_; i++) {
+            const int text = command_[i] == COMMAND_ACHIEVEMENTS ? (int)s_achievements
+                           : command_[i] == COMMAND_CHEATS       ? (int)s_cheats
+                                                                 : tactics[(int)command_[i]];
+            addBattleEntry(text, (short)i, true);
+        }
+        setBattleCursor(menuItem_.active_);
+        endFieldMenu(TownMenu_ROOT::ROOT_OPERATION, NULL);
+        return;
+    }
+#endif
     if (charaItem_.getActive() == status::g_Party.getCount()) {
         drawOperationRootScreen(mode_, command_, commandCount_, -2);
     } else {
@@ -228,7 +252,11 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         redraw_ = 1;
         return;
     }
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result == 0) {
         return;
     }
