@@ -8,6 +8,10 @@
 #include "main/status/PartyStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_town.hpp"
 #include "ov016/UnkTownMenuDraw/TownMenuScreens.hpp"
+#ifdef DQIV_NATIVE
+#include "main/status/PlayerStatus.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuSetup()
 {
@@ -62,6 +66,30 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuDraw()
         found = 0;
     }
     list[count] = -1;
+#ifdef DQIV_NATIVE
+    // Classic: the Items window: the members left (and done, once one is placed), the new order beside.
+    if (classicBattleMenus() && !g_TownMenuMessage.isOpen()) {
+        int order[4];
+        for (int i = 0; i < selectCharaMaxCount_; i++) {
+            order[i] = status::g_Party.getPlayerStatus(selectCharaAllocation_[i])->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000;
+        }
+        beginItemsWindow();
+        setItemsWindowTitle(0x80000071);
+        storeItemsTexts(order, selectCharaMaxCount_, 0, true);
+        status::g_Party.setMemberShiftMode();
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        for (int i = 0; i < count; i++) {
+            addMemberEntry(&status::g_Party.getPlayerStatus(list[i])->haveStatusInfo_, (short)i);
+        }
+        if (selectCharaMaxCount_ != 0 && (carriageEnable_ != 0 || count == 0)) {
+            addBattleEntry(0x8000008c, (short)count, true);
+        }
+        setBattleCursor((short)active);
+        endItemsWindow(pc::BattleItemsFocus::whose, NULL);
+        status::g_Party.setMemberShiftMode();
+        return;
+    }
+#endif
     drawShiftPartyScreen(selectCharaAllocation_, list, active, count);
     menuItem_.drawActive();
     cancelItem_.drawActive();
@@ -102,7 +130,11 @@ THUMB void TownMenu_OPERATION_SHIFT_PARTY::menuUpdate()
         count++;
     }
     navigator_.setup(5, 2, count);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result == 0) {
         return;
     }

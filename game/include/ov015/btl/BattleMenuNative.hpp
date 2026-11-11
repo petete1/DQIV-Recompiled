@@ -82,6 +82,10 @@ void setItemsWindowTitle(int text);
 // those worn), headed by title (0: none), then removeText's entry (0: none) at index
 // count-on-page; into the menu being built, or out of focus.
 void addEquipList(const unsigned char* ids, int count, int page, int active, const status::HaveStatusInfo* owner, int title, int removeText);
+// A member's entry (name and face) at index, into the menu being built; and a pane of
+// texts (title 0: none; numbered: 1, 2... before them) out of focus.
+void addMemberEntry(const status::HaveStatusInfo* info, short index);
+void storeItemsTexts(const int* texts, int count, int title, bool numbered = false);
 void storeEquipList(const unsigned char* ids, int count, int page, const status::HaveStatusInfo* owner, int title);
 void storeItemsList(int chara, bool bag, int page, int chosen);  // a member's or the bag's list, out of focus
 // The detail of item: owner its holder (NULL: the bag; no comparison), bagIndex the bag's slot (-1: a member's).

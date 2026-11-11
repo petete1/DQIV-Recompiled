@@ -1342,3 +1342,22 @@ void publishChurchMembers(int active)
     endBattleMenu();
     publishFieldParty(chosen);
 }
+
+void addMemberEntry(const status::HaveStatusInfo* info, short index)
+{
+    addBattleEntry(info->haveStatus_.playerIndex_ + 0x50000000, index, true);
+    s_building.entries.back().face = portraitPixels(info->haveStatus_.iconIndex_);
+}
+
+void storeItemsTexts(const int* texts, int count, int title, bool numbered)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    if (title != 0) {
+        setBattleTitle(title);
+    }
+    for (int i = 0; i < count; i++) {
+        addBattleEntry(texts[i], (short)i, true, numbered ? i + 1 : 0, numbered ? 1 : 0);
+    }
+    setBattleCursor(-1);
+    stashItemsPane(s_items.list);
+}
