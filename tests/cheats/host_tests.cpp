@@ -240,6 +240,21 @@ int main(int argc, char** argv) {
         panel.draw(item, 0, 256, frame);
         CHECK(drawnTabs == 4 && highestRow <= 176);
     }
+    // Skip intro: off by default, a Yes/No on the Game page.
+    CHECK(!pc::GameSettings().skipIntro);
+    input(panel, item, PAD_BUTTON_L);
+    CHECK(panel.page_ == pc::pageGame);
+    panel.execute(item);
+    CHECK(rowIndex(panel, pc::settingSkipIntro) >= 0);
+    item.active_ = rowIndex(panel, pc::settingSkipIntro);
+    input(panel, item, PAD_KEY_RIGHT);
+    CHECK(settings.skipIntro && pc::takeSettingsApply());
+    input(panel, item, PAD_KEY_RIGHT);
+    CHECK(!settings.skipIntro && pc::takeSettingsApply());
+    for (int language = 0; language <= 5; ++language) {
+        CHECK(std::string(pc::settingLabel(pc::settingSkipIntro, language)).size() > 0);
+        CHECK(std::string(pc::settingHint(pc::settingSkipIntro, language)).size() > 0);
+    }
     // In a game the settings keep their four pages: the cheats are not one.
     panel.open(true);
     input(panel, item, PAD_BUTTON_L);

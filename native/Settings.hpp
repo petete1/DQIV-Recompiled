@@ -31,6 +31,7 @@ struct GameSettings {
     bool centredCamera=true;
     bool mobileSound=true;    // the smartphone version's music and sounds instead of the DS sequences
     int battleMenus=0;        // battle menus: 0 the DS touch menus, 1 console windows (Classic), 2 the DS menus on the overlay
+    bool skipIntro=false;     // start at the launch menu: no company logos, opening or title screen
     // Controls, in the order of controlBits then party chat and fast forward:
     // an SDL keycode and an SDL gamepad button (or padLeftTrigger / padRightTrigger).
     unsigned keys[14]={'z','x','s','a','q','w',0x0d,0x400000e5,0x40000052,0x40000051,0x40000050,0x4000004f,'e','\t'};
@@ -104,7 +105,7 @@ void saveSettings();
 // The settings, as the game's menus list them.
 enum SettingItem {settingLanguage,settingFps,settingFullscreen,settingWindowSize,settingPicture,settingStretch,
     settingVsync,settingQuality,settingTextures,settingVolume,settingTextSpeed,settingFrameRate,settingBattleBoost,
-    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,settingBattleMenus,
+    settingCameraZoom,settingMobileSound,settingBattleView,settingBattleZoom,settingCentredCamera,settingBattleMenus,settingSkipIntro,
     settingCheatInvincible,settingCheatNoEncounters,settingCheatCriticals,settingCheatExp,settingCheatGold,
     settingCheatJackpot,settingCheatFirstStrike,settingCheatMonsterActions,settingCheatHocusPocus,
     settingCheatConfusedAllies,settingCheatConfusedEnemies,settingCount};

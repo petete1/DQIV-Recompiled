@@ -12,12 +12,21 @@
 #include "main/sound/SoundManager.hpp"
 #include "nitro/gx.h"
 #include "nitro/gx.hpp"
+#ifdef DQIV_NATIVE
+#include "DualScreen.hpp"
+#endif
 
 static int s_frame;
 MenuPart g_MenuPart;
 static int s_isEnd;
 static Render s_render;
 static MenuSprite s_logo[2];
+#ifdef DQIV_NATIVE
+// One logo after the other on one screen (the DS shows them on its two screens at once):
+// each fades in, holds and fades out over s_logoFrames, its screen shown alone and
+// centred (the panel focus: Square Enix on the top screen, Arte Piazza on the bottom).
+static const int s_logoFrames = 150;
+#endif
 
 ARM void MenuPart::initialize()
 {
@@ -48,7 +57,11 @@ ARM void MenuPart::initialize()
     s_logo[1].setAlpha(0x1f);
     s_isEnd = 0;
     s_frame = 0;
+#ifdef DQIV_NATIVE
+    g_Global.fadeInBlack(30);
+#else
     g_Global.fadeInBlack(60);
+#endif
 }
 
 ARM void MenuPart::terminate()
@@ -61,7 +74,17 @@ ARM void MenuPart::terminate()
 ARM void MenuPart::onExecutePart()
 {
     s_frame++;
+#ifdef DQIV_NATIVE
+    if (s_frame == s_logoFrames - 30) {
+        g_Global.fadeOutBlack(30);
+    }
+    if (s_frame == s_logoFrames) {
+        g_Global.fadeInBlack(30);
+    }
+    if (s_isEnd == 0 && s_frame > 2 * s_logoFrames - 30) {
+#else
     if (s_isEnd == 0 && s_frame > 240) {
+#endif
         g_Global.startTitle();
         s_isEnd = 1;
     }
@@ -70,8 +93,13 @@ ARM void MenuPart::onExecutePart()
 ARM void MenuPart::onDrawPart()
 {
     setupOrtho2DBackground();
+#ifdef DQIV_NATIVE
+    pc::setPanelFocus(s_frame < s_logoFrames ? 0 : 1);
+    s_logo[s_frame < s_logoFrames ? 0 : 1].draw();
+#else
     s_logo[0].draw();
     s_logo[1].draw();
+#endif
 }
 
 ARM void MenuPart::onWindowPart()

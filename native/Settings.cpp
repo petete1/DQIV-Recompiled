@@ -47,6 +47,7 @@ void loadSettings() {
         else if(key=="mobileSound")s.mobileSound=value!=0;
         else if(key=="centredCamera")s.centredCamera=value!=0;
         else if(key=="battleMenus")s.battleMenus=std::clamp(value,0,2);
+        else if(key=="skipIntro")s.skipIntro=value!=0;
         else if(key=="classicBattleMenus")s.battleMenus=value?1:0; // the earlier on/off setting
         else if(key=="cheatBattleInvincible")s.cheats.battleInvincible=value!=0;
         else if(key=="cheatNoRandomEncounters")s.cheats.noRandomEncounters=value!=0;
@@ -76,7 +77,7 @@ void saveSettings() {
     const auto& s=gameSettings();
     file<<"language="<<s.language<<"\nshowFps="<<s.showFps<<"\nfullscreen="<<s.fullscreen<<"\nwindowSize="<<s.windowSize
         <<"\nwide="<<s.wide<<"\nbattleLayout="<<s.battleLayout<<"\nbattleZoom="<<s.battleZoom<<"\nstretch="<<s.stretch<<"\nvsync="<<s.vsync<<"\nquality="<<s.quality
-        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\nbattleMenus="<<s.battleMenus
+        <<"\nsmoothTextures="<<s.smoothTextures<<"\nvolume="<<s.volume<<"\ntextSpeed="<<s.textSpeed<<"\nframeRate="<<s.frameRate<<"\nbattleBoost="<<s.battleBoost<<"\ncameraZoom="<<s.cameraZoom<<"\nmobileSound="<<s.mobileSound<<"\ncentredCamera="<<s.centredCamera<<"\nbattleMenus="<<s.battleMenus<<"\nskipIntro="<<s.skipIntro
         <<"\ncheatBattleInvincible="<<s.cheats.battleInvincible<<"\ncheatNoRandomEncounters="<<s.cheats.noRandomEncounters
         <<"\ncheatGuaranteedCriticals="<<s.cheats.guaranteedCriticals
         <<"\ncheatExpMultiplier="<<s.cheats.expMultiplier<<"\ncheatGoldMultiplier="<<s.cheats.goldMultiplier
@@ -318,6 +319,7 @@ const char* settingLabel(int item,int language) {
     case settingBattleBoost:return pick(language,"Battle speed","Vitesse des combats","Kampftempo","Velocità battaglie","Velocidad de combate");
     case settingCameraZoom:return pick(language,"Camera zoom","Zoom caméra","Kamerazoom","Zoom telecamera","Zoom de cámara");
     case settingBattleMenus:return pick(language,"Menus","Menus","Menüs","Menu","Menús");
+    case settingSkipIntro:return pick(language,"Skip intro","Passer l'intro","Intro überspringen","Salta intro","Saltar intro");
     case settingCentredCamera:return pick(language,"Centred camera","Caméra centrée","Zentrierte Kamera","Telecamera centrata","Cámara centrada");
     case settingMobileSound:return pick(language,"HD sound","Son HD","HD-Sound","Audio HD","Sonido HD");
     }
@@ -376,6 +378,7 @@ std::string settingValue(int item,int language) {
     case settingBattleZoom:return std::to_string(s.battleZoom)+"%";
     case settingStretch:return yesNo(s.stretch,language);
     case settingCentredCamera:return yesNo(s.centredCamera,language);
+    case settingSkipIntro:return yesNo(s.skipIntro,language);
     case settingBattleMenus:return s.battleMenus==1?pick(language,"Classic","Classiques","Klassisch","Classici","Clásicos"):
         s.battleMenus==2?pick(language,"Overlay","Superposés","Überlagert","Sovrapposti","Superpuestos"):
         pick(language,"Original","Originaux","Original","Originali","Originales");
@@ -412,6 +415,11 @@ const char* settingHint(int item,int language) {
         "Grand : monstres agrandis pour remplir la zone de combat ; Panorama : le zoom ci-dessous.","Groß: Monster vergrößert, um den Kampfbereich zu füllen; Panorama: der Zoom unten.",
         "Grande: mostri ingranditi per riempire l'area di battaglia; Panorama: lo zoom sotto.","Grande: monstruos ampliados para llenar la zona de combate; Panorama: el zoom de abajo.");
     case settingPicture:return pick(language,"Wide fills the screen without stretching; DS screens keeps the original layout.","Large remplit l'écran sans étirer ; Écrans DS garde la disposition d'origine.","Breit füllt den Bildschirm ohne Verzerrung; DS-Bildschirme: Original.","Panoramico riempie lo schermo senza deformare; Schermi DS: originale.","Panorámica llena la pantalla sin estirar; Pantallas DS: disposición original.");
+    case settingSkipIntro:return pick(language,"Start at the adventure log menu: no logos, opening or title screen.",
+        "Démarrer au menu des journaux d'aventure : sans logos, introduction ni écran titre.",
+        "Direkt im Abenteuerbuch-Menü starten: ohne Logos, Vorspann und Titelbild.",
+        "Avvia dal menu dei diari d'avventura: niente loghi, introduzione o schermata del titolo.",
+        "Empezar en el menú de diarios de aventura: sin logotipos, introducción ni pantalla de título.");
     case settingBattleMenus:return pick(language,"Classic, console-style windows in battle and in the field menu (wide picture only); Overlay, the DS battle menus anywhere on the screen; Original, the DS touch menus.",
         "Classiques, fenêtres comme sur console en combat et dans le menu hors combat (image large seulement) ; Superposés, les menus de combat DS n'importe où ; Originaux, les menus tactiles de la DS.",
         "Klassisch, Fenster wie auf Konsolen im Kampf und im Feldmenü (nur Breitbild); Überlagert, die DS-Kampfmenüs überall; Original, die Touch-Menüs der DS.",
@@ -463,6 +471,7 @@ bool changeSetting(int item,int step) {
     case settingBattleZoom:s.battleZoom=cycle(s.battleZoom/25-4,0,3)*25+100;return true;
     case settingStretch:s.stretch=!s.stretch;return true;
     case settingCentredCamera:s.centredCamera=!s.centredCamera;return true;
+    case settingSkipIntro:s.skipIntro=!s.skipIntro;return true;
     case settingBattleMenus:s.battleMenus=cycle(s.battleMenus,0,2);return true;
     case settingVsync:s.vsync=!s.vsync;return true;
     case settingQuality:s.quality=cycle(s.quality,0,4);return true;

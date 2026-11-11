@@ -102,6 +102,7 @@ void SettingsPanel::buildRows()
         rows_[rowCount_++] = pc::settingMobileSound;
         rows_[rowCount_++] = pc::settingLanguage;
         rows_[rowCount_++] = pc::settingFps;
+        rows_[rowCount_++] = pc::settingSkipIntro;
         break;
     case pc::pageDisplay:
         rows_[rowCount_++] = pc::settingFullscreen;
