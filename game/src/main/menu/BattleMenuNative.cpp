@@ -1265,3 +1265,15 @@ std::vector<pc::BattleSaveCard> readSaveCards(bool resumeSaves)
     }
     return cards;
 }
+
+void publishFieldCommands(const int* texts, int count, int columns, int active)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, columns);
+    for (int i = 0; i < count; i++) {
+        addBattleEntry(texts[i], (short)i, true);
+    }
+    setBattleCursor((short)active);
+    setBattleGold(status::g_Party.gold_);
+    endBattleMenu();
+    publishFieldParty(NULL);
+}

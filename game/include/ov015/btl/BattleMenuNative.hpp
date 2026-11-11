@@ -112,6 +112,9 @@ std::vector<pc::BattleSaveCard> readSaveCards(bool resumeSaves);
 pc::BattleText battlePlayTime(int frames);
 pc::BattleText battleString(const char* utf8);
 const std::vector<std::uint8_t>& playerFace(int player);
+// A town service's commands (church, shop, inn): a Classic field list of texts in
+// columns, the hand on active, with the gold and the party's cards.
+void publishFieldCommands(const int* texts, int count, int columns, int active);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

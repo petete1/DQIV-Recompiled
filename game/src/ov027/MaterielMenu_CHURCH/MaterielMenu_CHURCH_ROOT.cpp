@@ -3,6 +3,8 @@
 #ifdef DQIV_NATIVE
 #include "Settings.hpp"
 #include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include <nitro/pad.h>
 #endif
 #include "main/menu/TownMenu_MESSAGE.hpp"
@@ -82,6 +84,15 @@ THUMB void MaterielMenu_CHURCH_ROOT::menuExecute()
 
 THUMB void MaterielMenu_CHURCH_ROOT::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    // Classic: the services in a field list with the gold and the party's cards.
+    if (classicBattleMenus() && activeCommand_ == -1 && firstFlag_ == 0 && g_TownMenuMessage.isMessageWAITPROG()) {
+        int command[6];
+        menu::MenuDataCommon::getChurchCommand(command, commandNum_ != 6);
+        publishFieldCommands(command, commandNum_, 2, menuItem_.active_);
+        return;
+    }
+#endif
     if (activeCommand_ != 7) {
         drawChurchScreen(activeCommand_, firstFlag_);
         if (activeCommand_ == -1 && firstFlag_ == 0 && g_TownMenuMessage.isMessageWAITPROG()) {
@@ -160,7 +171,11 @@ THUMB bool MaterielMenu_CHURCH_ROOT::commandUpdate()
         }
         int offset = 6 - commandNum_;
         navigator_.setup(2, 3, commandNum_);
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
         if (result != 0) {
             if (result == 2) {
                 int cmd = offset + menuItem_.active_;
