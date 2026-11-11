@@ -76,8 +76,28 @@ THUMB void TownMenu_OPERATION_ROOT::menuDraw()
 {
 #ifdef DQIV_NATIVE
     // Classic: the commands in two columns under the root's, the hand on Misc.
+    static const int tactics[9] = { 0x8000006f, 0x8000006b, 0x80000071, 0x80000070, 0x80000072, 0x80000073, 0x80000082, 0x80000074, 0x80000083 };
+    // Sort Bag's Contents: its two orders; Organise Items: each member, then everyone.
+    if (classicBattleMenus() && (mode_ == 1 || mode_ == 2) && !g_TownMenuMessage.isOpen()) {
+        beginFieldMenu(pc::BattleMenuKind::list, mode_ == 1 ? 2 : 1);
+        setBattleTitle(tactics[mode_ == 1 ? 5 : 4]);
+        if (mode_ == 1) {
+            addBattleEntry(0xa000006e, 0, true);
+            addBattleEntry(0xa000006f, 1, true);
+            setBattleCursor(sortItem_.active_);
+        } else {
+            status::g_Party.setBattleMode();
+            const int count = status::g_Party.getCount();
+            for (int i = 0; i < count; i++) {
+                addBattleEntry(status::g_Party.getPlayerStatus(i)->haveStatusInfo_.haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+            }
+            addBattleEntry(0x8000006e, (short)count, true);
+            setBattleCursor(charaItem_.active_);
+        }
+        endFieldMenu(TownMenu_ROOT::ROOT_OPERATION, NULL);
+        return;
+    }
     if (classicBattleMenus() && mode_ == 0 && !g_TownMenuMessage.isOpen()) {
-        static const int tactics[9] = { 0x8000006f, 0x8000006b, 0x80000071, 0x80000070, 0x80000072, 0x80000073, 0x80000082, 0x80000074, 0x80000083 };
         static char s_achievements[48];
         static char s_cheats[48];
         snprintf(s_achievements, sizeof(s_achievements), "%s", pc::achievementsTitle(pc::gameSettings().language));
@@ -231,7 +251,11 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
     sortNavigator_.setup(2, 1, 2);
     charaNavigator_.setup(5, 2, status::g_Party.getCount() + 1);
     if (mode_ == 1) {
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(sortItem_, sortNavigator_) : MenuUpdate_Assist::menuSelect(sortItem_, sortNavigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(sortItem_, sortNavigator_);
+#endif
         if (result == 0) {
             return;
         }
@@ -242,7 +266,11 @@ THUMB void TownMenu_OPERATION_ROOT::menuUpdate()
         return;
     }
     if (mode_ == 2) {
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(charaItem_, charaNavigator_) : MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(charaItem_, charaNavigator_);
+#endif
         if (result == 0) {
             return;
         }
