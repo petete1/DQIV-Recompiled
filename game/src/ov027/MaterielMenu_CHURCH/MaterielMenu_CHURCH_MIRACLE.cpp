@@ -1,6 +1,9 @@
 #pragma ipa file
 #include "ov027/MaterielMenu_CHURCH/MaterielMenu_CHURCH.hpp"
 #include "main/object/DisplayCharacter.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
 #include "main/global/Global.hpp"
@@ -77,6 +80,13 @@ THUMB void MaterielMenu_CHURCH_MIRACLE::menuExecute()
 THUMB void MaterielMenu_CHURCH_MIRACLE::menuDraw()
 {
     if (g_TownMenuMessage.isMessageWAITPROG() && miracleStatus_ != MIRACLE_ISEND && miracleStatus_ != MIRACLE_SOUND && miracleStatus_ != MIRACLE_SOUNDEND) {
+#ifdef DQIV_NATIVE
+        // Classic: the members in a field list (HP or condition), the chosen one's card out.
+        if (classicBattleMenus()) {
+            publishChurchMembers(menuItem_.active_);
+            return;
+        }
+#endif
         status::g_Party.setBattleMode();
         drawChurchMiracleScreen(status::g_Party.getCount());
         menuItem_.drawActive();
@@ -191,7 +201,11 @@ THUMB bool MaterielMenu_CHURCH_MIRACLE::listUpdate()
             return false;
         }
         int active = menuItem_.active_;
+#ifdef DQIV_NATIVE
+        int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
         int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
         navigator_.setup(5, 2, status::g_Party.getCount());
         if (result != 0) {
             if (result == 2) {

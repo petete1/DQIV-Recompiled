@@ -115,6 +115,9 @@ const std::vector<std::uint8_t>& playerFace(int player);
 // A town service's commands (church, shop, inn): a Classic field list of texts in
 // columns, the hand on active, with the gold and the party's cards.
 void publishFieldCommands(const int* texts, int count, int columns, int active);
+// The church's member picker: the whole party in battle order, each with its HP (or its
+// death or poison), the hand on active (whose card slides out), the gold and the cards.
+void publishChurchMembers(int active);
 // Clears the description at the start of each frame of the menu system.
 void clearBattleMenu();
 #endif

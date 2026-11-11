@@ -1277,3 +1277,33 @@ void publishFieldCommands(const int* texts, int count, int columns, int active)
     endBattleMenu();
     publishFieldParty(NULL);
 }
+
+void publishChurchMembers(int active)
+{
+    status::g_Party.setBattleMode();
+    const int count = status::g_Party.getCount();
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    const status::HaveStatusInfo* chosen = NULL;
+    for (int i = 0; i < count; i++) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
+        const int condition = getStatusCondition(info);
+        if (condition == 2 || condition == 3) {
+            addBattleEntry(info->haveStatus_.playerIndex_ + 0x50000000, (short)i, true,
+                           menu::MenuDataCommon::convMessage(info, condition == 2 ? 0xa0000014 : 0xa0000018));
+        } else {
+            addBattleEntry(info->haveStatus_.playerIndex_ + 0x50000000, (short)i, true);
+            char hp[0x20];
+            dss::sprintf_s(hp, sizeof(hp), "%d/%d", info->getHp(), info->getHpMax());
+            s_building.entries.back().right = numbersText(hp, 12);
+            s_keys.push_back(info->getHp());
+        }
+        if (i == active) {
+            chosen = info;
+        }
+    }
+    setBattleCursor((short)active);
+    setBattleGold(status::g_Party.gold_);
+    status::g_Party.setPlayerMode();
+    endBattleMenu();
+    publishFieldParty(chosen);
+}
