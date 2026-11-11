@@ -1361,3 +1361,30 @@ void storeItemsTexts(const int* texts, int count, int title, bool numbered)
     setBattleCursor(-1);
     stashItemsPane(s_items.list);
 }
+
+void addRecordNumber(int label, int value, int unit, short index)
+{
+    addBattleEntry(label, index, true);
+    char digits[0x20];
+    char text[0x200];
+    char unitText[0x100];
+    dss::sprintf_s(digits, sizeof(digits), "%d", value);
+    translateText(g_fullWidthCharTable, g_asciiCharTable, text, sizeof(text), digits);
+    extractText(unit, unitText, sizeof(unitText));
+    const std::string right = std::string(text) + " " + unitText;
+    auto found = s_texts.find("@" + right);
+    s_building.entries.back().right = found != s_texts.end() ? found->second : (s_texts["@" + right] = drawText(right.c_str()));
+    s_keys.push_back(value);
+}
+
+void addRecordTime(int label, int frames, short index)
+{
+    addBattleEntry(label, index, true);
+    s_building.entries.back().right = battlePlayTime(frames);
+    s_keys.push_back(frames);
+}
+
+void addRecordText(int label, int text, short index)
+{
+    addBattleEntry(label, index, label != 0, text);
+}

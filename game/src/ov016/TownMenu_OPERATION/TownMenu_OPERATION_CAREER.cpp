@@ -10,6 +10,12 @@
 #include "main/menu/MenuPartsDraw.hpp"
 #include "main/menu/MenuCommonDraw.hpp"
 #include "main/menu/MaterielMenuOverlay.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#include "ov016/TownMenu_ROOT/TownMenu_ROOT.hpp"
+#include "main/dss/Pad.hpp"
+#include <nitro/pad.h>
+#endif
 
 THUMB void TownMenu_OPERATION_CAREER::menuSetup()
 {
@@ -54,6 +60,52 @@ THUMB void TownMenu_OPERATION_CAREER::menuDraw()
     } else {
         type = 1;
     }
+#ifdef DQIV_NATIVE
+    // Classic: one window of records, now (and beside it the earlier record A switches).
+    if (classicBattleMenus()) {
+        static const int names[7] = { 0xa0000191, 0xa0000192, 0xa0000193, 0xa0000194, 0xa0000195, 0xa0000196, 0xa0000197 };
+        static const int units[7] = { 0xa000019d, 0xa000019e, 0xa000003c, 0xa000019d, 0xa000019d, 0xa000019d, 0xa00001a0 };
+        const bool earlier = pageMax_ >= 1;
+        const int columns = earlier ? 2 : 1;
+        status::BattleHistory& history = status::g_BattleHistory;
+        beginFieldMenu(pc::BattleMenuKind::list, columns);
+        setBattleTitle(0x80000082);
+        short n = 0;
+        // Row by row: now, then the earlier record.
+        for (int row = 0; row < 10; row++) {
+            for (int column = 0; column < columns; column++) {
+                history.historyType_ = column == 0 ? status::BattleHistory::RightNow : (status::BattleHistory::HistoryType)type;
+                if (row == 0) {
+                    addRecordTime(column == 0 ? 0xa000002d : type == 1 ? 0xa000019a : 0xa000019b, history.getAdventureTime(), n++);
+                } else if (row == 1) {
+                    addRecordText(0xa0000199, history.getTitle() - 0x20000000, n++);
+                } else if (row < 9) {
+                    int value = 0;
+                    switch (row) {
+                    case 2: value = history.getBattleCount(); break;
+                    case 3: value = history.getMonsterCount(); break;
+                    case 4: value = history.getTotalGold(); break;
+                    case 5: value = history.getVictoryCount(); break;
+                    case 6: value = history.getWipeoutCount(); break;
+                    case 7: value = history.getEscapeCount(); break;
+                    default: value = history.getMaxDamage(); break;
+                    }
+                    addRecordNumber(names[row - 2], value, units[row - 2], n++);
+                } else if (column == 1) {
+                    addRecordNumber(0xa000019c, history.getHeroLevel(), 0xa000003f, n++);
+                } else if (bookOfBeasts_ != 0) {
+                    addRecordNumber(0xa0000198, history.getRestMonsterCount(), 0xa000019e, n++);
+                } else if (earlier) {
+                    addRecordText(0, 0, n++);  // keeps the earlier record's hero level in its column
+                }
+            }
+        }
+        history.historyType_ = status::BattleHistory::RightNow;
+        setBattleCursor(-1);
+        endFieldMenu(TownMenu_ROOT::ROOT_OPERATION, NULL);
+        return;
+    }
+#endif
     SetTextPage(0, type);
     drawMenuFrame(0, 0, 0x100, 0xc0, -1);
     if (pageMax_ >= 1) {
@@ -65,7 +117,13 @@ THUMB void TownMenu_OPERATION_CAREER::menuDraw()
 THUMB void TownMenu_OPERATION_CAREER::menuUpdate()
 {
     navigator_.setup(1, 1, 1);
+#ifdef DQIV_NATIVE
+    // Classic: nothing to point at; A switches the earlier record, B leaves.
+    int result = classicBattleMenus() ? (dss::g_Pad.edge() & PAD_BUTTON_A ? 2 : dss::g_Pad.edge() & PAD_BUTTON_B ? 3 : 0)
+                                      : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result == 0) {
         return;
     }

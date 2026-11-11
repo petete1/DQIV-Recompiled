@@ -86,6 +86,11 @@ void addEquipList(const unsigned char* ids, int count, int page, int active, con
 // texts (title 0: none; numbered: 1, 2... before them) out of focus.
 void addMemberEntry(const status::HaveStatusInfo* info, short index);
 void storeItemsTexts(const int* texts, int count, int title, bool numbered = false);
+// A record row (Battle Records): label, then at the right a number and its unit, a play
+// time ("HHH:MM"), a text, or nothing (label 0: an empty row).
+void addRecordNumber(int label, int value, int unit, short index);
+void addRecordTime(int label, int frames, short index);
+void addRecordText(int label, int text, short index);
 void storeEquipList(const unsigned char* ids, int count, int page, const status::HaveStatusInfo* owner, int title);
 void storeItemsList(int chara, bool bag, int page, int chosen);  // a member's or the bag's list, out of focus
 // The detail of item: owner its holder (NULL: the bag; no comparison), bagIndex the bag's slot (-1: a member's).
