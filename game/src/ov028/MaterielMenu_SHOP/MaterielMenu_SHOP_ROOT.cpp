@@ -4,6 +4,10 @@
 #include "main/status/PartyStatus.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 THUMB void MaterielMenu_SHOP_ROOT::menuSetup()
 {
@@ -24,6 +28,15 @@ THUMB void MaterielMenu_SHOP_ROOT::menuExecute()
 THUMB void MaterielMenu_SHOP_ROOT::menuDraw()
 {
     if (g_TownMenuMessage.isMessageWAITPROG()) {
+#ifdef DQIV_NATIVE
+        // Classic: buy, sell or nothing in a field list with the gold and the party's cards.
+        if (classicBattleMenus()) {
+            int command[3];
+            menu::MenuDataCommon::getShopCommand(command, false);
+            publishFieldCommands(command, 3, 1, menuItem_.active_);
+            return;
+        }
+#endif
         drawShopRootScreen();
         menuItem_.drawActive();
     } else if (g_TownMenuMessage.isOpen() && mode_ != 1) {
@@ -40,7 +53,11 @@ THUMB void MaterielMenu_SHOP_ROOT::menuUpdate()
                 mode_ = 2;
             }
             navigator_.setup(1, 3, 3);
+#ifdef DQIV_NATIVE
+            int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
             int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
             if (result != 0) {
                 if (result == 2) {
                     g_TownMenuMessage.clearMessageWAITPROG();

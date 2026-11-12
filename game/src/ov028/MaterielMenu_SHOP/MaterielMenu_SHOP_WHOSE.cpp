@@ -7,6 +7,10 @@
 #include "main/status/UseItem.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 THUMB void MaterielMenu_SHOP_WHOSE::menuSetup()
 {
@@ -38,6 +42,25 @@ THUMB void MaterielMenu_SHOP_WHOSE::menuDraw()
         drawShopScreen();
         return;
     }
+#ifdef DQIV_NATIVE
+    // Classic: the Items window: who carries it (the members and the bag), their items, and
+    // the item bought.
+    if (classicBattleMenus() && yesno_ == 0) {
+        MaterielMenu_SHOP_MANAGER* manager = MaterielMenu_SHOP_MANAGER::getSingleton();
+        const int item = manager->getExtraShop() == 1 ? (activeItem_ == 0 ? 0x6f : 7) : manager->getItem(activeItem_);
+        const int count = status::g_Party.getCount();
+        int command[3];
+        menu::MenuDataCommon::getShopCommand(command, false);
+        beginItemsWindow();
+        setItemsWindowTitle(command[0]);
+        storeItemsList(activeChara_ < count ? activeChara_ : 0, activeChara_ >= count, 0, -1);
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        addItemsWhose(activeChara_);
+        setItemsDetail(item, NULL, -1);
+        endItemsWindow(pc::BattleItemsFocus::whose, activeChara_ < count ? &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_ : NULL);
+        return;
+    }
+#endif
     if (yesno_ == 0) {
         drawShopWhoseScreen(0);
         menuItem_.drawActive();
@@ -76,7 +99,11 @@ THUMB void MaterielMenu_SHOP_WHOSE::menuUpdate()
         return;
     }
     navigator_.setup(5, 2, maxCharaCount_);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         activeChara_ = menuItem_.active_;
         int activeChara = activeChara_;

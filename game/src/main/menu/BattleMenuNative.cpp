@@ -41,6 +41,7 @@
 #include "main/status/ExcelParam.hpp"
 #include "SavePages.hpp"
 #include "main/profile/SaveLoad.hpp"
+#include "ov016/UnkMaterielMenuDraw/MaterielMenuDraw.hpp"
 #include <cstring>
 #include <map>
 #include <string>
@@ -336,6 +337,11 @@ void setBattleGold(int amount)
     s_building.gold = numbersText(buf, 12);
     s_building.goldUnit = battleText(0xa000003c);
     s_keys.push_back(amount);
+}
+
+void setBattleEntryItemIcon(int item)
+{
+    setEntryIcon(0xf0000000, item, 32);
 }
 
 void setBattleEntryIcon(int icon)
@@ -1426,4 +1432,58 @@ void addItemsRowTime(int label, int frames)
 void addItemsRowText(int label, int text)
 {
     addItemsRowValue(label, battleText(text), text);
+}
+
+void storeShopWhose(int item)
+{
+    status::g_Party.setPlayerMode();
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    const int count = status::g_Party.getCount();
+    const bool equipment = status::UseItem::getItemType(item) <= 4;
+    for (int i = 0; i < count; i++) {
+        status::HaveStatusInfo* info = &status::g_Party.getPlayerStatus(i)->haveStatusInfo_;
+        addMemberEntry(info, (short)i);
+        int param[4] = {0};
+        char text[0x40];
+        if (equipment) {
+            const int result = getShopEquipCompare(info, param, item);
+            if (result == 0) {
+                s_building.entries.back().right = battleText(param[1]);
+                continue;
+            }
+            if (result == 2) {
+                dss::sprintf_s(text, sizeof(text), "E %d", param[2]);
+            } else {
+                dss::sprintf_s(text, sizeof(text), "%d>%d", param[1], param[3]);  // the font has no arrow
+            }
+        } else if (getShopHeldCount(info, param, item)) {
+            dss::sprintf_s(text, sizeof(text), "\xc3\x97%d", param[2]);
+        } else {
+            s_building.entries.back().right = battleText(param[1]);
+            continue;
+        }
+        s_building.entries.back().right = battleString(text);
+        s_keys.push_back(param[1] * 1000 + param[2] * 10 + param[3]);
+    }
+    if (status::g_Party.fukuro_ != 0) {
+        addBattleEntry(0x5000005b, (short)count, true);
+        int held = 0;
+        for (int j = 0; j < status::g_Party.haveItemSack_.getCount(); j++) {
+            if (status::g_Party.haveItemSack_.getItem(j) == item) {
+                held = status::g_Party.haveItemSack_.getItemCount(j);
+            }
+        }
+        char text[0x20];
+        dss::sprintf_s(text, sizeof(text), "\xc3\x97%d", held);
+        s_building.entries.back().right = held > 0 ? battleString(text) : battleText(0xa0000077);  // "None", as the members
+        s_keys.push_back(held);
+    }
+    setBattleCursor(-1);
+    stashItemsPane(s_items.whose);
+}
+
+void setItemsCountText(const char* utf8)
+{
+    s_items.count = battleString(utf8);
+    s_itemsKeys.push_back((int)std::hash<std::string>()(utf8));
 }

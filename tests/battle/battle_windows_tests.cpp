@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace {
 int failures=0;
@@ -416,6 +417,27 @@ void itemsRowsInDetail() {
     }
     check(inside&&!outside,"the rows drawn in the detail pane only");
 }
+void itemsWhoseRightValue() {
+    // The shop: each member's value (held count, comparison) at the right of their row.
+    auto state=itemsState(pc::BattleItemsFocus::list);
+    auto blank=ink(20);std::fill(blank.ink.begin(),blank.ink.end(),0);
+    state.items.whose.entries[0].right=blank;   // the same width: the same layout
+    const auto layout=pc::layoutBattleMenu(state,1280,720);
+    const auto before=pc::composeBattleMenu(state,layout,0);
+    state.items.whose.entries[0].right=ink(20);
+    const auto after=pc::composeBattleMenu(state,layout,0);
+    if(layout.windows.size()<2) {check(false,"the whose pane");return;}
+    const int s=layout.scale,w=layout.picture.w/s;
+    const auto& p=layout.windows[1];
+    const int x0=(p.x-layout.picture.x)/s,y0=(p.y-layout.picture.y)/s,x1=x0+p.w/s,y1=y0+p.h/s;
+    bool inside=false,outside=false;
+    for(std::size_t i=0;i<before.size()&&i<after.size();++i) {
+        if(before[i]==after[i])continue;
+        const int x=int(i)%w,y=int(i)/w;
+        (x>=x0&&x<x1&&y>=y0&&y<y1?inside:outside)=true;
+    }
+    check(inside&&!outside,"a member's value drawn in their row");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -803,6 +825,7 @@ int main() {
     itemsCompareClearOfIconBelow();
     itemsWhoseHeaderOnUse();
     itemsRowsInDetail();
+    itemsWhoseRightValue();
     launchFitsEightAt720();
     launchScrollsToCursor();
     launchDimmedNotPickable();

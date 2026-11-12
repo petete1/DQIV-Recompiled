@@ -25,6 +25,7 @@ void setBattleFooter(int value, int number);   // a label and a number ("MP 12")
 void addBattleEntry(int text, short index, bool enabled, int right = 0, int rightKind = 0);
 // The last entry's command icon (command24, as drawBattleCommandIcon picks it).
 void setBattleEntryIcon(int icon);
+void setBattleEntryItemIcon(int item);        // the last entry's item icon (32x32, as the item lists)
 void setBattlePage(int page, int pages);
 void setBattleCursor(short active);           // the entry with that game index
 void endBattleMenu();
@@ -81,6 +82,10 @@ void setItemsWindowTitle(int text);
 // The detail pane without an item (Attributes): its header, and label / value rows
 // (the value a number, "a/b", a play time or a text).
 void setItemsKind(int text);
+// The shop: the members (and the bag), each with what item means to them: its comparison
+// (equipment) or how many they hold; out of focus. And the detail's count line, as text.
+void storeShopWhose(int item);
+void setItemsCountText(const char* utf8);
 void addItemsRow(int label, int value);
 void addItemsRowPair(int label, int value, int max);
 void addItemsRowTime(int label, int frames);

@@ -9,6 +9,10 @@
 #include "ov028/MaterielMenu_SHOP/MaterielMenu_SHOP.hpp"
 #include "main/menu/MenuPartsDraw.hpp"
 #include "main/menu/MenuCommonDraw.hpp"
+#ifdef DQIV_NATIVE
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 
 static MenuPartsEntry s_partsSlotCoins[] = {
     { 0x01, 0x00, (short)0xf000, 0, 0xc0, 0, 0x40, 0x30 },
@@ -98,6 +102,15 @@ THUMB void drawShopSellQuantityScreen(int quantity)
 
 THUMB void drawShopScreen()
 {
+#ifdef DQIV_NATIVE
+    // Classic: under the shopkeeper's words, the shop's commands with the hand on the one chosen.
+    if (classicBattleMenus()) {
+        int command[3];
+        menu::MenuDataCommon::getShopCommand(command, false);
+        publishFieldCommands(command, 3, 1, MaterielMenu_SHOP_MANAGER::getSingleton()->getShopAction());
+        return;
+    }
+#endif
     switch (MaterielMenu_SHOP_MANAGER::getSingleton()->getShopAction()) {
     case 0:
         drawCommandCursor(0xa4, 0x10);

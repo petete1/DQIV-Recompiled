@@ -57,8 +57,9 @@ Plan planItems(const BattleMenuState& state,int width,int height) {
     const Box big{0,0,right-margin,height-2*margin};
     p.windows.push_back(big);
     const int inner=big.w-2*pad,top=headerHeight+gap,bottom=big.h-pad;
-    int labels=0;for(const auto& e:whose)labels=std::max(labels,e.label.width);
-    const int whoseW=std::clamp(2*pad+cursorWidth+labels+4+faceStrip,whoseMin,whoseMax);
+    int labels=0,rights=0;for(const auto& e:whose) {labels=std::max(labels,e.label.width);rights=std::max(rights,e.right.width);}
+    // The shop's values (held counts, comparisons) widen the pane.
+    const int whoseW=std::clamp(2*pad+cursorWidth+labels+4+faceStrip+(rights?rights+6:0),whoseMin,rights?whoseMax+60:whoseMax);
     int names=0;for(const auto& e:list)names=std::max(names,e.label.width);
     p.detailBelow=whoseW+listMin+detailMin+2*gap>inner;
     int listW=inner-whoseW-gap;
@@ -451,7 +452,10 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
     for(std::size_t i=0;i<whose.size()&&i<p.whoseRows.size();++i) {
         const auto& e=whose[i];const auto& b=p.whoseRows[i];
         drawFace(out,width,height,state,e.face,b.x+b.w-faceStrip,b.y+(itemsRow-16)/2);
-        blit(out,width,height,e.label,b.x+cursorWidth,b.y+(itemsRow-e.label.height)/2,b.w-cursorWidth-faceStrip-2,state.palette,!e.enabled);
+        const int rightX=b.x+b.w-faceStrip-2-e.right.width;
+        if(e.right.width>0)blit(out,width,height,e.right,rightX,b.y+(itemsRow-e.right.height)/2,e.right.width,state.palette,!e.enabled);
+        blit(out,width,height,e.label,b.x+cursorWidth,b.y+(itemsRow-e.label.height)/2,
+            (e.right.width>0?rightX-4:b.x+b.w-faceStrip-2)-(b.x+cursorWidth),state.palette,!e.enabled);
         if(int(i)==whoseCursor)pointer(b.x-3,b.y+(itemsRow-16)/2,whoseFocus&&state.waiting,!whoseFocus);
     }
     // The list: its header, then "E", the icon and the name.

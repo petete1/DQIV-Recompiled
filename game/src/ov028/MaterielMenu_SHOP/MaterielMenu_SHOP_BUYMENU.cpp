@@ -11,7 +11,10 @@
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuDraw.hpp"
 #include "main/menu/MenuCommonDraw.hpp"
 #include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
 #include <nitro/pad.h>
+#include <stdio.h>
 
 void MaterielMenu_SHOP_BUYMENU::buildRows()
 {
@@ -126,6 +129,39 @@ THUMB void MaterielMenu_SHOP_BUYMENU::menuDraw()
         return;
     }
 #ifdef DQIV_NATIVE
+    // Classic: the Items window: the goods of the tab, the item's detail with its quantity and
+    // price, and what it means to each member (its comparison, or how many they hold).
+    if (classicBattleMenus()) {
+        MaterielMenu_SHOP_MANAGER* manager = MaterielMenu_SHOP_MANAGER::getSingleton();
+        const int extra = manager->getExtraShop() == 1;
+        const int active = menuItem_.active_ < rowCount_ ? menuItem_.active_ : 0;
+        const int shopIndex = rows_[active];
+        const int item = extra ? (active == 0 ? 0x6f : 7) : manager->getItem(shopIndex);
+        int command[3];
+        menu::MenuDataCommon::getShopCommand(command, false);
+        beginItemsWindow();
+        setItemsWindowTitle(command[0]);
+        storeShopWhose(item);
+        beginFieldMenu(pc::BattleMenuKind::list, 1);
+        static char s_tab[48];
+        snprintf(s_tab, sizeof(s_tab), "%s", unkfunc_native_shopFilterName(filter_));
+        setBattleTitle((int)s_tab);
+        for (int k = 0; k < rowCount_; k++) {
+            const int goods = extra ? (k == 0 ? 0x6f : 7) : manager->getItem(rows_[k]);
+            addBattleEntry(goods + 0x40000000, (short)k, true);
+            setBattleEntryItemIcon(goods);
+        }
+        if (tabCount_ > 1) {
+            setBattlePage(tab_, tabCount_);
+        }
+        setItemsDetail(item, NULL, -1);
+        char count[0x40];
+        snprintf(count, sizeof(count), "\xc3\x97%d  %dG", manager->getItemQuantity(shopIndex), manager->getItemPriceSum(shopIndex));
+        setItemsCountText(count);
+        setBattleCursor((short)active);
+        endItemsWindow(pc::BattleItemsFocus::list, NULL);
+        return;
+    }
     {
         // As drawShopBuyScreen, with the category tabs above the list and icons in it.
         unkfunc_native_shopTabs(tabs_, tabCount_, tab_);
@@ -184,7 +220,7 @@ THUMB void MaterielMenu_SHOP_BUYMENU::menuUpdate()
     navigator_.setup(1, 6, rowCount_);
     {
         const int active = rows_[menuItem_.active_];
-        const int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+        const int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
         if (result != 0) {
             activeItem_ = rows_[menuItem_.active_];
             if (result == 2) {
