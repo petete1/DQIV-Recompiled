@@ -1,4 +1,7 @@
 #include "ov024/MaterielMenu_INN_ROOT/MaterielMenu_INN_ROOT.hpp"
+#ifdef DQIV_NATIVE
+#include "ov015/btl/BattleMenuNative.hpp"
+#endif
 #include "main/object/DisplayCharacter.hpp"
 #include "main/menu/TownMenu_MESSAGE.hpp"
 #include "main/text/TextAPI.hpp"
@@ -46,6 +49,13 @@ THUMB void MaterielMenu_INN_ROOT::menuSetup()
 
 THUMB void MaterielMenu_INN_ROOT::menuDraw()
 {
+#ifdef DQIV_NATIVE
+    // Classic: the gold and the party's cards around the innkeeper's words.
+    if (classicBattleMenus()) {
+        publishFieldCommands(NULL, 0, 1, -1);
+        return;
+    }
+#endif
     drawMoneyWindow(-1, -1, 0);
 }
 

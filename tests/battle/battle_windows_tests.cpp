@@ -438,6 +438,12 @@ void itemsWhoseRightValue() {
     }
     check(inside&&!outside,"a member's value drawn in their row");
 }
+void fieldEmptyListGoldOnly() {
+    // The inn: no commands, only the gold (and the party's cards).
+    auto state=menu(pc::BattleMenuKind::list,0);state.field=true;state.gold=ink(20);state.goldUnit=ink(8);
+    check(pc::layoutBattleMenu(state,1280,720).windows.empty(),"no window for an empty field list");
+    check(pc::layoutBattleGold(state,1280,720).picture.w>0,"the gold still shows");
+}
 void windowsStayInside() {
     auto state=menu(pc::BattleMenuKind::spells,4,2);state.title=ink(30);state.entries[1].label=ink(400);
     const auto layout=pc::layoutBattleMenu(state,640,480);
@@ -826,6 +832,7 @@ int main() {
     itemsWhoseHeaderOnUse();
     itemsRowsInDetail();
     itemsWhoseRightValue();
+    fieldEmptyListGoldOnly();
     launchFitsEightAt720();
     launchScrollsToCursor();
     launchDimmedNotPickable();

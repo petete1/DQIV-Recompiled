@@ -126,6 +126,8 @@ Plan plan(const BattleMenuState& state,int width,int height) {
     if(state.kind==BattleMenuKind::none)return p;
     if(state.launch.shown&&!state.launch.cards.empty())return planLaunch(state,width,height);
     if(state.items.shown)return planItems(state,width,height);
+    // A field scene with nothing to choose (the inn): only the gold and the party's cards.
+    if(state.field&&state.entries.empty()&&state.title.width==0&&state.parent.empty())return p;
     if(state.kind==BattleMenuKind::message) {
         const int w=std::min(state.title.width+2*pad,width-2*margin),h=state.title.height+2*pad;
         p.windows.push_back({0,0,std::max(w,2*pad),h});p.titleBox={pad,pad,w-2*pad,state.title.height};
