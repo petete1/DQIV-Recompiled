@@ -85,6 +85,11 @@ void setItemsKind(int text);
 // The shop: the members (and the bag), each with what item means to them: its comparison
 // (equipment) or how many they hold; out of focus. And the detail's count line, as text.
 void storeShopWhose(int item);
+// The shop's sell lists, in the game's own order (HaveItem, the bag's HaveItemSack): a member's
+// items or the bag's (with their counts), 6 a page; focused (with the detail of active, its
+// price; quantity > 0: that many and their total) or out of focus.
+void addSellItems(int chara, bool bag, int page, int active, int quantity = 0);
+void storeSellItems(int chara, bool bag, int page);
 void setItemsCountText(const char* utf8);
 void addItemsRow(int label, int value);
 void addItemsRowPair(int label, int value, int max);

@@ -5,6 +5,22 @@
 #include "main/status/UseItem.hpp"
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include <nitro/pad.h>
+namespace {
+// The Items window under the shop's Sell command.
+void beginSellWindow()
+{
+    int command[3];
+    menu::MenuDataCommon::getShopCommand(command, false);
+    beginItemsWindow();
+    setItemsWindowTitle(command[1]);
+}
+}
+#endif
 
 THUMB void MaterielMenu_SHOP_SELL_QUANTITY::menuSetup()
 {
@@ -29,6 +45,17 @@ THUMB void MaterielMenu_SHOP_SELL_QUANTITY::menuExecute()
 THUMB void MaterielMenu_SHOP_SELL_QUANTITY::menuDraw()
 {
     if (g_TownMenuMessage.isMessageWAITPROG()) {
+#ifdef DQIV_NATIVE
+        // Classic: the bag's list with the item, its quantity (Left / Right) and their price.
+        if (classicBattleMenus()) {
+            beginSellWindow();
+            storeItemsWhose(status::g_Party.getCount());
+            beginFieldMenu(pc::BattleMenuKind::items, 1);
+            addSellItems(0, true, itemIndex_ / 6, itemIndex_ % 6, quantity_);
+            endItemsWindow(pc::BattleItemsFocus::list, NULL);
+            return;
+        }
+#endif
         drawShopSellQuantityScreen(quantity_);
         menuItem_.drawActive();
     } else if (g_TownMenuMessage.isOpen()) {

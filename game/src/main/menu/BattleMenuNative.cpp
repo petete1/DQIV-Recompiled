@@ -1487,3 +1487,49 @@ void setItemsCountText(const char* utf8)
     s_items.count = battleString(utf8);
     s_itemsKeys.push_back((int)std::hash<std::string>()(utf8));
 }
+
+void addSellItems(int chara, bool bag, int page, int active, int quantity)
+{
+    status::g_Party.setPlayerMode();
+    std::vector<int> items;
+    status::HaveStatusInfo* owner = NULL;
+    if (bag) {
+        for (int i = 0; i < status::g_Party.haveItemSack_.getCount(); i++) {
+            items.push_back(status::g_Party.haveItemSack_.getItem(i));
+        }
+        setBattleTitle(0x5000005b);
+    } else {
+        owner = &status::g_Party.getPlayerStatus(chara)->haveStatusInfo_;
+        for (int i = 0; i < owner->haveItem_.getCount(); i++) {
+            items.push_back(owner->haveItem_.getItem(i));
+        }
+        setBattleTitle(owner->haveStatus_.playerIndex_ + 0x50000000);
+    }
+    addBattleItems(items.empty() ? NULL : &items[0], (int)items.size(), page, active, owner);
+    if (bag) {
+        for (size_t k = 0; k < s_building.entries.size(); k++) {
+            const int count = status::g_Party.haveItemSack_.getItemCount(page * 6 + (int)k);
+            s_building.entries[k].right = battleCount(count);
+            s_keys.push_back(count);
+        }
+    }
+    const int index = page * 6 + active;
+    if (active >= 0 && index < (int)items.size() && s_itemsOpen) {
+        setItemsDetail(items[index], owner, bag ? index : -1);
+        const int price = status::UseItem::getSellPrice(items[index]);
+        char text[0x40];
+        if (quantity > 0) {
+            dss::sprintf_s(text, sizeof(text), "\xc3\x97%d  %dG", quantity, price * quantity);
+        } else {
+            dss::sprintf_s(text, sizeof(text), "%dG", price);
+        }
+        setItemsCountText(text);
+    }
+}
+
+void storeSellItems(int chara, bool bag, int page)
+{
+    beginFieldMenu(pc::BattleMenuKind::list, 1);
+    addSellItems(chara, bag, page, -1);
+    stashItemsPane(s_items.list);
+}

@@ -7,6 +7,22 @@
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/MaterielMenu_SHOP_EXTRA_SELL/MaterielMenu_SHOP_EXTRA_SELL.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include <nitro/pad.h>
+namespace {
+// The Items window under the shop's Sell command.
+void beginSellWindow()
+{
+    int command[3];
+    menu::MenuDataCommon::getShopCommand(command, false);
+    beginItemsWindow();
+    setItemsWindowTitle(command[1]);
+}
+}
+#endif
 
 THUMB void MaterielMenu_SHOP_WHO_SELL::menuSetup()
 {
@@ -44,6 +60,18 @@ THUMB void MaterielMenu_SHOP_WHO_SELL::menuDraw()
             drawShopScreen();
             return;
         }
+#ifdef DQIV_NATIVE
+        // Classic: who sells (the members and the bag), their items beside.
+        if (classicBattleMenus()) {
+            const int count = status::g_Party.getCount();
+            beginSellWindow();
+            storeSellItems(activeChara_ < count ? activeChara_ : 0, activeChara_ >= count, 0);
+            beginFieldMenu(pc::BattleMenuKind::list, 1);
+            addItemsWhose(activeChara_);
+            endItemsWindow(pc::BattleItemsFocus::whose, activeChara_ < count ? &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_ : NULL);
+            return;
+        }
+#endif
         drawShopWhoSellScreen();
         menuItem_.drawActive();
     }
@@ -78,7 +106,11 @@ THUMB void MaterielMenu_SHOP_WHO_SELL::menuUpdate()
         return;
     }
     navigator_.setup(5, 2, maxCharaCount_);
+#ifdef DQIV_NATIVE
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         int activeChara = menuItem_.active_;
         activeChara_ = activeChara;

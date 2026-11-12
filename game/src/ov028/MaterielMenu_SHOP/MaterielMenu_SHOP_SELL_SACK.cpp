@@ -5,6 +5,22 @@
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include <nitro/pad.h>
+namespace {
+// The Items window under the shop's Sell command.
+void beginSellWindow()
+{
+    int command[3];
+    menu::MenuDataCommon::getShopCommand(command, false);
+    beginItemsWindow();
+    setItemsWindowTitle(command[1]);
+}
+}
+#endif
 
 THUMB void MaterielMenu_SHOP_SELL_SACK::menuSetup()
 {
@@ -39,6 +55,16 @@ THUMB void MaterielMenu_SHOP_SELL_SACK::menuDraw()
         drawShopScreen();
         return;
     }
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        beginSellWindow();
+        storeItemsWhose(status::g_Party.getCount());
+        beginFieldMenu(pc::BattleMenuKind::items, 1);
+        addSellItems(0, true, pageStart_, itemIndex_);
+        endItemsWindow(pc::BattleItemsFocus::list, NULL);
+        return;
+    }
+#endif
     drawShopSellSackScreen();
     menuItem_.drawActive();
 }
@@ -56,7 +82,26 @@ THUMB void MaterielMenu_SHOP_SELL_SACK::menuUpdate()
         gMaterielMenu_SHOP_WHO_SELL.open();
     }
     navigator_.setup(2, 3, status::g_Party.haveItemSack_.getCount());
+#ifdef DQIV_NATIVE
+    // Classic: one column; Left / Right turn the page.
+    if (classicBattleMenus()) {
+        const int pages = (status::g_Party.haveItemSack_.getCount() + 5) / 6;
+        const int edge = dss::g_Pad.edge();
+        if (pages > 1 && (edge & (PAD_KEY_LEFT | PAD_KEY_RIGHT))) {
+            pageStart_ = (pageStart_ + (edge & PAD_KEY_RIGHT ? 1 : pages - 1)) % pages;
+            navigator_.setPageNo(pageStart_);
+            itemIndex_ = menuItem_.active_ = 0;
+            MaterielMenuPlayerControl::getSingleton()->activeItem_ = 0;
+            MaterielMenuPlayerControl::getSingleton()->activeItemPage_ = pageStart_;
+            changeItem();
+            redraw_ = 1;
+            return;
+        }
+    }
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             selectItem();

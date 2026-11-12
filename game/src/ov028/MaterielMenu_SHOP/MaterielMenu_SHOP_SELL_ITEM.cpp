@@ -6,6 +6,22 @@
 #include "ov016/MenuTemplate/MenuTemplate_materiel.hpp"
 #include "ov016/UnkMaterielMenuDraw/MaterielMenuScreens.hpp"
 #include "main/menu/MenuTemplate_Common.hpp"
+#ifdef DQIV_NATIVE
+#include "main/dss/Pad.hpp"
+#include "main/menu/MenuDataCommon.hpp"
+#include "ov015/btl/BattleMenuNative.hpp"
+#include <nitro/pad.h>
+namespace {
+// The Items window under the shop's Sell command.
+void beginSellWindow()
+{
+    int command[3];
+    menu::MenuDataCommon::getShopCommand(command, false);
+    beginItemsWindow();
+    setItemsWindowTitle(command[1]);
+}
+}
+#endif
 
 static inline int getItem(status::HaveItem* haveItem, int index)
 {
@@ -62,6 +78,16 @@ THUMB void MaterielMenu_SHOP_SELL_ITEM::menuDraw()
         drawShopScreen();
         return;
     }
+#ifdef DQIV_NATIVE
+    if (classicBattleMenus()) {
+        beginSellWindow();
+        storeItemsWhose(activeChara_);
+        beginFieldMenu(pc::BattleMenuKind::items, 1);
+        addSellItems(activeChara_, false, pageStart_, itemIndex_);
+        endItemsWindow(pc::BattleItemsFocus::list, &status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_);
+        return;
+    }
+#endif
     drawShopSellItemScreen();
     menuItem3_.drawActive();
     menuItem_.drawActive();
@@ -80,7 +106,24 @@ THUMB void MaterielMenu_SHOP_SELL_ITEM::menuUpdate()
         gMaterielMenu_SHOP_WHO_SELL.open();
     }
     navigator_.setup(2, 3, status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_.haveItem_.getCount());
+#ifdef DQIV_NATIVE
+    // Classic: one column; Left / Right turn the page.
+    if (classicBattleMenus()) {
+        const int pages = (status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_.haveItem_.getCount() + 5) / 6;
+        if (pages > 1 && (dss::g_Pad.edge() & (PAD_KEY_LEFT | PAD_KEY_RIGHT))) {
+            pageStart_ = (pageStart_ + 1) % pages;
+            navigator_.setPageNo(pageStart_);
+            itemIndex_ = menuItem_.active_ = 0;
+            MaterielMenuPlayerControl::getSingleton()->activeItem_ = 0;
+            MaterielMenuPlayerControl::getSingleton()->activeItemPage_ = pageStart_;
+            redraw_ = 1;
+            return;
+        }
+    }
+    int result = classicBattleMenus() ? battleMenuSelect(menuItem_, navigator_) : MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#else
     int result = MenuUpdate_Assist::menuSelect(menuItem_, navigator_);
+#endif
     if (result != 0) {
         if (result == 2) {
             int itemID = getItem(&status::g_Party.getPlayerStatus(activeChara_)->haveStatusInfo_.haveItem_, itemIndex_ + pageStart_ * 6);

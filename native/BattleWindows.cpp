@@ -477,10 +477,14 @@ void composeItems(std::vector<std::uint32_t>& out,int width,int height,const Bat
     for(std::size_t i=0;i<list.size()&&i<p.listRows.size();++i) {
         const auto& e=list[i];const auto& b=p.listRows[i];
         const int x=b.x+cursorWidth;
-        if(e.right.width>0)blit(out,width,height,e.right,x,b.y+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
+        // The "E" mark before the icon; a wider right text (a count) at the row's end.
+        const bool mark=e.right.width>0&&e.right.width<=10;
+        const int countWidth=mark?0:e.right.width;
+        if(mark)blit(out,width,height,e.right,x,b.y+(row-e.right.height)/2,e.right.width,state.palette,!e.enabled);
+        if(countWidth)blit(out,width,height,e.right,b.x+b.w-countWidth,b.y+(row-e.right.height)/2,countWidth,state.palette,!e.enabled);
         if(iconSide(e.icon))icon(out,width,height,e.icon,x+10,b.y+(row-iconSize)/2,!e.enabled);
         const int labelX=x+10+iconSize+iconGap;
-        blit(out,width,height,e.label,labelX,b.y+(row-e.label.height)/2,b.x+b.w-labelX,state.palette,!e.enabled);
+        blit(out,width,height,e.label,labelX,b.y+(row-e.label.height)/2,b.x+b.w-labelX-(countWidth?countWidth+4:0),state.palette,!e.enabled);
         if(int(i)==listCursor)pointer(b.x-3,b.y+(row-16)/2,listFocus&&state.waiting,!listFocus);
     }
     // The detail: the kind, the icon in a frame, the description, the count and the comparison.
